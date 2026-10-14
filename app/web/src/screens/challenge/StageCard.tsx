@@ -80,7 +80,7 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
   const hints = c.hints ?? [];
 
   return (
-    <article className={`${styles.card} ${active ? styles.active : ''}`} aria-label={`Etapa ${stage.number}: ${stage.title}`}>
+    <article className={`${styles.card} ${ui.open ? styles.open : ''}`} aria-label={`Etapa ${stage.number}: ${stage.title}`} data-active={active || undefined}>
       <header className={styles.head}>
         <button
           type="button"

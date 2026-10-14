@@ -2,7 +2,7 @@
 .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .timeRow { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .minutes { margin: 2px 0 0; font-size: 20px; font-weight: 500; color: var(--ink); }
-.field { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; min-height: 44px; }
+.field { width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; min-height: 44px; }
 textarea.field { resize: vertical; line-height: 1.5; }
 .notes { display: flex; flex-direction: column; gap: 6px; }
 .fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

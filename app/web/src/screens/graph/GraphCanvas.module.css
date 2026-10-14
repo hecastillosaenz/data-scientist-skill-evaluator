@@ -15,7 +15,7 @@
 .dot { stroke: var(--sunk); stroke-width: 1.5; transition: r 0.1s; }
 .node:hover .dot { stroke: var(--ink); }
 .node:focus-visible .hit { stroke: var(--focus); stroke-width: 2; fill: var(--accent-soft); }
-.ring { fill: none; stroke: var(--accent); stroke-width: 2; }
+.ring { fill: var(--accent); opacity: 0.2; stroke: none; }
 .label { fill: var(--ink); font-size: 11px; font-weight: 500; paint-order: stroke; stroke: var(--sunk); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 
 .sNo { fill: var(--st-no); }

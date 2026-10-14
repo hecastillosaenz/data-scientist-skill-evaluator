@@ -99,9 +99,11 @@ button {
   gap: 8px;
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 12px;
-  background: var(--card);
+  background: var(--btn-bg);
+  box-shadow: var(--shadow-btn);
+  color: var(--ink);
   font-weight: 500;
   font-size: 14px;
   text-decoration: none;
@@ -111,11 +113,12 @@ button {
   text-decoration: none;
   background: var(--sel);
 }
+.btn:active { transform: translateY(0.5px); }
 
 .btn-primary {
   background: var(--primary);
   color: var(--primary-fg);
-  border-color: transparent;
+  box-shadow: none;
 }
 
 .btn-primary:hover {

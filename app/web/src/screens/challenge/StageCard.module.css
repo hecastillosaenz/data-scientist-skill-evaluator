@@ -1,5 +1,9 @@
-.card { background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-card); min-width: 0; }
-.active { box-shadow: var(--shadow-card), inset 4px 0 0 var(--accent); }
+.card { position: relative; background: var(--card); border-radius: var(--r-card); box-shadow: var(--shadow-card); min-width: 0; transition: box-shadow 0.35s ease; }
+/* Etapa desplegada: un velo de acento que aparece gradualmente y algo más de elevación (sin barra ni anillo). */
+.card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent) 0, color-mix(in srgb, var(--accent) 3%, transparent) 180px, transparent 420px); }
+.open { box-shadow: var(--shadow-pop); }
+.open::before { opacity: 1; }
+.card > * { position: relative; }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px 12px 8px; flex-wrap: wrap; }
 .toggle { flex: 1; min-width: 260px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 8px; border: 0; background: none; text-align: left; border-radius: 12px; min-height: 44px; }
 .toggle:hover { background: var(--sel); }
@@ -10,7 +14,9 @@
 .domainName { font-size: 12px; color: var(--ink2); }
 .chevOpen { transform: rotate(180deg); }
 
-.body { padding: 22px 28px 28px; display: flex; flex-direction: column; gap: 26px; border-top: 1px solid var(--line); }
+.body { padding: 24px 28px 32px; display: flex; flex-direction: column; gap: 28px; }
+/* Columna de lectura centrada: párrafos, código, tablas y diagramas comparten ancho. */
+.body > * { width: 100%; max-width: var(--column); margin-inline: auto; }
 .section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .section h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .tag { font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 8px; border-radius: 7px; background: var(--sunk); }
@@ -45,7 +51,7 @@
 .verify { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; padding: 18px 20px; border-radius: 14px; background: var(--sunk); }
 .verify p { margin: 0; font-size: 14px; max-width: 72ch; }
 .verify code { padding: 1px 6px; border-radius: 6px; background: var(--card); font-size: 12px; }
-.textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.6; resize: vertical; }
+.textarea { width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--btn-bg); box-shadow: var(--shadow-btn); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.6; resize: vertical; }
 .result { padding: 14px 18px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .result strong { color: var(--ink); font-size: 15px; }
 .result p { margin: 0; }

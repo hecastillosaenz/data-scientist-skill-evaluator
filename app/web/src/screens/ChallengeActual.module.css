@@ -5,7 +5,8 @@
 .domainText { font-size: 13px; color: var(--ink2); }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--gap); align-items: start; }
 .main { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
-.statementCard { display: flex; flex-direction: column; gap: 28px; }
+.statementCard { display: flex; flex-direction: column; gap: 30px; }
+.statementCard > * { width: 100%; max-width: var(--column); margin-inline: auto; }
 .block { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .questions { margin: 12px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
 .footnote { margin-top: 24px; font-size: 12px; color: var(--muted); }

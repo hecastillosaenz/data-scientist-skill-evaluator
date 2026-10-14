@@ -1,4 +1,7 @@
-.md { font-size: var(--fs-body); line-height: 1.7; color: var(--ink2); max-width: 72ch; overflow-wrap: anywhere; }
+.md { font-size: var(--fs-body); line-height: 1.7; color: var(--ink2); width: 100%; overflow-wrap: break-word; }
+/* Texto justificado con guionado automático (el documento está en español). */
+.md p, .md li, .md blockquote { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
+.md pre, .md code, .md table, .md h1, .md h2, .md h3, .md h4 { text-align: left; hyphens: none; }
 .inline { display: inline; max-width: none; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
@@ -17,11 +20,12 @@
 .md pre { margin: 0 0 1em; padding: 14px 16px; border-radius: 12px; background: var(--sunk); overflow-x: auto; max-width: 100%; }
 .md pre code { padding: 0; background: none; font-size: 13px; line-height: 1.75; }
 
-.md table { border-collapse: collapse; margin: 0 0 1em; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; }
-.md th, .md td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.md th { color: var(--ink); font-weight: 600; background: var(--sunk); }
+.tableWrap { overflow-x: auto; margin: 0 0 1em; max-width: 100%; }
+.tableWrap table { border-collapse: collapse; margin: 0 auto; font-size: 14px; }
+.tableWrap th, .tableWrap td { padding: 8px 16px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tableWrap th { color: var(--ink); font-weight: 600; background: var(--sunk); }
 
-.md :global(.katex-display) { margin: 0.9em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.md :global(.katex-display) { margin: 0.9em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; text-align: center; }
 .md :global(.katex) { font-size: 1.05em; color: var(--ink); }
 
 /* Resaltado de sintaxis (highlight.js) con los tokens de color del tema. */

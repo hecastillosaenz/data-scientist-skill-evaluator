@@ -1,8 +1,9 @@
-.card { display: flex; flex-direction: column; gap: 18px; }
+.card { display: flex; flex-direction: column; gap: 20px; }
+.card > * { width: 100%; max-width: var(--column); margin-inline: auto; }
 .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .lock { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); padding: 4px 10px; border-radius: 8px; background: var(--sunk); }
 .score { font-size: 14px; font-weight: 500; color: var(--ink); padding: 4px 12px; border-radius: 8px; background: var(--accent-soft); }
-.intro { margin: 0; font-size: 14px; color: var(--muted); max-width: 72ch; line-height: 1.6; }
+.intro { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; text-align: justify; hyphens: auto; }
 .list { margin: 0; padding: 0; list-style: none; counter-reset: t; display: flex; flex-direction: column; gap: 26px; }
 .item { counter-increment: t; display: flex; flex-direction: column; gap: 12px; padding-left: 36px; position: relative; }
 .item::before { content: counter(t); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
@@ -15,7 +16,7 @@
 .option input { margin-top: 4px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .picked { background: var(--accent-soft); color: var(--ink); }
 .right { box-shadow: inset 3px 0 0 var(--accent); }
-.field { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.6; resize: vertical; }
+.field { width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.6; resize: vertical; }
 .field:disabled { opacity: 0.8; }
 .feedback { padding: 14px 18px; border-radius: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .ok { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }

@@ -4,7 +4,7 @@
 .tab:hover { color: var(--ink); }
 .active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-card); }
 .tableWrap { overflow-x: auto; border-radius: 12px; background: var(--sunk); padding: 4px 4px 0; }
-.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table { margin: 0 auto; min-width: 60%; border-collapse: collapse; font-size: 13px; }
 .table th, .table td { padding: 9px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
 .table th { color: var(--ink); font-weight: 600; font-size: 12px; background: var(--sel); position: sticky; top: 0; }
 .table tbody tr:last-child td { border-bottom: 0; }

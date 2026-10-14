@@ -18,6 +18,15 @@ interface Props {
 
 const inlineComponents: ComponentProps<typeof ReactMarkdown>['components'] = { p: ({ children }) => <Fragment>{children}</Fragment> };
 
+/** Las tablas van en un contenedor que las centra y permite desplazarlas si son más anchas que la columna. */
+const blockComponents: ComponentProps<typeof ReactMarkdown>['components'] = {
+  table: ({ children }) => (
+    <div className={styles.tableWrap}>
+      <table>{children}</table>
+    </div>
+  ),
+};
+
 /**
  * Markdown del contenido de los challenges: GFM, fórmulas LaTeX (`$…$` y `$$…$$`, KaTeX local)
  * y resaltado de SQL/Python. Escapa los signos de moneda como `\$` para que no se lean como fórmula.
@@ -28,7 +37,7 @@ export function Markdown({ children, inline = false, className = '' }: Props) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, [rehypeHighlight, { languages: { sql, python }, detect: false }]]}
-        components={inline ? inlineComponents : undefined}
+        components={inline ? inlineComponents : blockComponents}
       >
         {children}
       </ReactMarkdown>

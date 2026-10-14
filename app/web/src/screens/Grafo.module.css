@@ -2,7 +2,7 @@
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--gap); align-items: start; }
 
-.search { position: relative; display: flex; align-items: center; gap: 8px; min-width: 280px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--muted); }
+.search { position: relative; display: flex; align-items: center; gap: 8px; min-width: 280px; min-height: 44px; padding: 0 14px; border-radius: 12px; background: var(--btn-bg); box-shadow: var(--shadow-btn); color: var(--muted); }
 .search input { flex: 1; min-width: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 14px; outline: none; }
 .search:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
 .search input::-webkit-search-cancel-button { display: none; }

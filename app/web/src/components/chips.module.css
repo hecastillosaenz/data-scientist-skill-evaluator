@@ -10,7 +10,7 @@
   white-space: nowrap;
 }
 .neutral {
-  border: 1px solid var(--line);
+  background: var(--sunk);
   color: var(--ink2);
 }
 .status {
