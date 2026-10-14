@@ -11,7 +11,8 @@ import { DOMAIN_COLOR_VAR } from '../components/domainColors';
 import { StageBar } from '../components/StageBar';
 import { LineChart } from '../charts/LineChart';
 import { StackedBars } from '../charts/StackedBars';
-import { addDays, activityDays, averageActualMinutes, averageEstimatedMinutes, completedStageCount, currentStreakDays, isoWeek, longestStreak, stageIndex, stagesCompletedThisWeek, timePoints, userLevel, weeklyByDomain, WEEKLY_GOAL } from '../domain/stats';
+import { globalLevel, levelByDomain } from '../domain/level';
+import { addDays, activityDays, averageActualMinutes, averageEstimatedMinutes, completedStageCount, currentStreakDays, isoWeek, longestStreak, stageIndex, stagesCompletedThisWeek, timePoints, weeklyByDomain, WEEKLY_GOAL } from '../domain/stats';
 import { formatLongDate, formatWeekday, relativeTime } from '../charts/format';
 import { timeReadingLine } from '../domain/readingLines';
 import { buildReviewQueue, reasonText, topWeaknesses } from '../domain/reviewQueue';
@@ -37,7 +38,7 @@ export function Inicio() {
       weekDone: stagesCompletedThisWeek(data.evidence, now),
       avgReal: averageActualMinutes(data.evidence),
       avgEst: averageEstimatedMinutes(data.evidence, data.challenges),
-      level: userLevel(data.challenges, data.evidence),
+      level: globalLevel(levelByDomain(data.challenges, data.evidence)),
       queue: buildReviewQueue(data.concepts, data.challenges, data.evidence, now, data.testResults),
       points: timePoints(data.evidence, data.challenges, now, PERIOD_DAYS),
       week: weeklyByDomain(data.evidence, data.challenges, now),
@@ -103,7 +104,7 @@ export function Inicio() {
             value={view.avgReal === null ? '—' : `${Math.round(view.avgReal)} min`}
             context={view.avgEst === null ? 'Sin etapas aprobadas todavía' : `Estimado: ~${Math.round(view.avgEst)} min`}
           />
-          <KpiCard label="Nivel actual" value={view.level} context="Según etapas aprobadas sin ayuda" />
+          <KpiCard label="Nivel actual" value={view.level} context="Mediana de tus 6 dominios" />
         </div>
       </div>
 

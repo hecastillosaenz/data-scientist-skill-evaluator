@@ -13,6 +13,7 @@ import { StackedBars } from '../charts/StackedBars';
 import { formatShortDate } from '../charts/format';
 import { activityHeatmap, blockerTrend, domainGaps, performanceByDifficulty, periodActivity, stagesByDomainApoyo } from '../domain/analytics';
 import { activityReadingLine, difficultyReadingLine, domainsReadingLine, gapsReadingLine, timeReadingLine, weaknessReadingLine } from '../domain/readingLines';
+import { globalLevel, levelByDomain } from '../domain/level';
 import { addDays, timePoints } from '../domain/stats';
 import { useApp } from '../data/DataContext';
 import styles from './Analitica.module.css';
@@ -36,6 +37,7 @@ export function Analitica() {
       difficulty: performanceByDifficulty(data.evidence, data.challenges),
       heat: activityHeatmap(data.evidence, now, days),
       activity: periodActivity(data.evidence, now, days),
+      levels: levelByDomain(data.challenges, data.evidence),
     };
   }, [data, now, days]);
 
@@ -120,6 +122,37 @@ export function Analitica() {
           </ul>
           <p className={styles.legendRow}><span><i className={styles.swDone} /> Evidencia reciente</span><span><i className={styles.swNone} /> Sin evidencia</span></p>
           <ReadingLine>{gapsReadingLine(view.gaps)}</ReadingLine>
+        </Card>
+
+        <Card>
+          <h2>Nivel por dominio</h2>
+          <p className={styles.sub}>Global: <strong>{globalLevel(view.levels)}</strong> · mediana de los seis dominios</p>
+          <ul className={styles.levels}>
+            {DOMAINS.map((d) => {
+              const l = view.levels[d.id];
+              return (
+                <li key={d.id}>
+                  <span className={styles.gapLabel}><DomainTile domain={d.id} size={22} />{d.short}</span>
+                  <span className={styles.levelName}>{l.level}</span>
+                  <span className={styles.levelNext}>
+                    {l.next ? (
+                      <>
+                        <span className={styles.levelBar} role="img" aria-label={`${l.next.have} de ${l.next.need} etapas para ${l.next.level}`}>
+                          <span style={{ width: `${(l.next.have / l.next.need) * 100}%` }} />
+                        </span>
+                        <span className="mono">{l.next.have}/{l.next.need}</span>
+                      </>
+                    ) : (
+                      <span className={styles.muted}>Máximo</span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <ReadingLine>
+            Suben el nivel las etapas aprobadas sin ayuda y en Apoyo Autónomo; el nivel no baja. La barra muestra cuántas faltan para el siguiente nivel.
+          </ReadingLine>
         </Card>
 
         <Card>

@@ -1,4 +1,4 @@
-import type { Challenge, Difficulty, DomainId, Evidence, Stage } from '../../../shared/types';
+import type { Challenge, DomainId, Evidence, Stage } from '../../../shared/types';
 import { DOMAINS } from '../../../shared/domains';
 import { latestAttemptByStage } from './conceptState';
 
@@ -122,25 +122,6 @@ export function averageEstimatedMinutes(evidence: Evidence[], challenges: Challe
   const passed = evidence.filter((e) => e.result === 'aprobada' && index.has(e.stageId));
   if (passed.length === 0) return null;
   return passed.reduce((sum, e) => sum + index.get(e.stageId)!.stage.estimatedMinutes, 0) / passed.length;
-}
-
-export type UserLevel = 'Trainee' | 'Básico' | 'Intermedio' | 'Avanzado';
-
-/**
- * Nivel del usuario — PROVISIONAL: el alcance del "Nivel del usuario" sigue sin decidir (SDD §7.3).
- * Se cuentan etapas aprobadas sin ayuda por dificultad.
- */
-export function userLevel(challenges: Challenge[], evidence: Evidence[]): UserLevel {
-  const index = stageIndex(challenges);
-  const clean = new Map<Difficulty, Set<string>>([[1, new Set()], [2, new Set()], [3, new Set()]]);
-  for (const e of latestAttemptByStage(evidence).values()) {
-    const ref = index.get(e.stageId);
-    if (ref && e.result === 'aprobada' && !e.withHelp) clean.get(ref.stage.difficulty)!.add(e.stageId);
-  }
-  if (clean.get(3)!.size >= 3) return 'Avanzado';
-  if (clean.get(2)!.size >= 3) return 'Intermedio';
-  if (clean.get(1)!.size + clean.get(2)!.size >= 1) return 'Básico';
-  return 'Trainee';
 }
 
 export interface TimePoint {

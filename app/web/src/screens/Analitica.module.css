@@ -35,4 +35,10 @@
 .table tbody th { font-weight: 400; }
 .table tbody tr:last-child th, .table tbody tr:last-child td { border-bottom: 0; }
 
-@media (max-width: 1099px) { .grid { grid-template-columns: 1fr; } .gaps li { grid-template-columns: 100px minmax(0, 1fr) auto; } }
+.levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.levels li { display: grid; grid-template-columns: 120px 96px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 13px; }
+.levelName { font-weight: 600; color: var(--ink); }
+.levelNext { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.levelBar { flex: 1; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.levelBar > span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+@media (max-width: 1099px) { .grid { grid-template-columns: 1fr; } .gaps li { grid-template-columns: 100px minmax(0, 1fr) auto; } .levels li { grid-template-columns: 100px 90px minmax(0, 1fr); } }
