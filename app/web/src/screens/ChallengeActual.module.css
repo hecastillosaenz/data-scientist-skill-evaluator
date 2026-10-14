@@ -1,0 +1,18 @@
+.header { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.h1 { font-size: clamp(26px, 3vw, 36px); font-weight: 600; line-height: 1.15; letter-spacing: -0.015em; }
+.headMeta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tiles { display: inline-flex; gap: 6px; }
+.domainText { font-size: 13px; color: var(--ink2); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--gap); align-items: start; }
+.main { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.statement { font-size: 16px; line-height: 1.7; max-width: 68ch; margin: 10px 0 20px; }
+.schemaTitle { margin-bottom: 10px; }
+.schemas { display: flex; flex-wrap: wrap; gap: 14px; }
+.schema { border-collapse: collapse; font-size: 12px; background: var(--sunk); border-radius: 12px; overflow: hidden; min-width: 200px; }
+.schema caption { text-align: left; padding: 10px 12px 4px; font-weight: 500; font-size: 13px; caption-side: top; background: var(--sunk); }
+.schema th, .schema td { padding: 3px 12px; text-align: left; font-weight: 400; }
+.schema td { color: var(--muted); }
+.schema tbody tr:last-child th, .schema tbody tr:last-child td { padding-bottom: 10px; }
+.questions { margin: 12px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.footnote { margin-top: 24px; font-size: 12px; color: var(--muted); }
+@media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } }
