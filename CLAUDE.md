@@ -20,7 +20,11 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 
 ### Estructura de `app/` (un solo `package.json`, TypeScript, Fastify)
 - `server/` — `app.ts` (`buildApp`, testeable con `inject()`), `mutex.ts`, `atomic-write.ts`, `ndjson.ts`, `start.ts` (`HOST` fijo en loopback), `paths.ts`, `index.ts`.
-- `web/` — React + Vite; el build (`web/dist`) lo sirve el propio servidor.
+- `shared/` — contrato de datos (`types.ts`) y metadatos de dominios/etiquetas (`domains.ts`).
+- `web/` — React + Vite + react-router, CSS plano con variables (tokens de UI-UX §1.3); el build (`web/dist`) lo sirve el propio servidor.
+  - `src/screens/` — Inicio, Challenges, ChallengeActual, Repaso, Grafo, Analítica. `src/components/`, `src/charts/` (SVG propio), `src/layout/`.
+  - `src/domain/` — lógica pura y testeada (estado de concepto R11, cola de repaso, filtros, layout del grafo, analítica, líneas de lectura).
+  - `src/data/` — **datos de ejemplo** (`sample/`) detrás de `repository.ts`, el único punto a reemplazar por `fetch` al orquestador. `?escenario=nuevo|sin-challenge|racha-rota` fuerza los estados vacíos de Inicio.
 
 ## Standards que no se negocian
 - Persistencia en archivos versionados por git (markdown + JSON); sin base de datos (S1).
@@ -30,6 +34,9 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - El Evaluador nunca comparte contexto de sesión con el Generador (R14).
 - Una sola operación de escritura en vuelo (mutex en memoria); la segunda se rechaza, no se encola.
 - Marcador de entregable: `# Entregable - Etapa X:` como primera línea de la celda; X debe coincidir con los metadatos del challenge o se rechaza con error explícito (R8, R16).
+
+## Estado de la UI
+Las 6 pantallas están construidas sobre datos sintéticos. La verificación/evaluación de etapas, el refuerzo y "Iniciar challenge" son **simulados** (`domain/simulate.ts`, `domain/reinforcement.ts`) hasta que existan P1–P5. Las fórmulas derivadas son **provisionales** (SDD, Fase 8).
 
 ## Cómo trabajamos
 - Una sesión = un paquete de entrega (P0–P7, ver SDD §7.2). Plan Mode primero, luego implementar.

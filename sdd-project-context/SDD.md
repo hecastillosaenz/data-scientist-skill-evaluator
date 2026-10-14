@@ -218,3 +218,18 @@ data-scientist-skill-evaluator/
 - Condición de disparo del Analista.
 - Manejo de errores (celda no encontrada, budget agotado, JSON corrupto).
 - Alcance de "Nivel del usuario".
+
+---
+
+## Fase 8 — Decisiones y supuestos de la UI con datos de ejemplo
+
+La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sintéticos, detrás de `app/web/src/data/repository.ts`. El PRD de referencia (§11 fórmulas, §25–26 datos) no está en el repo, así que lo siguiente es **provisional** y falta ratificarlo:
+
+- **Estado de Concept** (`domain/conceptState.ts`): sin intentos → No visto; algún último intento fallido → Con fallos; todos aprobados sin ayuda → Dominado; cualquier otro caso (parcial o con ayuda) → Visto. Sigue R11 (solo el último intento de cada etapa).
+- **Prioridad de la cola de repaso** (`domain/reviewQueue.ts`): base por motivo (fallos 100, parcial 70, ayuda 60, olvido 40) + 5 × fallos históricos de la etapa + 2 × conceptos dependientes + 0.3 × días desde la práctica. «Olvido» = dominado hace más de 21 días.
+- **Nivel del usuario** (`domain/stats.ts`): Trainee / Básico / Intermedio (≥3 etapas de dificultad 2 aprobadas sin ayuda) / Avanzado (≥3 de dificultad 3). Sigue siendo la decisión abierta de §7.3.
+- **Meta semanal** de 5 etapas para el subtítulo de Inicio.
+- **Estado de Etapa y de Challenge se derivan** de la evidencia; no se almacenan.
+- **Tensión R10 vs. UI-UX §4.3**: R10 dice que *cada verificación* crea una Evidence, pero el flujo de UI-UX separa "Verificar etapa" de "Registrar etapa" (que captura tiempo real, dónde te trabaste y notas). La UI actual crea la Evidence al **registrar**. Hay que decidir si la verificación crea la Evidence y "Registrar" la completa con un registro adicional, o si el resultado verificado queda pendiente hasta registrar.
+- **Layout del grafo**: un carril horizontal por dominio (R15: los 6 dominios visibles al abrir), capas de izquierda a derecha por camino más largo de prerrequisitos. Con ~240 conceptos, pan/zoom sostiene ~13 ms por frame.
+
