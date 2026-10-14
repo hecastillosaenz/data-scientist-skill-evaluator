@@ -144,6 +144,7 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - Tabla: Challenge (título + dataset), Dominios (tiles), Dificultad (chip), Progreso por etapas, Tiempo total.
 - Vista previa lateral fija: lista de etapas expandible, cada una con chip de dominio/Bloom/estado; al expandir, descripción/dificultad/tiempo/tipo/conceptos. CTA según estado.
 - Filtrar por Dominio o Bloom incluye el challenge si alguna etapa cumple la condición. Orden por defecto: en curso → pendientes recomendados → completados.
+- **Generar nuevo challenge (R1, R38, R39).** Botón en la cabecera (y «Generar uno nuevo» en Inicio) que abre un diálogo: dominio opcional (por defecto «Recomendado por mi grafo»), el plan que calculó el orquestador (rol, conceptos, Bloom, dificultad y Apoyo de cada etapa) y, si quedó trabajo sin terminar, «Retomar». Al generar muestra la línea de tiempo por fases con «Detener»; al terminar, «Abrir challenge». Si falla: el motivo con el campo, «Reintentar desde <fase>» y, si fue por presupuesto, «Reintentar con el doble de presupuesto». Solo con datos reales: con `?datos=ejemplo` explica que no está disponible.
 
 ### 4.3 Challenge actual
 - Encabezado: título, tiles de dominios, dificultad, tiempo total, progreso por etapas.

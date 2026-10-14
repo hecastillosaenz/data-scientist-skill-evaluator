@@ -19,6 +19,8 @@ interface Actions {
   addTestResults: (results: Omit<TestResult, 'id' | 'at'>[]) => Promise<boolean>;
   /** Cierra un aviso de la barra superior. */
   dismissNotice: (id: string) => void;
+  /** Vuelve a leer el estado del orquestador (p. ej. tras generar un challenge nuevo). */
+  reload: () => Promise<void>;
 }
 
 /** Aviso persistente de la barra superior: guardado fallido (R37), progreso ilegible (R33) o challenge inválido (R29). */
@@ -183,6 +185,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       },
       dismissNotice: (id) => setNotices((prev) => prev.filter((n) => n.id !== id)),
+      reload: async () => {
+        if (!persisted) return;
+        try {
+          const loaded = await loadAppState('real', 'normal');
+          setData(loaded.data);
+          setApoyos(loaded.apoyos);
+          setStarted(new Set(loaded.started));
+        } catch (err) {
+          fail('la recarga de tus datos', err);
+        }
+      },
     }),
     [addEvidence, challengeOfStage, persisted, fail],
   );

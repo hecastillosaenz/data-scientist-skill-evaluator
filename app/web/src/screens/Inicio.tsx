@@ -17,12 +17,14 @@ import { formatLongDate, formatWeekday, relativeTime } from '../charts/format';
 import { timeReadingLine } from '../domain/readingLines';
 import { buildReviewQueue, reasonText, topWeaknesses } from '../domain/reviewQueue';
 import { useApp } from '../data/DataContext';
+import { useGeneratorDialog } from './generate/GenerateDialog';
 import styles from './Inicio.module.css';
 
 const PERIOD_DAYS = 30;
 
 export function Inicio() {
-  const { loading, data, now, currentChallenge, stageStatusesOf, challengeStatusOf, actions } = useApp();
+  const { loading, data, now, currentChallenge, stageStatusesOf, challengeStatusOf, actions, source } = useApp();
+  const generator = useGeneratorDialog();
   const navigate = useNavigate();
 
   const view = useMemo(() => {
@@ -74,6 +76,8 @@ export function Inicio() {
           <NoChallengeCard
             brandNew={brandNew}
             recommended={recommended}
+            canGenerate={source === 'real'}
+            onGenerate={generator.open}
             onStart={() => {
               if (!recommended) return;
               actions.startChallenge(recommended.id);
@@ -248,7 +252,7 @@ function CurrentChallengeCard({ challenge, statuses }: { challenge: Challenge; s
   );
 }
 
-function NoChallengeCard({ brandNew, recommended, onStart }: { brandNew: boolean; recommended?: Challenge; onStart: () => void }) {
+function NoChallengeCard({ brandNew, recommended, onStart, canGenerate, onGenerate }: { brandNew: boolean; recommended?: Challenge; onStart: () => void; canGenerate: boolean; onGenerate: () => void }) {
   return (
     <section className={styles.hero} aria-label="Sin challenge en curso">
       <p className={styles.heroLabel}>{brandNew ? 'Bienvenido' : 'Sin challenge en curso'}</p>
@@ -270,7 +274,14 @@ function NoChallengeCard({ brandNew, recommended, onStart }: { brandNew: boolean
       )}
       <div className={styles.heroFoot}>
         <p>{DIFFICULTY_LABEL[recommended?.difficulty ?? 1]} · calibrado con tu grafo</p>
-        <button type="button" className={`btn ${styles.heroBtn}`} onClick={onStart}>Iniciar nuevo challenge <ArrowRight size={16} aria-hidden="true" /></button>
+        <div className={styles.heroActions}>
+          {canGenerate && (
+            <button type="button" className={`btn ${recommended ? styles.heroGhost : styles.heroBtn}`} onClick={onGenerate}>Generar uno nuevo</button>
+          )}
+          {(recommended || !canGenerate) && (
+            <button type="button" className={`btn ${styles.heroBtn}`} onClick={onStart} disabled={!recommended}>Iniciar nuevo challenge <ArrowRight size={16} aria-hidden="true" /></button>
+          )}
+        </div>
       </div>
     </section>
   );

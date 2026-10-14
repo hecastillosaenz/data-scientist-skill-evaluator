@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { BLOOM_LABEL, DIFFICULTY_LABEL, DOMAINS, DOMAIN_BY_ID } from '../../../shared/domains';
 import type { Bloom, Challenge, ChallengeStatus, Difficulty, DomainId, Stage } from '../../../shared/types';
 import { Card, EmptyState, PageHeader, Skeleton, StickyPanel } from '../components/cards';
@@ -12,6 +12,7 @@ import { challengeMinutes } from '../domain/progress';
 import { emptyFilters, filterChallenges, sortChallenges, type ChallengeFilters } from '../domain/challengeFilters';
 import { latestResults, scoreOf } from '../domain/finalTest';
 import { useApp } from '../data/DataContext';
+import { useGeneratorDialog } from './generate/GenerateDialog';
 import styles from './Challenges.module.css';
 
 const STATUS_LABEL: Record<ChallengeStatus, string> = { en_curso: 'En curso', pendiente: 'Pendiente', completada: 'Completada' };
@@ -28,7 +29,8 @@ function toggle<T>(set: Set<T>, value: T): Set<T> {
 }
 
 export function Challenges() {
-  const { loading, data, challengeStatusOf, stageStatusesOf, currentChallenge } = useApp();
+  const { loading, data, challengeStatusOf, stageStatusesOf, currentChallenge, source } = useApp();
+  const generator = useGeneratorDialog();
   const [filters, setFilters] = useState<ChallengeFilters>(emptyFilters);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -48,7 +50,15 @@ export function Challenges() {
 
   return (
     <>
-      <PageHeader title="Challenges" subtitle={`${all.length} challenges · ${countStatus('completada')} completados`} />
+      <PageHeader
+        title="Challenges"
+        subtitle={`${all.length} challenges · ${countStatus('completada')} completados`}
+        actions={
+          source === 'real' ? (
+            <button type="button" className="btn btn-primary" onClick={generator.open}><Sparkles size={16} aria-hidden="true" /> Generar nuevo challenge</button>
+          ) : undefined
+        }
+      />
 
       <Card className={styles.filters}>
         <FilterGroup label="Dominio">

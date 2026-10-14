@@ -260,7 +260,8 @@ async function* runPhase<T>(
     const remaining = ctx.budget - spent;
     if (remaining < MIN_CALL_USD) return yield* budgetStop(ctx, id, label);
     const tools: GenerateEvent[] = [];
-    let text: string;
+    let text = '';
+    let failure: unknown = null;
     try {
       const result = await deps.runAgent({
         message: attempt === 0 ? message : repairMessage(message, previous, errors),
@@ -270,11 +271,15 @@ async function* runPhase<T>(
         ...(params.signal ? { signal: params.signal } : {}),
         onEvent: (e) => e.type === 'tool' && tools.push({ type: 'tool', text: e.text }),
       });
-      for (const t of tools) yield t;
       spent += result.cost;
       ctx.state.spentUsd += result.cost;
       text = result.text;
     } catch (err) {
+      failure = err;
+    }
+    for (const t of tools) yield t; // lo que alcanzó a leer el agente se muestra aunque la llamada falle
+    if (failure) {
+      const err = failure;
       if (err instanceof AgentError && err.code === 'budget') {
         ctx.state.spentUsd += remaining;
         return yield* budgetStop(ctx, id, label);

@@ -19,6 +19,9 @@
 .heroFoot strong { color: var(--hero-fg); font-weight: 500; }
 .heroBtn { background: #fff; color: #15171c; border-color: transparent; }
 .heroBtn:hover { background: #e9ebf0; }
+.heroActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.heroGhost { background: rgba(255, 255, 255, 0.12); color: var(--hero-fg); border-color: transparent; }
+.heroGhost:hover { background: rgba(255, 255, 255, 0.2); }
 .recommended { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 12px; background: rgba(255, 255, 255, .07); }
 .recommended strong { font-size: 17px; font-weight: 500; }
 .recoMeta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--hero-muted); }

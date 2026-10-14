@@ -66,14 +66,14 @@ export function interruptedState(state: VerifyState): VerifyState {
 }
 
 /** Lee un stream NDJSON y emite un objeto por línea; ignora líneas vacías o corruptas. */
-export async function* readNdjson(stream: ReadableStream<Uint8Array>): AsyncGenerator<VerifyEvent> {
+export async function* readNdjson<T = VerifyEvent>(stream: ReadableStream<Uint8Array>): AsyncGenerator<T> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let rest = '';
-  const parse = (line: string): VerifyEvent | null => {
+  const parse = (line: string): T | null => {
     if (!line.trim()) return null;
     try {
-      return JSON.parse(line) as VerifyEvent;
+      return JSON.parse(line) as T;
     } catch {
       return null;
     }

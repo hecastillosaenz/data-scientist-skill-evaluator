@@ -8,11 +8,13 @@ import { Debilidad } from './screens/Debilidad';
 import { Grafo } from './screens/Grafo';
 import { Inicio } from './screens/Inicio';
 import { Repaso } from './screens/Repaso';
+import { GeneratorProvider } from './screens/generate/GenerateDialog';
 
 export function App() {
   return (
     <DataProvider>
       <BrowserRouter>
+        <GeneratorProvider>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<Inicio />} />
@@ -24,6 +26,7 @@ export function App() {
             <Route path="analitica" element={<Analitica />} />
           </Route>
         </Routes>
+        </GeneratorProvider>
       </BrowserRouter>
     </DataProvider>
   );

@@ -53,7 +53,7 @@ El Generador es de solo lectura y **no ejecuta código** (R9). El orquestador ej
 
 1. **Seed:** construye `datos/challenge.duckdb` desde `data.seedSql`; si no corre, devuelve el error de DuckDB. Comprueba
    que `rowCount`, las columnas, `sampleRows` y las llaves foráneas coinciden con lo que declaras.
-2. **Solución de referencia:** ejecuta `solution.code` sobre esos datos. Debe correr sin error y reproducir `expected`
+2. **Ejecución de la solución de referencia:** ejecuta `solution.code` sobre esos datos. Debe correr sin error y reproducir `expected`
    (mismas columnas y filas, en el mismo orden) o pasar los `asserts`. Si no, la fase se repara con la salida real.
 3. **Plan:** el orquestador fija id, número, dificultad y, por etapa, dominio, Bloom, dificultad, Apoyo y mecanismo (R38);
    tú aportas el contenido y, si quieres, hasta 3 conceptos de apoyo por etapa (ids exactos del grafo).
