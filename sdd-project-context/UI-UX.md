@@ -181,7 +181,7 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - Panel lateral fijo: sin nodo → "Selecciona un concepto" + conteo por estado; con nodo → tile+dominio, nombre, nivel actual, Bloom máximo con evidencia, prerrequisitos (navegables, incluso de otro dominio), challenges/etapas relacionadas, evidencias, conceptos relacionados (máx. 8).
 - Accesibilidad: cada nodo `role="button"`, enfocable con Tab, activable con Enter/Espacio, `aria-label` con el estado.
 
-### 4.5b Grafo unificado (second brain)
+### 4.5b Grafo unificado (second brain) — implementado
 - Segunda vista de la pantalla de Grafo, con selector **Conceptos | Second brain**.
 - Muestra juntos cinco tipos de nodo: **conceptos** (punto, color según estado), **challenges** (cuadrado), **etapas** (rombo), **tests** (triángulo) y **mejoras** (debilidades abiertas, círculo marcado). Aristas: prerrequisito, challenge→etapa, etapa→concepto que practica, test→concepto y mejora→concepto.
 - Disposición por fuerzas (determinista): los conceptos de un tema se agrupan y los challenges quedan entre los conceptos que practican, así se ve cómo interactúa todo.

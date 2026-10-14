@@ -14,3 +14,6 @@
 @media (max-width: 1279px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 @media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } }
 @media (max-width: 859px) { .search { min-width: 0; width: 100%; } }
+
+.chipGroups { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+@media (max-width: 859px) { .chipGroups { align-items: flex-start; } }

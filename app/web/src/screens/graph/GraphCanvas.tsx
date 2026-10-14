@@ -1,11 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { memo, useMemo, type KeyboardEvent } from 'react';
 import { Maximize2, Minus, Plus } from 'lucide-react';
 import { CONCEPT_STATE_LABEL, DOMAIN_BY_ID } from '../../../../shared/domains';
 import type { ConceptState, DomainId } from '../../../../shared/types';
-import { useElementWidth } from '../../charts/useElementWidth';
 import { domainOpacity } from '../../domain/graphQueries';
 import type { GraphLayout, LayoutEdge, LayoutNode } from '../../domain/graphLayout';
-import { centerOn, fitView, zoomAt, type View } from '../../domain/graphView';
+import { usePanZoom } from './usePanZoom';
 import styles from './GraphCanvas.module.css';
 
 export const CANVAS_HEIGHT = 540;
@@ -124,67 +123,11 @@ const GraphLayer = memo(function GraphLayer({
 });
 
 export function GraphCanvas({ layout, stateOf, activeDomains, selectedId, emphasizedIds, onSelect, focus }: Props) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const width = useElementWidth(wrapRef, 880);
-  const canvas = useMemo(() => ({ width, height: CANVAS_HEIGHT }), [width]);
-  const [view, setView] = useState<View>(() => fitView(layout, { width: 880, height: CANVAS_HEIGHT }));
-  const fitted = useRef(false);
-  const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean; id: number } | null>(null);
-  const [dragging, setDragging] = useState(false);
-
-  // Ajuste inicial cuando se conoce el ancho real del lienzo.
-  useEffect(() => {
-    if (!fitted.current && width > 0) {
-      setView(fitView(layout, canvas));
-      fitted.current = true;
-    }
-  }, [layout, canvas, width]);
-
-  useEffect(() => {
-    if (!focus) return;
-    const node = layout.byId.get(focus.id);
-    if (node) setView((v) => centerOn(v, node.x, node.y, canvas));
-  }, [focus, layout, canvas]);
-
-  // La rueda hace zoom; el listener debe ser no pasivo para poder evitar el scroll de la página.
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const rect = svg.getBoundingClientRect();
-      const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
-      setView((v) => zoomAt(v, factor, e.clientX - rect.left, e.clientY - rect.top));
-    };
-    svg.addEventListener('wheel', onWheel, { passive: false });
-    return () => svg.removeEventListener('wheel', onWheel);
-  }, []);
-
-  const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0) return;
-    drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, id: e.pointerId };
-  };
-  const onPointerMove = (e: PointerEvent<SVGSVGElement>) => {
-    const d = drag.current;
-    if (!d) return;
-    const dx = e.clientX - d.x;
-    const dy = e.clientY - d.y;
-    if (!d.moved && Math.hypot(dx, dy) < 4) return;
-    if (!d.moved) {
-      // Solo se captura el puntero cuando hay arrastre real, para que un clic simple llegue al nodo.
-      d.moved = true;
-      svgRef.current?.setPointerCapture(d.id);
-      setDragging(true);
-    }
-    setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }));
-  };
-  const endDrag = () => {
-    drag.current = null;
-    setDragging(false);
-  };
-
-  const zoomBy = useCallback((factor: number) => setView((v) => zoomAt(v, factor, canvas.width / 2, canvas.height / 2)), [canvas]);
+  const focusPoint = useMemo(() => {
+    const node = focus ? layout.byId.get(focus.id) : null;
+    return focus && node ? { x: node.x, y: node.y, nonce: focus.nonce } : null;
+  }, [focus, layout]);
+  const { wrapRef, svgRef, width, view, dragging, zoomBy, fit, handlers } = usePanZoom(layout, CANVAS_HEIGHT, focusPoint);
   const labelsOn = view.k >= LABELS_FROM_ZOOM;
 
   return (
@@ -196,10 +139,7 @@ export function GraphCanvas({ layout, stateOf, activeDomains, selectedId, emphas
         className={`${styles.svg} ${dragging ? styles.grabbing : ''}`}
         role="group"
         aria-label="Grafo de conocimiento. Arrastra para mover, usa la rueda o los botones para hacer zoom."
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        {...handlers}
       >
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
           <GraphLayer
@@ -230,7 +170,7 @@ export function GraphCanvas({ layout, stateOf, activeDomains, selectedId, emphas
       <div className={styles.controls} role="group" aria-label="Controles de zoom">
         <button type="button" aria-label="Acercar" onClick={() => zoomBy(1.3)}><Plus size={18} strokeWidth={1.5} aria-hidden="true" /></button>
         <button type="button" aria-label="Alejar" onClick={() => zoomBy(1 / 1.3)}><Minus size={18} strokeWidth={1.5} aria-hidden="true" /></button>
-        <button type="button" aria-label="Ajustar a la vista" onClick={() => setView(fitView(layout, canvas))}><Maximize2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
+        <button type="button" aria-label="Ajustar a la vista" onClick={fit}><Maximize2 size={16} strokeWidth={1.5} aria-hidden="true" /></button>
       </div>
 
       <ul className={styles.legend} aria-label="Leyenda">

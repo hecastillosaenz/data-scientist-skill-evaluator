@@ -29,8 +29,14 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - `shared/` — contrato de datos (`types.ts`) y metadatos de dominios/etiquetas (`domains.ts`).
 - `web/` — React + Vite + react-router, CSS plano con variables (tokens de UI-UX §1.3); el build (`web/dist`) lo sirve el propio servidor.
   - `src/screens/` — Inicio, Challenges, ChallengeActual, Repaso, Grafo, Analítica. `src/components/`, `src/charts/` (SVG propio), `src/layout/`.
-  - `src/domain/` — lógica pura y testeada (estado de concepto R11, cola de repaso, filtros, layout del grafo, analítica, líneas de lectura).
+  - `src/domain/` — lógica pura y testeada (estado de concepto R11, cola de repaso, filtros, layout del grafo, analítica, líneas de lectura, `weakness` (ventana de debilidad), `brainGraph`/`forceLayout` (second brain), `timekeeper` (cronómetro global con vueltas y ausencias)).
   - `src/data/` — **datos de ejemplo** (`sample/`) detrás de `repository.ts`, el único punto a reemplazar por `fetch` al orquestador. `?escenario=nuevo|sin-challenge|racha-rota` fuerza los estados vacíos de Inicio.
+
+## Formato de los challenges (contrato para los agentes)
+`configuracion-retos/plantillas/` guarda cómo se presenta un caso: `challenge.schema.json` (JSON Schema, R29), `contrato-generador.md` y una plantilla por tipo de reto. El orquestador valida cada `challenge.json` en modo estricto (`server/challenges/validate.ts`) y rechaza con un mensaje explícito lo que no cumpla. Orden de presentación: objetivos → enunciado → datos → etapas → preguntas de negocio → test final. Si cambias el modelo (`app/shared/types.ts`), actualiza el esquema, las plantillas y los tests.
+
+## Estilo de la UI
+Sin anillos ni contornos de 1px en cuadrículas, chips ni campos (fondo y sombra); el foco de teclado sí conserva su anillo. Texto largo **justificado** en una **columna de lectura centrada** (`--column`); tablas centradas; la etapa desplegada se enfatiza con un sombreado gradual, no con un borde.
 
 ## Standards que no se negocian
 - Persistencia en archivos versionados por git (markdown + JSON); sin base de datos (S1).
@@ -43,7 +49,7 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - Marcador de entregable: `# Entregable - Etapa X:` como primera línea de la celda; X debe coincidir con los metadatos del challenge o se rechaza con error explícito (R8, R16).
 
 ## Estado de la UI
-Las 6 pantallas funcionan con challenges **de ejemplo** (`data/sample/`) más los **reales** de `challenge-N/` (los reales sustituyen al de ejemplo con el mismo título). La verificación de los reales es de verdad (notebook + DuckDB + Evaluador de Claude); la de los de ejemplo, el refuerzo y «Iniciar challenge» siguen **simulados** (`domain/simulateVerify.ts`, `domain/reinforcement.ts`). Cronómetro y respuestas de negocio viven en el navegador (`localStorage`) hasta que el orquestador los guarde en `logs-avance.md`. Las fórmulas derivadas son **provisionales** (SDD, Fase 8).
+Las 6 pantallas funcionan con challenges **de ejemplo** (`data/sample/`) más los **reales** de `challenge-N/` (los reales sustituyen al de ejemplo con el mismo título). La verificación de los reales es de verdad (notebook + DuckDB + Evaluador de Claude); la de los de ejemplo, el refuerzo y «Iniciar challenge» siguen **simulados** (`domain/simulateVerify.ts`, `domain/reinforcement.ts`). El **cronómetro es uno solo y global** (vueltas por registro; pregunta qué hacer si la app estuvo ausente más de 3 min) y, junto con las respuestas de negocio, vive en el navegador (`localStorage`) hasta que el orquestador los guarde en `logs-avance.md`. Las fórmulas derivadas son **provisionales** (SDD, Fase 8).
 
 Contenido de los challenges: Markdown con KaTeX; **escapa los signos de moneda como `\$`** para que no se lean como fórmula. Las respuestas numéricas y las tablas esperadas se verifican ejecutándolas (SQLite/DuckDB) antes de publicarlas.
 
