@@ -7,6 +7,7 @@ import { OperationBusyError, OperationMutex } from './mutex';
 import { streamNdjson } from './ndjson';
 import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
+import { registerStateRoutes } from './persistence/routes';
 import { REPO_ROOT, WEB_DIST } from './paths';
 
 export type BuildAppOptions = {
@@ -17,6 +18,8 @@ export type BuildAppOptions = {
   verifyDeps?: Partial<VerifyDeps>;
   /** Modo estricto del contrato de challenges (R29); por defecto true. */
   strictChallenges?: boolean;
+  /** Reloj para las fechas que pone el servidor; se sustituye en los tests. */
+  now?: () => Date;
 };
 
 export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string };
@@ -52,6 +55,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
     const { loaded, invalid } = await scanChallenges(repoRoot, { strict: options.strictChallenges ?? true });
     return { challenges: loaded.map((c) => c.challenge), invalid };
   });
+
+  registerStateRoutes(app, { repoRoot, strict: options.strictChallenges ?? true, ...(options.now ? { now: options.now } : {}) });
 
   /**
    * Verificación en vivo (R26): NDJSON `step | output | tool | feedback | result | done | error`.

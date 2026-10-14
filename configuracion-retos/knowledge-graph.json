@@ -1,5 +1,2016 @@
 {
   "version": 1,
-  "concepts": [],
-  "edges": []
+  "concepts": [
+    {
+      "id": "sql:select",
+      "name": "SELECT y proyección",
+      "domain": "sql",
+      "prerequisites": []
+    },
+    {
+      "id": "sql:alias",
+      "name": "Alias y expresiones",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:where",
+      "name": "Filtrado con WHERE",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:operators",
+      "name": "Operadores lógicos y de comparación",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:null",
+      "name": "Manejo de NULL",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:distinct",
+      "name": "DISTINCT",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:orderby",
+      "name": "ORDER BY y LIMIT",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:like",
+      "name": "Patrones con LIKE e ILIKE",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:in-between",
+      "name": "IN y BETWEEN",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:case",
+      "name": "Expresiones CASE",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:alias",
+        "sql:operators"
+      ]
+    },
+    {
+      "id": "sql:agg",
+      "name": "Funciones de agregación",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:groupby",
+      "name": "GROUP BY",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:agg"
+      ]
+    },
+    {
+      "id": "sql:having",
+      "name": "HAVING",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:groupby"
+      ]
+    },
+    {
+      "id": "sql:joins-inner",
+      "name": "INNER JOIN",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select",
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:joins-outer",
+      "name": "LEFT, RIGHT y FULL JOIN",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:joins-inner",
+        "sql:null"
+      ]
+    },
+    {
+      "id": "sql:self-join",
+      "name": "Self join",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:joins-inner"
+      ]
+    },
+    {
+      "id": "sql:cross-join",
+      "name": "CROSS JOIN",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:joins-inner"
+      ]
+    },
+    {
+      "id": "sql:subquery",
+      "name": "Subconsultas",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:where",
+        "sql:agg"
+      ]
+    },
+    {
+      "id": "sql:correlated",
+      "name": "Subconsultas correlacionadas",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:subquery"
+      ]
+    },
+    {
+      "id": "sql:exists",
+      "name": "EXISTS y NOT EXISTS",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:subquery"
+      ]
+    },
+    {
+      "id": "sql:cte",
+      "name": "CTEs con WITH",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:subquery"
+      ]
+    },
+    {
+      "id": "sql:recursive-cte",
+      "name": "CTEs recursivas",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:cte"
+      ]
+    },
+    {
+      "id": "sql:set-ops",
+      "name": "UNION, INTERSECT y EXCEPT",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:window-basics",
+      "name": "Funciones de ventana: OVER",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:agg",
+        "sql:groupby"
+      ]
+    },
+    {
+      "id": "sql:rank",
+      "name": "ROW_NUMBER, RANK y DENSE_RANK",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:window-basics"
+      ]
+    },
+    {
+      "id": "sql:lag-lead",
+      "name": "LAG y LEAD",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:window-basics"
+      ]
+    },
+    {
+      "id": "sql:frames",
+      "name": "Ventanas móviles (ROWS y RANGE)",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:window-basics"
+      ]
+    },
+    {
+      "id": "sql:ntile",
+      "name": "NTILE y percentiles",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:rank"
+      ]
+    },
+    {
+      "id": "sql:date-funcs",
+      "name": "Funciones de fecha y hora",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:string-funcs",
+      "name": "Funciones de texto",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:casting",
+      "name": "Conversión de tipos",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:ddl",
+      "name": "CREATE TABLE y tipos de datos",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:dml",
+      "name": "INSERT, UPDATE y DELETE",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:ddl",
+        "sql:where"
+      ]
+    },
+    {
+      "id": "sql:constraints",
+      "name": "Restricciones y claves",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:ddl"
+      ]
+    },
+    {
+      "id": "sql:indexes",
+      "name": "Índices",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:constraints"
+      ]
+    },
+    {
+      "id": "sql:explain",
+      "name": "Planes de ejecución (EXPLAIN)",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:indexes",
+        "sql:joins-inner"
+      ]
+    },
+    {
+      "id": "sql:normalization",
+      "name": "Normalización",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:constraints"
+      ]
+    },
+    {
+      "id": "sql:views",
+      "name": "Vistas",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:select"
+      ]
+    },
+    {
+      "id": "sql:transactions",
+      "name": "Transacciones y ACID",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:dml"
+      ]
+    },
+    {
+      "id": "sql:dedupe",
+      "name": "Deduplicación con ventanas",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:rank",
+        "sql:cte"
+      ]
+    },
+    {
+      "id": "sql:cohorts",
+      "name": "Cohortes en SQL",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:cte",
+        "sql:date-funcs",
+        "sql:window-basics"
+      ]
+    },
+    {
+      "id": "sql:sessionize",
+      "name": "Sesionización",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:lag-lead",
+        "sql:date-funcs"
+      ]
+    },
+    {
+      "id": "sql:pivot",
+      "name": "Pivotado con CASE y agregación",
+      "domain": "sql",
+      "prerequisites": [
+        "sql:case",
+        "sql:groupby"
+      ]
+    },
+    {
+      "id": "python:syntax",
+      "name": "Sintaxis y tipos básicos",
+      "domain": "python",
+      "prerequisites": []
+    },
+    {
+      "id": "python:vars",
+      "name": "Variables y operadores",
+      "domain": "python",
+      "prerequisites": [
+        "python:syntax"
+      ]
+    },
+    {
+      "id": "python:strings",
+      "name": "Cadenas y f-strings",
+      "domain": "python",
+      "prerequisites": [
+        "python:syntax"
+      ]
+    },
+    {
+      "id": "python:lists",
+      "name": "Listas y tuplas",
+      "domain": "python",
+      "prerequisites": [
+        "python:syntax"
+      ]
+    },
+    {
+      "id": "python:dicts",
+      "name": "Diccionarios",
+      "domain": "python",
+      "prerequisites": [
+        "python:lists"
+      ]
+    },
+    {
+      "id": "python:sets",
+      "name": "Conjuntos",
+      "domain": "python",
+      "prerequisites": [
+        "python:lists"
+      ]
+    },
+    {
+      "id": "python:control",
+      "name": "Condicionales",
+      "domain": "python",
+      "prerequisites": [
+        "python:vars"
+      ]
+    },
+    {
+      "id": "python:loops",
+      "name": "Bucles for y while",
+      "domain": "python",
+      "prerequisites": [
+        "python:control",
+        "python:lists"
+      ]
+    },
+    {
+      "id": "python:comprehensions",
+      "name": "Comprensiones",
+      "domain": "python",
+      "prerequisites": [
+        "python:loops",
+        "python:dicts"
+      ]
+    },
+    {
+      "id": "python:functions",
+      "name": "Funciones",
+      "domain": "python",
+      "prerequisites": [
+        "python:loops"
+      ]
+    },
+    {
+      "id": "python:args",
+      "name": "*args, **kwargs y valores por defecto",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:lambda",
+      "name": "Lambdas, map y filter",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:scope",
+      "name": "Alcance y closures",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:exceptions",
+      "name": "Manejo de excepciones",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:files",
+      "name": "Lectura y escritura de archivos",
+      "domain": "python",
+      "prerequisites": [
+        "python:strings",
+        "python:exceptions"
+      ]
+    },
+    {
+      "id": "python:modules",
+      "name": "Módulos y paquetes",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:venv",
+      "name": "Entornos virtuales y pip",
+      "domain": "python",
+      "prerequisites": [
+        "python:modules"
+      ]
+    },
+    {
+      "id": "python:classes",
+      "name": "Clases y objetos",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions",
+        "python:dicts"
+      ]
+    },
+    {
+      "id": "python:inheritance",
+      "name": "Herencia y polimorfismo",
+      "domain": "python",
+      "prerequisites": [
+        "python:classes"
+      ]
+    },
+    {
+      "id": "python:dunder",
+      "name": "Métodos especiales",
+      "domain": "python",
+      "prerequisites": [
+        "python:classes"
+      ]
+    },
+    {
+      "id": "python:dataclasses",
+      "name": "Dataclasses",
+      "domain": "python",
+      "prerequisites": [
+        "python:classes"
+      ]
+    },
+    {
+      "id": "python:iterators",
+      "name": "Iteradores y generadores",
+      "domain": "python",
+      "prerequisites": [
+        "python:loops",
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:decorators",
+      "name": "Decoradores",
+      "domain": "python",
+      "prerequisites": [
+        "python:scope"
+      ]
+    },
+    {
+      "id": "python:context",
+      "name": "Context managers",
+      "domain": "python",
+      "prerequisites": [
+        "python:exceptions",
+        "python:classes"
+      ]
+    },
+    {
+      "id": "python:typing",
+      "name": "Anotaciones de tipos",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions"
+      ]
+    },
+    {
+      "id": "python:numpy-arrays",
+      "name": "Arreglos de NumPy",
+      "domain": "python",
+      "prerequisites": [
+        "python:lists",
+        "python:vars"
+      ]
+    },
+    {
+      "id": "python:numpy-index",
+      "name": "Indexado y slicing en NumPy",
+      "domain": "python",
+      "prerequisites": [
+        "python:numpy-arrays"
+      ]
+    },
+    {
+      "id": "python:broadcasting",
+      "name": "Broadcasting",
+      "domain": "python",
+      "prerequisites": [
+        "python:numpy-index"
+      ]
+    },
+    {
+      "id": "python:vectorization",
+      "name": "Vectorización",
+      "domain": "python",
+      "prerequisites": [
+        "python:broadcasting",
+        "python:loops"
+      ]
+    },
+    {
+      "id": "python:pandas-series",
+      "name": "Series y DataFrames",
+      "domain": "python",
+      "prerequisites": [
+        "python:numpy-arrays",
+        "python:dicts"
+      ]
+    },
+    {
+      "id": "python:pandas-select",
+      "name": "Selección con loc e iloc",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-series"
+      ]
+    },
+    {
+      "id": "python:pandas-filter",
+      "name": "Filtrado booleano",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-select"
+      ]
+    },
+    {
+      "id": "python:pandas-groupby",
+      "name": "groupby y agregaciones",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-filter"
+      ]
+    },
+    {
+      "id": "python:pandas-merge",
+      "name": "merge y concat",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-select"
+      ]
+    },
+    {
+      "id": "python:pandas-pivot",
+      "name": "pivot y melt",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-groupby"
+      ]
+    },
+    {
+      "id": "python:pandas-datetime",
+      "name": "Fechas en pandas",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-series"
+      ]
+    },
+    {
+      "id": "python:pandas-apply",
+      "name": "apply y funciones vectorizadas",
+      "domain": "python",
+      "prerequisites": [
+        "python:pandas-series",
+        "python:lambda"
+      ]
+    },
+    {
+      "id": "python:regex",
+      "name": "Expresiones regulares",
+      "domain": "python",
+      "prerequisites": [
+        "python:strings"
+      ]
+    },
+    {
+      "id": "python:testing",
+      "name": "Pruebas con pytest",
+      "domain": "python",
+      "prerequisites": [
+        "python:functions",
+        "python:exceptions"
+      ]
+    },
+    {
+      "id": "python:perf",
+      "name": "Perfilado y rendimiento",
+      "domain": "python",
+      "prerequisites": [
+        "python:vectorization",
+        "python:iterators"
+      ]
+    },
+    {
+      "id": "math:arith",
+      "name": "Aritmética y proporciones",
+      "domain": "math",
+      "prerequisites": []
+    },
+    {
+      "id": "math:algebra",
+      "name": "Álgebra básica",
+      "domain": "math",
+      "prerequisites": [
+        "math:arith"
+      ]
+    },
+    {
+      "id": "math:functions-m",
+      "name": "Funciones y gráficas",
+      "domain": "math",
+      "prerequisites": [
+        "math:algebra"
+      ]
+    },
+    {
+      "id": "math:exp-log",
+      "name": "Exponenciales y logaritmos",
+      "domain": "math",
+      "prerequisites": [
+        "math:functions-m"
+      ]
+    },
+    {
+      "id": "math:sequences",
+      "name": "Sucesiones y series",
+      "domain": "math",
+      "prerequisites": [
+        "math:algebra"
+      ]
+    },
+    {
+      "id": "math:sets-logic",
+      "name": "Conjuntos y lógica",
+      "domain": "math",
+      "prerequisites": [
+        "math:arith"
+      ]
+    },
+    {
+      "id": "math:combinatorics",
+      "name": "Combinatoria",
+      "domain": "math",
+      "prerequisites": [
+        "math:sets-logic"
+      ]
+    },
+    {
+      "id": "math:probability",
+      "name": "Probabilidad básica",
+      "domain": "math",
+      "prerequisites": [
+        "math:combinatorics"
+      ]
+    },
+    {
+      "id": "math:conditional",
+      "name": "Probabilidad condicional",
+      "domain": "math",
+      "prerequisites": [
+        "math:probability"
+      ]
+    },
+    {
+      "id": "math:bayes",
+      "name": "Teorema de Bayes",
+      "domain": "math",
+      "prerequisites": [
+        "math:conditional"
+      ]
+    },
+    {
+      "id": "math:independence",
+      "name": "Independencia",
+      "domain": "math",
+      "prerequisites": [
+        "math:conditional"
+      ]
+    },
+    {
+      "id": "math:rv",
+      "name": "Variables aleatorias",
+      "domain": "math",
+      "prerequisites": [
+        "math:probability"
+      ]
+    },
+    {
+      "id": "math:expectation",
+      "name": "Esperanza y varianza",
+      "domain": "math",
+      "prerequisites": [
+        "math:rv"
+      ]
+    },
+    {
+      "id": "math:binomial",
+      "name": "Distribución binomial",
+      "domain": "math",
+      "prerequisites": [
+        "math:rv",
+        "math:combinatorics"
+      ]
+    },
+    {
+      "id": "math:poisson",
+      "name": "Distribución de Poisson",
+      "domain": "math",
+      "prerequisites": [
+        "math:rv",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "math:normal",
+      "name": "Distribución normal",
+      "domain": "math",
+      "prerequisites": [
+        "math:rv",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "math:clt",
+      "name": "Teorema del límite central",
+      "domain": "math",
+      "prerequisites": [
+        "math:normal",
+        "math:expectation"
+      ]
+    },
+    {
+      "id": "math:descriptive",
+      "name": "Estadística descriptiva",
+      "domain": "math",
+      "prerequisites": [
+        "math:arith"
+      ]
+    },
+    {
+      "id": "math:percentiles",
+      "name": "Percentiles y cuantiles",
+      "domain": "math",
+      "prerequisites": [
+        "math:descriptive"
+      ]
+    },
+    {
+      "id": "math:correlation",
+      "name": "Correlación",
+      "domain": "math",
+      "prerequisites": [
+        "math:descriptive",
+        "math:expectation"
+      ]
+    },
+    {
+      "id": "math:sampling",
+      "name": "Muestreo y sesgo",
+      "domain": "math",
+      "prerequisites": [
+        "math:descriptive",
+        "math:probability"
+      ]
+    },
+    {
+      "id": "math:estimation",
+      "name": "Estimadores e intervalos de confianza",
+      "domain": "math",
+      "prerequisites": [
+        "math:clt",
+        "math:sampling"
+      ]
+    },
+    {
+      "id": "math:hypothesis",
+      "name": "Pruebas de hipótesis",
+      "domain": "math",
+      "prerequisites": [
+        "math:estimation"
+      ]
+    },
+    {
+      "id": "math:pvalue",
+      "name": "Valores p y errores tipo I y II",
+      "domain": "math",
+      "prerequisites": [
+        "math:hypothesis"
+      ]
+    },
+    {
+      "id": "math:ttest",
+      "name": "Prueba t",
+      "domain": "math",
+      "prerequisites": [
+        "math:hypothesis"
+      ]
+    },
+    {
+      "id": "math:chi2",
+      "name": "Chi-cuadrado",
+      "domain": "math",
+      "prerequisites": [
+        "math:hypothesis",
+        "math:binomial"
+      ]
+    },
+    {
+      "id": "math:anova",
+      "name": "ANOVA",
+      "domain": "math",
+      "prerequisites": [
+        "math:ttest"
+      ]
+    },
+    {
+      "id": "math:ab-testing",
+      "name": "A/B testing",
+      "domain": "math",
+      "prerequisites": [
+        "math:ttest",
+        "math:pvalue"
+      ]
+    },
+    {
+      "id": "math:power",
+      "name": "Potencia y tamaño de muestra",
+      "domain": "math",
+      "prerequisites": [
+        "math:pvalue"
+      ]
+    },
+    {
+      "id": "math:bootstrap",
+      "name": "Bootstrap",
+      "domain": "math",
+      "prerequisites": [
+        "math:sampling",
+        "math:estimation"
+      ]
+    },
+    {
+      "id": "math:vectors",
+      "name": "Vectores y producto punto",
+      "domain": "math",
+      "prerequisites": [
+        "math:algebra"
+      ]
+    },
+    {
+      "id": "math:matrices",
+      "name": "Matrices y operaciones",
+      "domain": "math",
+      "prerequisites": [
+        "math:vectors"
+      ]
+    },
+    {
+      "id": "math:inverse",
+      "name": "Inversa y determinante",
+      "domain": "math",
+      "prerequisites": [
+        "math:matrices"
+      ]
+    },
+    {
+      "id": "math:eigen",
+      "name": "Valores y vectores propios",
+      "domain": "math",
+      "prerequisites": [
+        "math:inverse"
+      ]
+    },
+    {
+      "id": "math:svd",
+      "name": "Descomposición SVD",
+      "domain": "math",
+      "prerequisites": [
+        "math:eigen"
+      ]
+    },
+    {
+      "id": "math:derivatives",
+      "name": "Derivadas",
+      "domain": "math",
+      "prerequisites": [
+        "math:functions-m"
+      ]
+    },
+    {
+      "id": "math:partial",
+      "name": "Derivadas parciales y gradiente",
+      "domain": "math",
+      "prerequisites": [
+        "math:derivatives",
+        "math:vectors"
+      ]
+    },
+    {
+      "id": "math:chain-rule",
+      "name": "Regla de la cadena",
+      "domain": "math",
+      "prerequisites": [
+        "math:derivatives"
+      ]
+    },
+    {
+      "id": "math:optimization",
+      "name": "Optimización y mínimos",
+      "domain": "math",
+      "prerequisites": [
+        "math:partial"
+      ]
+    },
+    {
+      "id": "math:mle",
+      "name": "Máxima verosimilitud",
+      "domain": "math",
+      "prerequisites": [
+        "math:expectation",
+        "math:optimization",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "ml:ml-intro",
+      "name": "Aprendizaje supervisado y no supervisado",
+      "domain": "ml",
+      "prerequisites": [
+        "math:descriptive"
+      ]
+    },
+    {
+      "id": "ml:features",
+      "name": "Variables y etiquetas",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:ml-intro"
+      ]
+    },
+    {
+      "id": "ml:split",
+      "name": "Train/test split",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:overfit",
+      "name": "Sobreajuste y subajuste",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:split"
+      ]
+    },
+    {
+      "id": "ml:bias-var",
+      "name": "Sesgo y varianza",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:overfit",
+        "math:expectation"
+      ]
+    },
+    {
+      "id": "ml:cv",
+      "name": "Validación cruzada",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:split"
+      ]
+    },
+    {
+      "id": "ml:linreg",
+      "name": "Regresión lineal",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features",
+        "math:matrices"
+      ]
+    },
+    {
+      "id": "ml:cost",
+      "name": "Funciones de costo (MSE)",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:linreg",
+        "math:derivatives"
+      ]
+    },
+    {
+      "id": "ml:gd",
+      "name": "Descenso por gradiente",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:cost",
+        "math:partial"
+      ]
+    },
+    {
+      "id": "ml:regularization",
+      "name": "Regularización L1 y L2",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:linreg",
+        "ml:overfit"
+      ]
+    },
+    {
+      "id": "ml:logreg",
+      "name": "Regresión logística",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:linreg",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "ml:metrics-clf",
+      "name": "Precisión, recall y F1",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:logreg"
+      ]
+    },
+    {
+      "id": "ml:confusion",
+      "name": "Matriz de confusión",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:metrics-clf"
+      ]
+    },
+    {
+      "id": "ml:roc",
+      "name": "Curva ROC y AUC",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:metrics-clf"
+      ]
+    },
+    {
+      "id": "ml:pr-curve",
+      "name": "Curva precisión-recall",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:metrics-clf"
+      ]
+    },
+    {
+      "id": "ml:metrics-reg",
+      "name": "RMSE, MAE y R²",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:linreg"
+      ]
+    },
+    {
+      "id": "ml:threshold",
+      "name": "Umbral de decisión",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:roc"
+      ]
+    },
+    {
+      "id": "ml:imbalance",
+      "name": "Clases desbalanceadas",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:metrics-clf"
+      ]
+    },
+    {
+      "id": "ml:knn",
+      "name": "k vecinos más cercanos",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:naive-bayes",
+      "name": "Naive Bayes",
+      "domain": "ml",
+      "prerequisites": [
+        "math:bayes",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:tree",
+      "name": "Árboles de decisión",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:entropy",
+      "name": "Entropía y ganancia de información",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:tree",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "ml:random-forest",
+      "name": "Random forest",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:tree",
+        "ml:bias-var"
+      ]
+    },
+    {
+      "id": "ml:boosting",
+      "name": "Gradient boosting",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:random-forest",
+        "ml:gd"
+      ]
+    },
+    {
+      "id": "ml:xgb",
+      "name": "XGBoost y LightGBM",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:boosting"
+      ]
+    },
+    {
+      "id": "ml:svm",
+      "name": "Máquinas de soporte vectorial",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:logreg",
+        "math:vectors"
+      ]
+    },
+    {
+      "id": "ml:kmeans",
+      "name": "K-means",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:ml-intro",
+        "math:vectors"
+      ]
+    },
+    {
+      "id": "ml:hierarchical",
+      "name": "Clustering jerárquico",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:kmeans"
+      ]
+    },
+    {
+      "id": "ml:dbscan",
+      "name": "DBSCAN",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:kmeans"
+      ]
+    },
+    {
+      "id": "ml:silhouette",
+      "name": "Silueta y evaluación de clusters",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:kmeans"
+      ]
+    },
+    {
+      "id": "ml:pca",
+      "name": "PCA",
+      "domain": "ml",
+      "prerequisites": [
+        "math:eigen",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:tsne",
+      "name": "t-SNE y UMAP",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:pca"
+      ]
+    },
+    {
+      "id": "ml:anomaly",
+      "name": "Detección de anomalías",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:dbscan",
+        "ml:pca"
+      ]
+    },
+    {
+      "id": "ml:pipelines",
+      "name": "Pipelines de scikit-learn",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:split",
+        "python:pandas-select"
+      ]
+    },
+    {
+      "id": "ml:encoding",
+      "name": "Codificación de categóricas",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:scaling",
+      "name": "Escalado de variables",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:features"
+      ]
+    },
+    {
+      "id": "ml:feature-selection",
+      "name": "Selección de variables",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:regularization",
+        "ml:tree"
+      ]
+    },
+    {
+      "id": "ml:feature-eng",
+      "name": "Ingeniería de variables",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:encoding",
+        "ml:scaling"
+      ]
+    },
+    {
+      "id": "ml:hyperparams",
+      "name": "Búsqueda de hiperparámetros",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:cv",
+        "ml:pipelines"
+      ]
+    },
+    {
+      "id": "ml:explain",
+      "name": "Importancia de variables y SHAP",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:random-forest"
+      ]
+    },
+    {
+      "id": "ml:calibration",
+      "name": "Calibración de probabilidades",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:logreg",
+        "ml:roc"
+      ]
+    },
+    {
+      "id": "ml:timeseries-ml",
+      "name": "Series de tiempo y validación temporal",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:cv",
+        "python:pandas-datetime"
+      ]
+    },
+    {
+      "id": "ml:leakage",
+      "name": "Fuga de datos",
+      "domain": "ml",
+      "prerequisites": [
+        "ml:split",
+        "ml:pipelines"
+      ]
+    },
+    {
+      "id": "cleaning:profiling",
+      "name": "Perfilado de datos",
+      "domain": "cleaning",
+      "prerequisites": [
+        "python:pandas-series"
+      ]
+    },
+    {
+      "id": "cleaning:dtypes",
+      "name": "Tipos de datos",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:profiling"
+      ]
+    },
+    {
+      "id": "cleaning:missing",
+      "name": "Detección de valores faltantes",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:profiling"
+      ]
+    },
+    {
+      "id": "cleaning:impute-simple",
+      "name": "Imputación simple",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:missing"
+      ]
+    },
+    {
+      "id": "cleaning:impute-adv",
+      "name": "Imputación avanzada (KNN, iterativa)",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:impute-simple",
+        "ml:knn"
+      ]
+    },
+    {
+      "id": "cleaning:duplicates",
+      "name": "Duplicados",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:profiling"
+      ]
+    },
+    {
+      "id": "cleaning:outliers-iqr",
+      "name": "Outliers con IQR",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:profiling",
+        "math:percentiles"
+      ]
+    },
+    {
+      "id": "cleaning:outliers-z",
+      "name": "Outliers con z-score",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:profiling",
+        "math:normal"
+      ]
+    },
+    {
+      "id": "cleaning:outlier-treat",
+      "name": "Tratamiento de outliers",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:outliers-iqr",
+        "cleaning:outliers-z"
+      ]
+    },
+    {
+      "id": "cleaning:text-clean",
+      "name": "Limpieza de texto",
+      "domain": "cleaning",
+      "prerequisites": [
+        "python:regex"
+      ]
+    },
+    {
+      "id": "cleaning:categories",
+      "name": "Normalización de categorías",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:text-clean"
+      ]
+    },
+    {
+      "id": "cleaning:dates-clean",
+      "name": "Fechas inconsistentes",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:dtypes",
+        "python:pandas-datetime"
+      ]
+    },
+    {
+      "id": "cleaning:units",
+      "name": "Unidades y escalas",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:dtypes"
+      ]
+    },
+    {
+      "id": "cleaning:merge-keys",
+      "name": "Llaves y uniones sucias",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:duplicates",
+        "python:pandas-merge"
+      ]
+    },
+    {
+      "id": "cleaning:validation",
+      "name": "Validación de reglas de negocio",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:dtypes"
+      ]
+    },
+    {
+      "id": "cleaning:reshape",
+      "name": "Datos tidy: de ancho a largo",
+      "domain": "cleaning",
+      "prerequisites": [
+        "python:pandas-pivot"
+      ]
+    },
+    {
+      "id": "cleaning:binning",
+      "name": "Discretización",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:dtypes"
+      ]
+    },
+    {
+      "id": "cleaning:skew",
+      "name": "Asimetría y transformaciones",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:outliers-z",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "cleaning:viz-principles",
+      "name": "Principios de visualización",
+      "domain": "cleaning",
+      "prerequisites": []
+    },
+    {
+      "id": "cleaning:chart-choice",
+      "name": "Elección del gráfico adecuado",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:viz-principles"
+      ]
+    },
+    {
+      "id": "cleaning:bar",
+      "name": "Barras y barras apiladas",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice"
+      ]
+    },
+    {
+      "id": "cleaning:line",
+      "name": "Líneas y series temporales",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice"
+      ]
+    },
+    {
+      "id": "cleaning:scatter",
+      "name": "Dispersión",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice",
+        "math:correlation"
+      ]
+    },
+    {
+      "id": "cleaning:hist",
+      "name": "Histogramas y densidades",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice",
+        "math:descriptive"
+      ]
+    },
+    {
+      "id": "cleaning:box",
+      "name": "Boxplots",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice",
+        "math:percentiles"
+      ]
+    },
+    {
+      "id": "cleaning:heatmap",
+      "name": "Mapas de calor",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:chart-choice",
+        "math:correlation"
+      ]
+    },
+    {
+      "id": "cleaning:small-multiples",
+      "name": "Pequeños múltiplos",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:bar",
+        "cleaning:line"
+      ]
+    },
+    {
+      "id": "cleaning:color",
+      "name": "Color y accesibilidad",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:viz-principles"
+      ]
+    },
+    {
+      "id": "cleaning:annotations",
+      "name": "Títulos y anotaciones",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:viz-principles"
+      ]
+    },
+    {
+      "id": "cleaning:matplotlib",
+      "name": "Matplotlib",
+      "domain": "cleaning",
+      "prerequisites": [
+        "python:pandas-series",
+        "cleaning:chart-choice"
+      ]
+    },
+    {
+      "id": "cleaning:seaborn",
+      "name": "Seaborn",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:matplotlib"
+      ]
+    },
+    {
+      "id": "cleaning:plotly",
+      "name": "Plotly interactivo",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:matplotlib"
+      ]
+    },
+    {
+      "id": "cleaning:dashboards",
+      "name": "Dashboards",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:plotly",
+        "cleaning:annotations"
+      ]
+    },
+    {
+      "id": "cleaning:storytelling",
+      "name": "Narrativa con datos",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:annotations",
+        "cleaning:dashboards"
+      ]
+    },
+    {
+      "id": "cleaning:misleading",
+      "name": "Gráficos engañosos",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:viz-principles"
+      ]
+    },
+    {
+      "id": "cleaning:eda",
+      "name": "Análisis exploratorio completo",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:hist",
+        "cleaning:box",
+        "cleaning:scatter",
+        "cleaning:missing"
+      ]
+    },
+    {
+      "id": "cleaning:pipelines-clean",
+      "name": "Pipelines de limpieza reproducibles",
+      "domain": "cleaning",
+      "prerequisites": [
+        "cleaning:eda",
+        "python:functions"
+      ]
+    },
+    {
+      "id": "business:kpis",
+      "name": "KPIs y métricas",
+      "domain": "business",
+      "prerequisites": []
+    },
+    {
+      "id": "business:funnel",
+      "name": "Embudos de conversión",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:retention",
+      "name": "Retención",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:cohort",
+      "name": "Análisis de cohortes",
+      "domain": "business",
+      "prerequisites": [
+        "business:retention",
+        "sql:cohorts"
+      ]
+    },
+    {
+      "id": "business:churn",
+      "name": "Churn",
+      "domain": "business",
+      "prerequisites": [
+        "business:retention"
+      ]
+    },
+    {
+      "id": "business:ltv",
+      "name": "Valor de vida del cliente (LTV)",
+      "domain": "business",
+      "prerequisites": [
+        "business:churn",
+        "math:expectation"
+      ]
+    },
+    {
+      "id": "business:cac",
+      "name": "CAC y payback",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:unit-econ",
+      "name": "Economía unitaria",
+      "domain": "business",
+      "prerequisites": [
+        "business:ltv",
+        "business:cac"
+      ]
+    },
+    {
+      "id": "business:north-star",
+      "name": "North Star Metric",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:segmentation",
+      "name": "Segmentación de clientes",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis",
+        "ml:kmeans"
+      ]
+    },
+    {
+      "id": "business:rfm",
+      "name": "Análisis RFM",
+      "domain": "business",
+      "prerequisites": [
+        "business:segmentation",
+        "sql:ntile"
+      ]
+    },
+    {
+      "id": "business:pareto",
+      "name": "Análisis de Pareto",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis",
+        "cleaning:bar"
+      ]
+    },
+    {
+      "id": "business:abc",
+      "name": "Clasificación ABC",
+      "domain": "business",
+      "prerequisites": [
+        "business:pareto"
+      ]
+    },
+    {
+      "id": "business:pricing",
+      "name": "Elasticidad de precios",
+      "domain": "business",
+      "prerequisites": [
+        "math:correlation",
+        "business:unit-econ"
+      ]
+    },
+    {
+      "id": "business:forecasting",
+      "name": "Pronóstico de demanda",
+      "domain": "business",
+      "prerequisites": [
+        "ml:timeseries-ml"
+      ]
+    },
+    {
+      "id": "business:seasonality",
+      "name": "Estacionalidad",
+      "domain": "business",
+      "prerequisites": [
+        "business:forecasting"
+      ]
+    },
+    {
+      "id": "business:experiment-design",
+      "name": "Diseño de experimentos",
+      "domain": "business",
+      "prerequisites": [
+        "math:ab-testing"
+      ]
+    },
+    {
+      "id": "business:experiment-read",
+      "name": "Lectura de resultados de experimentos",
+      "domain": "business",
+      "prerequisites": [
+        "business:experiment-design",
+        "math:pvalue"
+      ]
+    },
+    {
+      "id": "business:attribution",
+      "name": "Atribución de marketing",
+      "domain": "business",
+      "prerequisites": [
+        "business:funnel"
+      ]
+    },
+    {
+      "id": "business:roi",
+      "name": "ROI y márgenes",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:break-even",
+      "name": "Punto de equilibrio",
+      "domain": "business",
+      "prerequisites": [
+        "business:roi"
+      ]
+    },
+    {
+      "id": "business:margin-analysis",
+      "name": "Análisis de márgenes",
+      "domain": "business",
+      "prerequisites": [
+        "business:roi",
+        "sql:groupby"
+      ]
+    },
+    {
+      "id": "business:variance",
+      "name": "Análisis de variación (real vs. plan)",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:dashboards-biz",
+      "name": "Dashboards ejecutivos",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis",
+        "cleaning:dashboards"
+      ]
+    },
+    {
+      "id": "business:requirements",
+      "name": "De pregunta de negocio a análisis",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:hypothesis-biz",
+      "name": "Hipótesis de negocio",
+      "domain": "business",
+      "prerequisites": [
+        "business:requirements"
+      ]
+    },
+    {
+      "id": "business:prioritization",
+      "name": "Priorización impacto y esfuerzo",
+      "domain": "business",
+      "prerequisites": [
+        "business:requirements"
+      ]
+    },
+    {
+      "id": "business:stakeholder",
+      "name": "Comunicación con stakeholders",
+      "domain": "business",
+      "prerequisites": [
+        "cleaning:storytelling"
+      ]
+    },
+    {
+      "id": "business:recommendations",
+      "name": "Recomendaciones accionables",
+      "domain": "business",
+      "prerequisites": [
+        "business:stakeholder",
+        "business:hypothesis-biz"
+      ]
+    },
+    {
+      "id": "business:risk",
+      "name": "Riesgos y supuestos",
+      "domain": "business",
+      "prerequisites": [
+        "business:recommendations"
+      ]
+    },
+    {
+      "id": "business:sizing",
+      "name": "Dimensionamiento de mercado (TAM, SAM, SOM)",
+      "domain": "business",
+      "prerequisites": [
+        "business:requirements"
+      ]
+    },
+    {
+      "id": "business:competitive",
+      "name": "Benchmark competitivo",
+      "domain": "business",
+      "prerequisites": [
+        "business:sizing"
+      ]
+    },
+    {
+      "id": "business:supply-chain",
+      "name": "Inventario y rotación",
+      "domain": "business",
+      "prerequisites": [
+        "business:abc"
+      ]
+    },
+    {
+      "id": "business:sla",
+      "name": "SLAs y métricas operativas",
+      "domain": "business",
+      "prerequisites": [
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:data-quality-biz",
+      "name": "Calidad de datos para decisiones",
+      "domain": "business",
+      "prerequisites": [
+        "cleaning:validation",
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:metric-tree",
+      "name": "Árbol de métricas",
+      "domain": "business",
+      "prerequisites": [
+        "business:north-star",
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:anomaly-biz",
+      "name": "Alertas y anomalías de negocio",
+      "domain": "business",
+      "prerequisites": [
+        "ml:anomaly",
+        "business:kpis"
+      ]
+    },
+    {
+      "id": "business:case-study",
+      "name": "Caso de negocio de punta a punta",
+      "domain": "business",
+      "prerequisites": [
+        "business:recommendations",
+        "business:risk",
+        "sql:cte"
+      ]
+    }
+  ]
 }
