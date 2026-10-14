@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router';
 import { ChartLine, House, ListChecks, Network, PlayCircle, RefreshCw } from 'lucide-react';
 import { SampleDataTag } from '../components/cards';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { USING_SAMPLE_DATA } from '../data/repository';
 import { useApp } from '../data/DataContext';
 import styles from './AppShell.module.css';
@@ -21,8 +22,8 @@ export function AppShell() {
     <div className={styles.shell}>
       <nav className={styles.nav} aria-label="Principal">
         <div className={styles.logo}>
-          <span className={styles.logoMark} aria-hidden="true">SE</span>
-          <span>Skill Evaluator</span>
+          <span className={styles.logoMark} aria-hidden="true">DS</span>
+          <span className={styles.logoText}>Data Scientist Challenges</span>
         </div>
         <ul className={styles.list}>
           {NAV.map(({ to, label, short, icon: Icon, end }) => (
@@ -35,6 +36,9 @@ export function AppShell() {
             </li>
           ))}
         </ul>
+        <div className={styles.theme}>
+          <ThemeToggle />
+        </div>
         <div className={styles.user}>
           <span className={styles.avatar} aria-hidden="true">{name.slice(0, 1)}</span>
           <span>{name}</span>

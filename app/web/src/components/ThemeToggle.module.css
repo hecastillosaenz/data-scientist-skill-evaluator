@@ -1,0 +1,5 @@
+.group { display: flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--sunk); }
+.opt { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 40px; border-radius: 9px; color: var(--muted); cursor: pointer; }
+.opt:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 1px; }
+.opt:hover { color: var(--ink); }
+.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-card); }

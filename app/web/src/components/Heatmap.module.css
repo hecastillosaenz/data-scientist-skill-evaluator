@@ -5,7 +5,7 @@
 .pad { width: var(--cell); height: var(--cell); }
 .l1 { background: color-mix(in srgb, var(--accent) 28%, var(--track)); color: var(--ink2); }
 .l2 { background: color-mix(in srgb, var(--accent) 52%, var(--track)); color: var(--ink); }
-.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--track)); color: #fff; }
-.l4 { background: var(--accent); color: #fff; }
+.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--track)); color: var(--accent-fg); }
+.l4 { background: var(--accent); color: var(--accent-fg); }
 .legend { display: flex; align-items: center; gap: 4px; margin-top: 12px; font-size: 12px; color: var(--muted); }
 .legend .cell { --cell: 14px; border-radius: 4px; }

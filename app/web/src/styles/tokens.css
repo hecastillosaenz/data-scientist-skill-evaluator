@@ -1,5 +1,6 @@
-/* Tokens de UI-UX.md §1.3. Los colores de dificultad no tienen hex en el spec: elegidos con contraste >= 4.5:1. */
+/* Tokens de UI-UX.md §1. Tema claro por defecto; el oscuro se activa con data-theme="dark" en <html>. */
 :root {
+  color-scheme: light;
   --bg: #f3f4f7;
   --card: #ffffff;
   --sunk: #f5f6f9;
@@ -12,6 +13,7 @@
   --accent-2: #7d97f1;
   --accent-3: #c9d4fa;
   --accent-soft: #edf1fe;
+  --accent-fg: #ffffff;
   --sel: #f2f5fe;
   --primary: #15171c;
   --primary-fg: #ffffff;
@@ -27,14 +29,16 @@
   --d2-bg: #fdf0d5;
   --d3-fg: #b0245f;
   --d3-bg: #fce3ee;
-  /* Series de gráficos (una por dominio): azules y grafitos, distinguibles junto a la leyenda con texto. */
+  /* Series de gráficos (una por dominio / Apoyo). */
   --s1: #2f5bea;
   --s2: #7d97f1;
   --s3: #b9c7f7;
   --s4: #3a3f4b;
   --s5: #8a90a0;
   --s6: #c4c8d2;
-  --shadow-card: 0 0 0 1px #e7e9ef, 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px -6px rgba(16, 24, 40, 0.08);
+  /* Tarjetas sin anillo: elevación por sombra y contraste de superficie (UI-UX §1.5). */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px -12px rgba(16, 24, 40, 0.14);
+  --shadow-pop: 0 1px 2px rgba(16, 24, 40, 0.06), 0 16px 40px -12px rgba(16, 24, 40, 0.28);
   --tooltip-bg: #15171c;
   --tooltip-fg: #ffffff;
   --focus: #2f5bea;
@@ -48,48 +52,57 @@
   --content-max: 1320px;
   --tabbar-h: 68px;
 
+  /* Escala tipográfica (UI-UX §1.2): un título siempre pesa más que el texto que encabeza. */
+  --fs-h1: clamp(26px, 2.6vw, 32px);
+  --fs-h1-challenge: clamp(28px, 3vw, 36px);
+  --fs-h2: 20px;
+  --fs-h3: 15px;
+  --fs-body: 15px;
+  --fs-small: 13px;
+
   --font: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1115;
-    --card: #171a20;
-    --sunk: #1e222a;
-    --ink: #eef0f4;
-    --ink2: #c9cdd6;
-    --muted: #9aa0ad;
-    --line: #2a2f38;
-    --track: #2a2f38;
-    --accent: #7e9bf5;
-    --accent-2: #4f6fd8;
-    --accent-3: #2e3f78;
-    --accent-soft: #1e2747;
-    --sel: #1b2236;
-    --primary: #eef0f4;
-    --primary-fg: #0f1115;
-    --hero: #22252d;
-    --hero-fg: #eef0f4;
-    --hero-muted: #9aa0ad;
-    --st-no: #5b6270;
-    --seg-no: #343a45;
-    --edge: #3a404b;
-    --d1-fg: #6fd3a0;
-    --d1-bg: #163227;
-    --d2-fg: #f0b35a;
-    --d2-bg: #382b13;
-    --d3-fg: #f08ab8;
-    --d3-bg: #3b1a2b;
-    --s1: #7e9bf5;
-    --s2: #4f6fd8;
-    --s3: #2e3f78;
-    --s4: #c9cdd6;
-    --s5: #7b8190;
-    --s6: #454b58;
-    --shadow-card: 0 0 0 1px #2a2f38;
-    --tooltip-bg: #eef0f4;
-    --tooltip-fg: #15171c;
-    --focus: #7e9bf5;
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0e1014;
+  --card: #1a1e26;
+  --sunk: #12151b;
+  --ink: #eef0f4;
+  --ink2: #c9cdd6;
+  --muted: #9aa0ad;
+  --line: #2c313b;
+  --track: #2c313b;
+  --accent: #7e9bf5;
+  --accent-2: #4f6fd8;
+  --accent-3: #2e3f78;
+  --accent-soft: #212a4a;
+  --accent-fg: #0e1014;
+  --sel: #20273a;
+  --primary: #eef0f4;
+  --primary-fg: #0e1014;
+  --hero: #262a34;
+  --hero-fg: #eef0f4;
+  --hero-muted: #9aa0ad;
+  --st-no: #5b6270;
+  --seg-no: #343a45;
+  --edge: #3a404b;
+  --d1-fg: #6fd3a0;
+  --d1-bg: #163227;
+  --d2-fg: #f0b35a;
+  --d2-bg: #382b13;
+  --d3-fg: #f08ab8;
+  --d3-bg: #3b1a2b;
+  --s1: #7e9bf5;
+  --s2: #4f6fd8;
+  --s3: #2e3f78;
+  --s4: #c9cdd6;
+  --s5: #7b8190;
+  --s6: #454b58;
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 14px 32px -14px rgba(0, 0, 0, 0.7);
+  --shadow-pop: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 44px -12px rgba(0, 0, 0, 0.8);
+  --tooltip-bg: #eef0f4;
+  --tooltip-fg: #15171c;
+  --focus: #7e9bf5;
 }

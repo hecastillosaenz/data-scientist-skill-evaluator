@@ -6,17 +6,20 @@ import { BloomChip, DifficultyChip, StatusChip, TimeChip } from '../../component
 import { DomainTile } from '../../components/DomainTile';
 import { Segmented } from '../../components/Segmented';
 import type { StageResult } from '../../domain/simulate';
+import { toggleHint, toggleSolution, initialHelp } from '../../domain/stageHelp';
 import styles from './StageCard.module.css';
 
 export interface StageUI {
   open: boolean;
-  hintShown: boolean;
-  solutionShown: boolean;
+  hintVisible: boolean;
+  /** Permanente: marca el intento «Con ayuda» (R7) aunque luego se oculte. */
+  solutionOpened: boolean;
+  solutionVisible: boolean;
   answer: string;
   result: StageResult | null;
 }
 
-export const initialStageUI: StageUI = { open: false, hintShown: false, solutionShown: false, answer: '', result: null };
+export const initialStageUI: StageUI = { open: false, ...initialHelp, answer: '', result: null };
 
 const APOYO_OPTIONS: { value: Apoyo; label: string }[] = [
   { value: 'guiado', label: APOYO_LABEL.guiado },
@@ -84,17 +87,19 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
               <p><strong>Paso sugerido.</strong> {stage.suggestedStep}</p>
             </div>
           )}
-          {apoyo === 'pistas' &&
-            (ui.hintShown ? (
-              <div className={styles.support}>
-                <Lightbulb size={16} aria-hidden="true" />
-                <p><strong>Pista.</strong> {stage.hint}</p>
-              </div>
-            ) : (
-              <button type="button" className="btn btn-sm" onClick={() => onUI({ hintShown: true })}>
-                <Lightbulb size={14} aria-hidden="true" /> Ver pista
+          {apoyo === 'pistas' && (
+            <div className={styles.helpRow}>
+              <button type="button" className="btn btn-sm" aria-expanded={ui.hintVisible} onClick={() => onUI(toggleHint(ui))}>
+                <Lightbulb size={14} aria-hidden="true" /> {ui.hintVisible ? 'Ocultar pista' : 'Ver pista'}
               </button>
-            ))}
+              {ui.hintVisible && (
+                <div className={styles.support}>
+                  <Lightbulb size={16} aria-hidden="true" />
+                  <p><strong>Pista.</strong> {stage.hint}</p>
+                </div>
+              )}
+            </div>
+          )}
           {apoyo === 'autonomo' && <p className={styles.note}>Modo autónomo: sin pasos sugeridos ni pistas.</p>}
           {apoyo !== 'autonomo' && (
             <p className={styles.note}>Con Apoyo {APOYO_LABEL[apoyo]} el Nivel de esta etapa no sube.</p>
@@ -163,18 +168,15 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
           )}
 
           <section className={styles.solution}>
-            <button type="button" className="btn btn-sm" aria-expanded={ui.solutionShown} disabled={ui.solutionShown} onClick={() => onUI({ solutionShown: true })}>
-              {ui.solutionShown ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-              {ui.solutionShown ? 'Solución revelada' : 'Ver solución'}
-            </button>
-            {!ui.solutionShown ? (
-              <p className={styles.note}>Revélala después de verificar tu intento.</p>
-            ) : (
-              <>
-                <p className={styles.note}>Este intento queda marcado como «Con ayuda».</p>
-                <pre className={`${styles.code} mono`}>{stage.solution}</pre>
-              </>
-            )}
+            <div className={styles.solutionBar}>
+              <button type="button" className="btn btn-sm" aria-expanded={ui.solutionVisible} onClick={() => onUI(toggleSolution(ui))}>
+                {ui.solutionVisible ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                {ui.solutionVisible ? 'Ocultar solución' : ui.solutionOpened ? 'Mostrar solución' : 'Ver solución'}
+              </button>
+              {ui.solutionOpened && <span className={styles.helpBadge}>Con ayuda</span>}
+            </div>
+            {!ui.solutionOpened && <p className={styles.note}>Revélala después de verificar tu intento: abrirla marca el intento «Con ayuda».</p>}
+            {ui.solutionVisible && <pre className={`${styles.code} mono`}>{stage.solution}</pre>}
           </section>
         </div>
       )}

@@ -136,7 +136,7 @@ export function Challenges() {
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className={styles.group} role="group" aria-label={label}>
-      <h3>{label}</h3>
+      <span className="field-label">{label}</span>
       <div className={styles.chips}>{children}</div>
     </div>
   );

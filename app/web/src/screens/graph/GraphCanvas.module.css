@@ -1,4 +1,4 @@
-.wrap { position: relative; height: 540px; border-radius: var(--r-card); background: var(--sunk); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.wrap { position: relative; height: 540px; border-radius: var(--r-card); background: var(--sunk); box-shadow: inset 0 1px 3px rgba(16, 24, 40, 0.08); overflow: hidden; }
 .svg { display: block; touch-action: none; cursor: grab; user-select: none; }
 .grabbing { cursor: grabbing; }
 

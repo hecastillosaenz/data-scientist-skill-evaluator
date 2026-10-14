@@ -6,7 +6,7 @@
   border-radius: 8px; font-size: 12px; color: var(--ink2);
 }
 .practiced { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-.streak { background: var(--accent); color: #fff; font-weight: 500; }
+.streak { background: var(--accent); color: var(--accent-fg); font-weight: 500; }
 .today { box-shadow: inset 0 0 0 2px var(--ink); }
 .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }

@@ -33,7 +33,7 @@ interface KpiProps {
 export function KpiCard({ label, value, progress, context }: KpiProps) {
   return (
     <Card className={styles.kpi}>
-      <h3>{label}</h3>
+      <p className="field-label">{label}</p>
       <div className={`${styles.kpiValue} mono`}>{value}</div>
       {progress !== undefined && (
         <div className={styles.kpiTrack} aria-hidden="true">

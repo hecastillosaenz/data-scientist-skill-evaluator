@@ -10,6 +10,7 @@ import { challengeMinutes } from '../domain/progress';
 import { simulateCodeVerification, simulateConceptEvaluation } from '../domain/simulate';
 import { useApp } from '../data/DataContext';
 import { DeliveryPanel } from './challenge/DeliveryPanel';
+import { initialHelp } from '../domain/stageHelp';
 import { initialStageUI, StageCard, type StageUI } from './challenge/StageCard';
 import styles from './ChallengeActual.module.css';
 
@@ -139,13 +140,13 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
               at: new Date().toISOString(),
               result: result.status,
               // Abrir la solución marca el intento "Con ayuda" sin importar el resultado (R7).
-              withHelp: ui(active.id).solutionShown,
+              withHelp: ui(active.id).solutionOpened,
               apoyo: apoyoOf(active.id, active.apoyo),
               actualMinutes,
               ...(blocker ? { blocker } : {}),
               ...(notes ? { notes } : {}),
             });
-            patch(active.id, { result: null, solutionShown: false, hintShown: false });
+            patch(active.id, { result: null, ...initialHelp });
           }}
         />
       </div>

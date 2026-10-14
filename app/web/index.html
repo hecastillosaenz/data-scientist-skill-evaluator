@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Skill Evaluator</title>
+    <title>Data Scientist Challenges</title>
+    <script>
+      // Aplica el tema antes de pintar para evitar el parpadeo (misma lógica que theme/theme.ts).
+      (function () {
+        var pref = 'claro';
+        try { pref = localStorage.getItem('dsc-theme') || 'claro'; } catch (e) {}
+        var dark = pref === 'oscuro' || (pref === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
