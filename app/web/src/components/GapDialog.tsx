@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Clock3 } from 'lucide-react';
-import { useTimekeeper } from '../data/TimekeeperContext';
+import { useApp } from '../data/DataContext';
+import { useTimekeeper, useTimerOverview } from '../data/TimekeeperContext';
 import { formatClock } from '../domain/timekeeper';
 import styles from './GapDialog.module.css';
 
@@ -19,31 +20,40 @@ export function describeGap(ms: number): string {
  * pregunta qué hacer con ese intervalo. Nunca lo suma en silencio; lo recomendado es no contarlo.
  */
 export function GapDialog() {
-  const { gap, resolveGap, elapsed } = useTimekeeper();
+  const { gap: pending } = useTimerOverview();
+  if (!pending) return null;
+  return <GapPrompt challengeId={pending.id} from={pending.gap.from} to={pending.gap.to} />;
+}
+
+function GapPrompt({ challengeId, from, to }: { challengeId: string; from: number; to: number }) {
+  const { data } = useApp();
+  const { resolveGap } = useTimerOverview();
+  const { elapsed } = useTimekeeper(challengeId);
+  const title = data?.challenges.find((c) => c.id === challengeId)?.title ?? challengeId;
   const first = useRef<HTMLButtonElement>(null);
+  const gap = { from, to };
 
   useEffect(() => {
-    if (gap) first.current?.focus();
-  }, [gap]);
+    first.current?.focus();
+  }, []);
 
-  if (!gap) return null;
   const duration = gap.to - gap.from;
   return (
     <div className={styles.backdrop}>
       <div className={styles.dialog} role="alertdialog" aria-modal="true" aria-labelledby="gap-title" aria-describedby="gap-desc">
         <span className={styles.icon} aria-hidden="true"><Clock3 size={20} strokeWidth={1.75} /></span>
-        <h2 id="gap-title">El cronómetro estuvo corriendo mientras no estabas</h2>
+        <h2 id="gap-title">El cronómetro de «{title}» estuvo corriendo mientras no estabas</h2>
         <p id="gap-desc">
           La app no dio señal durante <strong>{describeGap(duration)}</strong> (de {hhmm(gap.from)} a {hhmm(gap.to)}): se cerró la pestaña o el equipo se
           suspendió. El cronómetro quedó congelado en <span className="mono">{formatClock(elapsed)}</span>. ¿Qué hacemos con ese tiempo?
         </p>
         <div className={styles.actions}>
-          <button ref={first} type="button" className="btn btn-primary" onClick={() => resolveGap('descartar')}>
+          <button ref={first} type="button" className="btn btn-primary" onClick={() => resolveGap(challengeId, 'descartar')}>
             No contarlo y seguir
             <span className={styles.rec}>Recomendado</span>
           </button>
-          <button type="button" className="btn" onClick={() => resolveGap('contar')}>Contarlo ({describeGap(duration)}) y seguir</button>
-          <button type="button" className="btn" onClick={() => resolveGap('pausar')}>No contarlo y dejarlo en pausa</button>
+          <button type="button" className="btn" onClick={() => resolveGap(challengeId, 'contar')}>Contarlo ({describeGap(duration)}) y seguir</button>
+          <button type="button" className="btn" onClick={() => resolveGap(challengeId, 'pausar')}>No contarlo y dejarlo en pausa</button>
         </div>
         <p className={styles.note}>Si estuviste resolviendo en VS Code con la app cerrada, elige «Contarlo». Si te levantaste, el tiempo ausente no debería sumar.</p>
       </div>

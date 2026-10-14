@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  GAP_THRESHOLD_MS, beat, detectGap, elapsedMs, formatClock, initialTimer, isRunning, lapMs, parseTimer, pause, reset, resolveGap, serializeTimer, start, takeLap, toMinutes,
+  GAP_THRESHOLD_MS, beat, mapTimers, parseBook, pendingGap, runningId, serializeBook, startIn, timerOf, updateTimer, detectGap, elapsedMs, formatClock, initialTimer, isRunning, lapMs, parseTimer, pause, reset, resolveGap, serializeTimer, start, takeLap, toMinutes,
 } from '../../web/src/domain/timekeeper';
 
 const SEC = 1000;
 const MIN = 60 * SEC;
 
-describe('cronómetro global', () => {
+describe('cronómetro', () => {
   it('acumula entre inicio y pausa y lo conserva al reanudar', () => {
     let s = start(initialTimer(), 0);
     expect(elapsedMs(s, 90 * SEC)).toBe(90 * SEC);
@@ -168,5 +168,81 @@ describe('formato', () => {
     expect(toMinutes(89 * SEC)).toBe(1);
     expect(toMinutes(91 * SEC)).toBe(2);
     expect(toMinutes(31 * MIN)).toBe(31);
+  });
+});
+
+describe('un cronómetro por challenge (AC-R20)', () => {
+  it('cada challenge acumula su propio tiempo y las vueltas no se mezclan', () => {
+    let book = startIn({}, 'challenge-001', 0);
+    book = updateTimer(book, 'challenge-001', (t) => takeLap(t, 20 * MIN).state);
+    book = startIn(book, 'challenge-002', 20 * MIN);
+    // challenge-001 quedó en pausa con sus 20 min; challenge-002 empieza de cero.
+    expect(elapsedMs(timerOf(book, 'challenge-001'), 90 * MIN)).toBe(20 * MIN);
+    expect(lapMs(timerOf(book, 'challenge-001'), 90 * MIN)).toBe(0);
+    expect(elapsedMs(timerOf(book, 'challenge-002'), 35 * MIN)).toBe(15 * MIN);
+    // Registrar en challenge-002 no toca la vuelta de challenge-001.
+    const lap = takeLap(timerOf(book, 'challenge-002'), 35 * MIN);
+    expect(lap.ms).toBe(15 * MIN);
+    book = updateTimer(book, 'challenge-002', () => lap.state);
+    expect(timerOf(book, 'challenge-001').lapBaseMs).toBe(20 * MIN);
+  });
+
+  it('iniciar uno pausa el que corría y conserva su tiempo; reanudarlo continúa desde ahí', () => {
+    let book = startIn({}, 'a', 0);
+    expect(runningId(book)).toBe('a');
+    book = startIn(book, 'b', 10 * MIN);
+    expect(runningId(book)).toBe('b');
+    expect(elapsedMs(timerOf(book, 'a'), 99 * MIN)).toBe(10 * MIN);
+    book = startIn(book, 'a', 30 * MIN);
+    expect(runningId(book)).toBe('a');
+    expect(elapsedMs(timerOf(book, 'a'), 35 * MIN)).toBe(15 * MIN);
+    expect(elapsedMs(timerOf(book, 'b'), 99 * MIN)).toBe(20 * MIN);
+  });
+
+  it('un challenge sin cronómetro está en cero y reiniciar uno no toca los demás', () => {
+    expect(timerOf({}, 'x')).toEqual(initialTimer());
+    let book = startIn({}, 'a', 0);
+    book = startIn(book, 'b', 5 * MIN);
+    book = updateTimer(book, 'a', () => reset());
+    expect(elapsedMs(timerOf(book, 'a'), 9 * MIN)).toBe(0);
+    expect(elapsedMs(timerOf(book, 'b'), 9 * MIN)).toBe(4 * MIN);
+  });
+
+  it('una ausencia pertenece al challenge que corría y bloquea iniciar solo a ese', () => {
+    let book = startIn({}, 'a', 0);
+    book = mapTimers(book, (t) => beat(t, MIN));
+    book = mapTimers(book, (t) => detectGap(t, MIN + 10 * MIN));
+    expect(runningId(book)).toBeNull();
+    const pending = pendingGap(book);
+    expect(pending?.id).toBe('a');
+    expect(pending?.gap).toEqual({ from: MIN, to: 11 * MIN });
+    expect(startIn(book, 'a', 12 * MIN)).toBe(book); // sin resolver, no arranca
+    expect(runningId(startIn(book, 'b', 12 * MIN))).toBe('b'); // otro challenge sí
+  });
+
+  it('mapTimers devuelve el mismo libro si nada cambió', () => {
+    const book = startIn({}, 'a', 0);
+    expect(mapTimers(book, (t) => t)).toBe(book);
+  });
+
+  it('se guarda y se lee; descarta entradas inválidas y vacías', () => {
+    let book = startIn({}, 'a', 1000);
+    book = startIn(book, 'b', 5000);
+    const back = parseBook(serializeBook(book));
+    expect(runningId(back)).toBe('b');
+    expect(elapsedMs(timerOf(back, 'a'), 9999)).toBe(4000);
+    expect(parseBook(null)).toEqual({});
+    expect(parseBook('no es json')).toEqual({});
+    expect(parseBook('[1,2]')).toEqual({});
+    expect(parseBook(JSON.stringify({ a: { accumulatedMs: -5 }, b: initialTimer() }))).toEqual({});
+  });
+
+  it('si el almacenamiento trae dos en marcha, solo queda uno', () => {
+    const raw = JSON.stringify({
+      a: { ...initialTimer(), startedAt: 1000, heartbeatAt: 2000 },
+      b: { ...initialTimer(), startedAt: 3000, heartbeatAt: 4000 },
+    });
+    const book = parseBook(raw);
+    expect(Object.values(book).filter((t) => t.startedAt !== null)).toHaveLength(1);
   });
 });

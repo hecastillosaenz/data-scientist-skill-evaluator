@@ -147,6 +147,7 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
 
         <StageLogPanel
           key={active.id}
+          challengeId={challenge.id}
           stage={active}
           result={ui(active.id).result}
           onRegister={async ({ actualMinutes, timeSource, blocker, notes }) => {

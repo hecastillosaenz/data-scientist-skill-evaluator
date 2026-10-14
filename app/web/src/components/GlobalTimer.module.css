@@ -6,6 +6,8 @@
 .toggle { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); }
 .on .toggle { background: color-mix(in srgb, var(--primary-fg) 20%, transparent); color: var(--primary-fg); }
 .menu { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow-pop); }
+.owner { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.owner a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .menu dl { display: grid; gap: 6px; margin: 0; }
 .menu dl div { display: flex; justify-content: space-between; font-size: 14px; }
 .menu dt { color: var(--muted); }

@@ -1,6 +1,6 @@
 /**
- * Cronómetro global con vueltas (SDD R20, R30). Hay UN solo reloj para toda la app; «Registrar etapa» toma una
- * *vuelta*: el tiempo desde el último registro. Se basa en marcas de tiempo, no en un contador, así que no se
+ * Cronómetro con vueltas (SDD R20, R30). Cada challenge tiene su propio reloj (`TimerBook`) y solo uno corre a la
+ * vez; «Registrar etapa» toma una *vuelta*: el tiempo de ese challenge desde su último registro. Se basa en marcas de tiempo, no en un contador, así que no se
  * desvía si el navegador throttlea la pestaña mientras el usuario trabaja en VS Code.
  *
  * Si la app deja de dar señal mientras el reloj corre (pestaña cerrada, equipo suspendido), al volver se detecta el
@@ -26,9 +26,10 @@ export interface TimerState {
   gap: Gap | null;
 }
 
-export const TIMER_KEY = 'dsc-timer';
-/** La clave del cronómetro por etapa anterior a R20 revisado; se descarta. */
-export const LEGACY_TIMERS_KEY = 'dsc-timers';
+/** Un cronómetro por challenge, guardados juntos en el navegador. */
+export const TIMERS_KEY = 'dsc-timers-v2';
+/** Claves de los relojes anteriores (por etapa y global); se descartan. */
+export const LEGACY_TIMER_KEYS = ['dsc-timers', 'dsc-timer'] as const;
 /** Sin señal por más de esto, se considera una ausencia (R30). */
 export const GAP_THRESHOLD_MS = 3 * 60_000;
 
@@ -143,3 +144,70 @@ export function parseTimer(raw: string | null | undefined): TimerState {
 }
 
 export const serializeTimer = (s: TimerState): string => JSON.stringify(s);
+
+/** Cronómetros por id de challenge; el que no aparece está en cero. */
+export type TimerBook = Readonly<Record<string, TimerState>>;
+
+export const timerOf = (book: TimerBook, id: string): TimerState => book[id] ?? initialTimer();
+
+/** Aplica `fn` solo al cronómetro de `id`; los demás no se tocan. */
+export function updateTimer(book: TimerBook, id: string, fn: (t: TimerState) => TimerState): TimerBook {
+  return { ...book, [id]: fn(timerOf(book, id)) };
+}
+
+/** El challenge cuyo cronómetro está en marcha, si hay alguno. */
+export function runningId(book: TimerBook): string | null {
+  return Object.keys(book).find((id) => isRunning(book[id]!)) ?? null;
+}
+
+/** Inicia el cronómetro de `id` y pausa el que corriera en otro challenge, conservando su tiempo (R20). */
+export function startIn(book: TimerBook, id: string, now: number): TimerBook {
+  if (timerOf(book, id).gap) return book;
+  const next: Record<string, TimerState> = {};
+  for (const [other, t] of Object.entries(book)) next[other] = other === id ? t : pause(t, now);
+  next[id] = start(timerOf(book, id), now);
+  return next;
+}
+
+/** Aplica `fn` a cada cronómetro; devuelve el mismo libro si ninguno cambió (evita renders de más). */
+export function mapTimers(book: TimerBook, fn: (t: TimerState) => TimerState): TimerBook {
+  let changed = false;
+  const next: Record<string, TimerState> = {};
+  for (const [id, t] of Object.entries(book)) {
+    next[id] = fn(t);
+    if (next[id] !== t) changed = true;
+  }
+  return changed ? next : book;
+}
+
+/** La primera ausencia sin resolver y el challenge al que pertenece (R30). */
+export function pendingGap(book: TimerBook): { id: string; gap: Gap } | null {
+  for (const [id, t] of Object.entries(book)) if (t.gap) return { id, gap: t.gap };
+  return null;
+}
+
+/** Lee el libro guardado; descarta entradas inválidas y los cronómetros vacíos. */
+export function parseBook(raw: string | null | undefined): TimerBook {
+  if (!raw) return {};
+  try {
+    const v = JSON.parse(raw) as unknown;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    const book: Record<string, TimerState> = {};
+    for (const [id, entry] of Object.entries(v as Record<string, unknown>)) {
+      const t = parseTimer(JSON.stringify(entry));
+      if (t.accumulatedMs > 0 || t.startedAt !== null || t.gap) book[id] = t;
+    }
+    // Defensa: si el almacenamiento trae dos en marcha (p. ej. dos pestañas), solo queda el primero.
+    let seen = false;
+    for (const id of Object.keys(book)) {
+      if (!isRunning(book[id]!)) continue;
+      if (seen) book[id] = pause(book[id]!, book[id]!.heartbeatAt ?? book[id]!.startedAt!);
+      seen = true;
+    }
+    return book;
+  } catch {
+    return {};
+  }
+}
+
+export const serializeBook = (book: TimerBook): string => JSON.stringify(book);

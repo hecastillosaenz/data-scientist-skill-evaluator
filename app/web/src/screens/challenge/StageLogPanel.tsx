@@ -17,6 +17,8 @@ export interface RegisterPayload {
 }
 
 interface Props {
+  /** El cronómetro es del challenge (R20), no de la etapa. */
+  challengeId: string;
   stage: Stage;
   result: StageResult | null;
   /** Registrar crea un Evidence nuevo (R10); nunca sobrescribe. */
@@ -27,11 +29,11 @@ const BLOCKERS = Object.keys(BLOCKER_LABEL) as Blocker[];
 
 /**
  * «Registro de la etapa» (sustituye a «Entrega»): la resolución ocurre en el notebook de VS Code (HU5),
- * así que aquí solo se registra cómo fue: tiempo real (la vuelta del cronómetro global, R20), dónde te trabaste y notas (HU9).
+ * así que aquí solo se registra cómo fue: tiempo real (la vuelta del cronómetro de este challenge, R20), dónde te trabaste y notas (HU9).
  */
-export function StageLogPanel({ stage, result, onRegister }: Props) {
+export function StageLogPanel({ challengeId, stage, result, onRegister }: Props) {
   // Se remonta al cambiar de etapa (key en el padre), así los campos arrancan limpios por etapa.
-  const { running, lap, takeLap, start, pause } = useTimekeeper();
+  const { running, lap, takeLap, start, pause } = useTimekeeper(challengeId);
   const [manual, setManual] = useState<number | null>(null);
   const [blocker, setBlocker] = useState<Blocker | null>(null);
   const [notes, setNotes] = useState('');
@@ -63,7 +65,7 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
           <p className={styles.hint}>
             Objetivo <span className="mono">{stage.estimatedMinutes} min</span>
             {lap > stage.estimatedMinutes * 60_000 && <> · <span className="mono">+{Math.max(1, Math.round((lap - stage.estimatedMinutes * 60_000) / 60_000))} min</span> sobre el objetivo</>}
-            {' · '}es el tiempo desde tu último registro, del cronómetro global.
+            {' · '}es el tiempo desde tu último registro en este challenge.
           </p>
         </div>
 
@@ -124,7 +126,7 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
             setSaving(false);
             // Si el guardado falló (R37) no se toma la vuelta ni se limpia nada: puedes reintentar sin perder lo escrito.
             if (!ok) return;
-            // Toma la vuelta: la siguiente etapa empieza a contar desde aquí (el reloj global no se reinicia).
+            // Toma la vuelta: la siguiente etapa empieza a contar desde aquí (el reloj del challenge no se reinicia).
             takeLap();
             setSaved(true);
           }}
@@ -133,7 +135,7 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
         </button>
         {!canRegister && (
           <p className={styles.hint}>
-            {!result ? 'Verifica o evalúa la etapa antes de registrarla.' : 'Inicia el cronómetro global o edita el tiempo para registrarla.'}
+            {!result ? 'Verifica o evalúa la etapa antes de registrarla.' : 'Inicia el cronómetro o edita el tiempo para registrarla.'}
           </p>
         )}
         {saved && (
