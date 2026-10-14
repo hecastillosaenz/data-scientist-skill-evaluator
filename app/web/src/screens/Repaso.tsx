@@ -116,6 +116,7 @@ function Queue({ items, selectedId: sel, onSelect, insights, now }: { items: Rev
                   <i /><i /><i />
                   <span>{PRIORITY_LABEL[item.priority]}</span>
                 </span>
+                <Link className="btn btn-sm btn-primary" to={`/debilidad/${encodeURIComponent(item.concept.id)}`}>Ver análisis</Link>
                 <Link className="btn btn-sm" to={`/challenge-actual/${item.source.challenge.id}`}>Practicar</Link>
               </div>
             </li>
@@ -147,6 +148,7 @@ function SidePanel({ item, stateOf }: { item: ReviewItem; stateOf: (id: string) 
         <div>
           <h2>Reto de refuerzo</h2>
           <p className={styles.panelSub}>Para «{item.concept.name}»</p>
+          <Link className={styles.analysisLink} to={`/debilidad/${encodeURIComponent(item.concept.id)}`}>Ver el análisis completo de esta debilidad →</Link>
         </div>
         {reinforcement ? (
           <div className={styles.reinforcement} aria-live="polite">

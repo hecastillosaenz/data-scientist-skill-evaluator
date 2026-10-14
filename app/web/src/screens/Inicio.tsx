@@ -146,7 +146,7 @@ export function Inicio() {
                     <span>Etapa {item.source.stage.number} · {item.source.stage.title} — {item.source.challenge.title}</span>
                     <em>{reasonText(item)}</em>
                   </div>
-                  <Link className="btn btn-sm" to={`/challenge-actual/${item.source.challenge.id}`}>Practicar</Link>
+                  <Link className="btn btn-sm" to={`/debilidad/${encodeURIComponent(item.concept.id)}`}>Ver análisis</Link>
                 </li>
               ))}
             </ul>

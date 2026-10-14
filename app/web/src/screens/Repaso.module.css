@@ -37,3 +37,5 @@
 
 @media (max-width: 1279px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 @media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; } .rowMeta { justify-content: flex-start; padding: 0 8px 10px; } }
+
+.analysisLink { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 500; }
