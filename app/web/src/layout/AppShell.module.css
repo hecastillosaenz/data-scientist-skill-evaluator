@@ -1,0 +1,50 @@
+.shell { display: flex; min-height: 100%; }
+.nav {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  height: 100vh;
+  flex: none;
+  padding: 20px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--card);
+}
+.logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 20px; font-weight: 600; }
+.logoMark {
+  display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center;
+  border-radius: var(--r-tile); background: var(--primary); color: var(--primary-fg); font-size: 12px; font-weight: 600;
+}
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.link {
+  display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px;
+  border-radius: 10px; color: var(--ink2); font-weight: 500; font-size: 14px;
+}
+.link:hover { background: var(--sel); text-decoration: none; }
+.active { background: var(--accent-soft); color: var(--accent); }
+.short { display: none; }
+.user { display: flex; align-items: center; gap: 10px; padding: 12px 10px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink2); }
+.avatar {
+  display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--sunk); color: var(--ink); font-size: 12px; font-weight: 600;
+}
+.main { flex: 1; min-width: 0; }
+.content { max-width: var(--content-max); margin: 0 auto; padding: 32px 32px 48px; }
+.footer { margin-top: 32px; display: flex; justify-content: flex-start; }
+
+@media (max-width: 859px) {
+  .shell { flex-direction: column; }
+  .nav {
+    position: fixed; inset: auto 0 0 0; z-index: 20; width: auto; height: var(--tabbar-h);
+    flex-direction: row; padding: 0 8px; border-right: 0; border-top: 1px solid var(--line);
+  }
+  .logo, .user { display: none; }
+  .list { flex-direction: row; justify-content: space-around; align-items: stretch; }
+  .list li { flex: 1; min-width: 0; }
+  .link { flex-direction: column; justify-content: center; gap: 2px; height: 100%; padding: 0 2px; font-size: 11px; text-align: center; }
+  .full { display: none; }
+  .short { display: inline; }
+  .content { padding: 20px 16px calc(var(--tabbar-h) + 28px); }
+}

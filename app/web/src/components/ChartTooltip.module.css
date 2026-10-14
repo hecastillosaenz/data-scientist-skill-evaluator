@@ -1,0 +1,13 @@
+.tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}

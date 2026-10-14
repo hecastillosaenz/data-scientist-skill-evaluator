@@ -1,0 +1,82 @@
+/* Tokens de UI-UX.md §1.3. Los colores de dificultad no tienen hex en el spec: elegidos con contraste >= 4.5:1. */
+:root {
+  --bg: #f3f4f7;
+  --card: #ffffff;
+  --sunk: #f5f6f9;
+  --ink: #15171c;
+  --ink2: #3a3f4b;
+  --muted: #5f6573;
+  --line: #e7e9ef;
+  --track: #eceef3;
+  --accent: #2f5bea;
+  --accent-2: #7d97f1;
+  --accent-3: #c9d4fa;
+  --accent-soft: #edf1fe;
+  --sel: #f2f5fe;
+  --primary: #15171c;
+  --primary-fg: #ffffff;
+  --hero: #15171c;
+  --hero-fg: #ffffff;
+  --hero-muted: #aab0bd;
+  --st-no: #a3a9b5;
+  --seg-no: #dde0e7;
+  --edge: #c9cdd6;
+  --d1-fg: #1d7a4a;
+  --d1-bg: #e3f4ea;
+  --d2-fg: #94560a;
+  --d2-bg: #fdf0d5;
+  --d3-fg: #b0245f;
+  --d3-bg: #fce3ee;
+  --shadow-card: 0 0 0 1px #e7e9ef, 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px -6px rgba(16, 24, 40, 0.08);
+  --tooltip-bg: #15171c;
+  --tooltip-fg: #ffffff;
+  --focus: #2f5bea;
+
+  --r-card: 16px;
+  --r-ctl: 12px;
+  --r-chip: 8px;
+  --r-tile: 9px;
+  --gap: 20px;
+  --sidebar-w: 240px;
+  --content-max: 1320px;
+  --tabbar-h: 68px;
+
+  --font: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --card: #171a20;
+    --sunk: #1e222a;
+    --ink: #eef0f4;
+    --ink2: #c9cdd6;
+    --muted: #9aa0ad;
+    --line: #2a2f38;
+    --track: #2a2f38;
+    --accent: #7e9bf5;
+    --accent-2: #4f6fd8;
+    --accent-3: #2e3f78;
+    --accent-soft: #1e2747;
+    --sel: #1b2236;
+    --primary: #eef0f4;
+    --primary-fg: #0f1115;
+    --hero: #22252d;
+    --hero-fg: #eef0f4;
+    --hero-muted: #9aa0ad;
+    --st-no: #5b6270;
+    --seg-no: #343a45;
+    --edge: #3a404b;
+    --d1-fg: #6fd3a0;
+    --d1-bg: #163227;
+    --d2-fg: #f0b35a;
+    --d2-bg: #382b13;
+    --d3-fg: #f08ab8;
+    --d3-bg: #3b1a2b;
+    --shadow-card: 0 0 0 1px #2a2f38;
+    --tooltip-bg: #eef0f4;
+    --tooltip-fg: #15171c;
+    --focus: #7e9bf5;
+  }
+}

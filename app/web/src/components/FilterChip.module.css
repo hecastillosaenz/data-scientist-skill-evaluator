@@ -1,0 +1,17 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink2);
+}
+.chip:hover { background: var(--sel); }
+.active { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+.active:hover { background: var(--primary); opacity: .92; }
+.count { font-size: 12px; opacity: .7; }

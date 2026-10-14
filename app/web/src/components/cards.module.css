@@ -1,0 +1,65 @@
+.card {
+  background: var(--card);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  min-width: 0;
+}
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.subtitle { color: var(--muted); margin-top: 4px; }
+.actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.kpi { display: flex; flex-direction: column; gap: 8px; padding: 20px; }
+.kpiValue { font-size: 28px; font-weight: 500; line-height: 1.1; }
+.kpiTrack { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.kpiTrack span { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.kpiContext { font-size: 13px; color: var(--muted); }
+.reading { font-size: 14px; color: var(--ink2); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  text-align: center;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r-card);
+  color: var(--muted);
+}
+.empty h2 { color: var(--ink); }
+.emptyIcon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--sunk);
+  color: var(--ink2);
+  margin-bottom: 4px;
+}
+.sticky { position: sticky; top: 24px; align-self: start; min-width: 0; }
+.sample {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px dashed var(--muted);
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.skeleton {
+  display: block;
+  background: linear-gradient(90deg, var(--track) 25%, var(--sunk) 50%, var(--track) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (max-width: 859px) { .sticky { position: static; } .card { padding: 20px; } }

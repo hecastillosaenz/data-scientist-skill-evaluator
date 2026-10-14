@@ -1,28 +1,28 @@
-import { useEffect, useState } from 'react';
-
-type Status = { busy: boolean; operation: string | null };
+import { BrowserRouter, Route, Routes } from 'react-router';
+import { DataProvider } from './data/DataContext';
+import { AppShell } from './layout/AppShell';
+import { Analitica } from './screens/Analitica';
+import { ChallengeActual } from './screens/ChallengeActual';
+import { Challenges } from './screens/Challenges';
+import { Grafo } from './screens/Grafo';
+import { Inicio } from './screens/Inicio';
+import { Repaso } from './screens/Repaso';
 
 export function App() {
-  const [status, setStatus] = useState<Status | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/status')
-      .then((res) => res.json() as Promise<Status>)
-      .then(setStatus)
-      .catch(() => setError(true));
-  }, []);
-
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: 32 }}>
-      <h1>Challenges</h1>
-      <p>
-        {error
-          ? 'No se pudo contactar al orquestador local.'
-          : status
-            ? `Servidor disponible · ${status.busy ? `ocupado (${status.operation})` : 'libre'}`
-            : 'Conectando…'}
-      </p>
-    </main>
+    <DataProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<Inicio />} />
+            <Route path="challenges" element={<Challenges />} />
+            <Route path="challenge-actual/:id?" element={<ChallengeActual />} />
+            <Route path="repaso" element={<Repaso />} />
+            <Route path="grafo" element={<Grafo />} />
+            <Route path="analitica" element={<Analitica />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </DataProvider>
   );
 }

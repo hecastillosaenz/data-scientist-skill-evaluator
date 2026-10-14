@@ -1,0 +1,14 @@
+.wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bar { display: flex; gap: 3px; }
+.seg {
+  flex: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--seg-no);
+}
+.en_curso { background: var(--accent-2); }
+.completada { background: var(--accent); }
+.con_fallos { background: var(--d2-fg); }
+.text { font-size: 12px; color: var(--muted); }
+.dark .seg.pendiente { background: rgba(255, 255, 255, 0.22); }
+.dark .text { color: var(--hero-muted); }

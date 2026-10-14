@@ -1,0 +1,15 @@
+.tile {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-tile);
+}
+.mono {
+  background: var(--sunk);
+  color: var(--ink2);
+}
+.color {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+}

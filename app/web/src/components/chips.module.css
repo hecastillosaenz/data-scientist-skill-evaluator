@@ -1,0 +1,45 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.neutral {
+  border: 1px solid var(--line);
+  color: var(--ink2);
+}
+.status {
+  color: var(--ink2);
+  padding: 0;
+  height: auto;
+}
+.d1 { background: var(--d1-bg); color: var(--d1-fg); }
+.d2 { background: var(--d2-bg); color: var(--d2-fg); }
+.d3 { background: var(--d3-bg); color: var(--d3-fg); }
+.bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+.bars i {
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.25;
+}
+.bars i.on { opacity: 1; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.tone_no { background: var(--st-no); }
+.tone_mid { background: var(--accent-2); }
+.tone_ok { background: var(--accent); }
+.tone_fail { background: var(--d2-fg); }
