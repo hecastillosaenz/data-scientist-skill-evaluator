@@ -8,10 +8,12 @@ import { DataBlock } from '../components/DataBlock';
 import { DomainTile } from '../components/DomainTile';
 import { Markdown } from '../components/Markdown';
 import { StageBar } from '../components/StageBar';
+import { isTestUnlocked } from '../domain/finalTest';
 import { challengeMinutes } from '../domain/progress';
 import { simulateCodeVerification, simulateConceptEvaluation } from '../domain/simulate';
 import { useApp } from '../data/DataContext';
 import { BusinessQuestions } from './challenge/BusinessQuestions';
+import { FinalTest } from './challenge/FinalTest';
 import { StageLogPanel } from './challenge/StageLogPanel';
 import { initialHelp } from '../domain/stageHelp';
 import { initialStageUI, StageCard, type StageUI } from './challenge/StageCard';
@@ -119,6 +121,13 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
           })}
 
           <BusinessQuestions challengeId={challenge.id} questions={challenge.businessQuestions} />
+
+          <FinalTest
+            challenge={challenge}
+            unlocked={isTestUnlocked(challenge, statuses)}
+            stagesDone={challenge.stages.filter((s) => statuses.get(s.id) === 'completada').length}
+            stagesTotal={challenge.stages.length}
+          />
         </div>
 
         <StageLogPanel

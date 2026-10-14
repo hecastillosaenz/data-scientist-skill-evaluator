@@ -192,6 +192,18 @@ export interface BusinessAnswer {
   text: string;
 }
 
+/** Resultado de una pregunta del test final (R21, R23). Append-only; el último por pregunta cuenta para el Concept. */
+export interface TestResult {
+  id: string;
+  challengeId: string;
+  questionId: string;
+  conceptId: string;
+  bloom: 1 | 2 | 3;
+  /** ISO 8601. */
+  at: string;
+  correct: boolean;
+}
+
 export interface AppData {
   user: { name: string };
   /** ISO 8601 del "ahora" de los datos de ejemplo. */
@@ -200,4 +212,5 @@ export interface AppData {
   challenges: Challenge[];
   evidence: Evidence[];
   businessAnswers: BusinessAnswer[];
+  testResults: TestResult[];
 }

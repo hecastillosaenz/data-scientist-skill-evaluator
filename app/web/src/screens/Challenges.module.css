@@ -44,3 +44,5 @@
 
 @media (max-width: 1279px) { .layout { grid-template-columns: minmax(0, 1fr) 360px; } }
 @media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } }
+
+.testChip { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--line); font-size: 12px; color: var(--ink2); }

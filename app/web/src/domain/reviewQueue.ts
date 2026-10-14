@@ -1,4 +1,4 @@
-import type { Challenge, Concept, Evidence } from '../../../shared/types';
+import type { Challenge, Concept, Evidence, TestResult } from '../../../shared/types';
 import { latestAttemptByStage } from './conceptState';
 import { stageIndex, type StageRef } from './stats';
 
@@ -12,6 +12,11 @@ export const REASON_LABEL: Record<ReviewReason, string> = {
   olvido: 'Hace tiempo que no lo practicas',
 };
 
+/** Texto del motivo; si viene del test final se dice explícitamente. */
+export function reasonText(item: Pick<ReviewItem, 'reason' | 'via'>): string {
+  return item.via === 'test' && item.reason === 'fallos' ? 'Fallaste este concepto en el test final' : REASON_LABEL[item.reason];
+}
+
 export const PRIORITY_LABEL: Record<Priority, string> = { alta: 'Alta', media: 'Media', baja: 'Baja' };
 
 export interface ReviewItem {
@@ -24,6 +29,8 @@ export interface ReviewItem {
   priority: Priority;
   /** Cuántos conceptos dependen de este (peso en el grafo). */
   dependents: number;
+  /** De dónde sale el motivo: el último intento de una etapa o el test final (R23). */
+  via: 'etapa' | 'test';
 }
 
 const FORGET_DAYS = 21;
@@ -35,7 +42,7 @@ const DAY_MS = 86_400_000;
  * puntaje = base del motivo + 5 × fallos históricos de la etapa + 2 × conceptos dependientes + 0.3 × días desde la práctica.
  * El motivo sale del último intento de cada etapa vinculada (R11), no del historial completo.
  */
-export function buildReviewQueue(concepts: Concept[], challenges: Challenge[], evidence: Evidence[], now: Date): ReviewItem[] {
+export function buildReviewQueue(concepts: Concept[], challenges: Challenge[], evidence: Evidence[], now: Date, testResults: TestResult[] = []): ReviewItem[] {
   const index = stageIndex(challenges);
   const latest = latestAttemptByStage(evidence);
   const failuresByStage = new Map<string, number>();
@@ -47,19 +54,38 @@ export function buildReviewQueue(concepts: Concept[], challenges: Challenge[], e
   const stagesByConcept = new Map<string, string[]>();
   for (const { stage } of index.values()) for (const cid of stage.conceptIds) stagesByConcept.set(cid, [...(stagesByConcept.get(cid) ?? []), stage.id]);
 
+  // Conceptos con un fallo vigente en el test final (último resultado por pregunta), y cuándo fue.
+  const latestTest = new Map<string, TestResult>();
+  for (const r of testResults) {
+    const key = `${r.challengeId}:${r.questionId}`;
+    const prev = latestTest.get(key);
+    if (!prev || r.at >= prev.at) latestTest.set(key, r);
+  }
+  const testFailure = new Map<string, string>();
+  for (const r of latestTest.values()) if (!r.correct && (testFailure.get(r.conceptId) ?? '') < r.at) testFailure.set(r.conceptId, r.at);
+
   const items: ReviewItem[] = [];
   for (const concept of concepts) {
     const attempts = (stagesByConcept.get(concept.id) ?? []).map((sid) => latest.get(sid)).filter((a): a is Evidence => !!a);
-    if (attempts.length === 0) continue;
-    const lastPracticed = attempts.reduce((acc, a) => (a.at > acc ? a.at : acc), '');
+    const failedTestAt = testFailure.get(concept.id);
+    if (attempts.length === 0 && !failedTestAt) continue;
+    const lastPracticed = [...attempts.map((a) => a.at), ...(failedTestAt ? [failedTestAt] : [])].reduce((acc, at) => (at > acc ? at : acc), '');
     const days = (now.getTime() - new Date(lastPracticed).getTime()) / DAY_MS;
 
     let reason: ReviewReason | null = null;
     let from: Evidence | undefined;
+    let via: 'etapa' | 'test' = 'etapa';
     if ((from = attempts.find((a) => a.result === 'fallida'))) reason = 'fallos';
-    else if ((from = attempts.find((a) => a.result === 'parcial'))) reason = 'parcial';
-    else if ((from = attempts.find((a) => a.withHelp))) reason = 'ayuda';
-    else if (days > FORGET_DAYS) {
+    else if (failedTestAt) {
+      reason = 'fallos';
+      via = 'test';
+      // Etapa de origen: la última que practica el concepto (para el enlace «Practicar»).
+      const sid = (stagesByConcept.get(concept.id) ?? []).at(-1);
+      from = sid ? ({ stageId: sid } as Evidence) : undefined;
+    }
+    if (!reason && (from = attempts.find((a) => a.result === 'parcial'))) reason = 'parcial';
+    if (!reason && (from = attempts.find((a) => a.withHelp))) reason = 'ayuda';
+    if (!reason && days > FORGET_DAYS) {
       reason = 'olvido';
       from = attempts.find((a) => a.at === lastPracticed);
     }
@@ -77,6 +103,7 @@ export function buildReviewQueue(concepts: Concept[], challenges: Challenge[], e
       score,
       priority: score >= 110 ? 'alta' : score >= 75 ? 'media' : 'baja',
       dependents: deps,
+      via,
     });
   }
   return items.sort((a, b) => b.score - a.score || a.concept.name.localeCompare(b.concept.name, 'es'));

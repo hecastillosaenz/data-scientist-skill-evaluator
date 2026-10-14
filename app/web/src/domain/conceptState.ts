@@ -1,4 +1,4 @@
-import type { Challenge, Concept, ConceptState, Difficulty, Evidence, Bloom } from '../../../shared/types';
+import type { Challenge, Concept, ConceptState, Difficulty, Evidence, Bloom, TestResult } from '../../../shared/types';
 
 /**
  * Estado de un Concept según R11: se calcula SOLO con el último intento de cada etapa vinculada,
@@ -36,8 +36,42 @@ export interface ConceptInsight {
   level: Difficulty | null;
 }
 
-export function computeInsights(concepts: Concept[], challenges: Challenge[], evidence: Evidence[]): Map<string, ConceptInsight> {
+/**
+ * Último resultado de cada pregunta del test final como intento del Concept (R23). Se trata igual que el último
+ * intento de una etapa (R11): un fallo reciente pesa más que un acierto antiguo en la misma pregunta.
+ */
+function testAttempts(testResults: TestResult[]): Map<string, { attempt: Evidence; bloom: Bloom }[]> {
+  const latestByQuestion = new Map<string, TestResult>();
+  for (const r of testResults) {
+    const key = `${r.challengeId}:${r.questionId}`;
+    const prev = latestByQuestion.get(key);
+    if (!prev || r.at >= prev.at) latestByQuestion.set(key, r);
+  }
+  const byConcept = new Map<string, { attempt: Evidence; bloom: Bloom }[]>();
+  for (const r of latestByQuestion.values()) {
+    const attempt: Evidence = {
+      id: r.id,
+      challengeId: r.challengeId,
+      stageId: `${r.challengeId}-test`,
+      at: r.at,
+      result: r.correct ? 'aprobada' : 'fallida',
+      withHelp: false,
+      apoyo: 'autonomo',
+      actualMinutes: 0,
+    };
+    byConcept.set(r.conceptId, [...(byConcept.get(r.conceptId) ?? []), { attempt, bloom: r.bloom }]);
+  }
+  return byConcept;
+}
+
+export function computeInsights(
+  concepts: Concept[],
+  challenges: Challenge[],
+  evidence: Evidence[],
+  testResults: TestResult[] = [],
+): Map<string, ConceptInsight> {
   const latest = latestAttemptByStage(evidence);
+  const tests = testAttempts(testResults);
   const stageIdsByConcept = new Map<string, string[]>();
   const stageById = new Map(challenges.flatMap((c) => c.stages).map((s) => [s.id, s] as const));
   for (const stage of stageById.values()) {
@@ -55,12 +89,15 @@ export function computeInsights(concepts: Concept[], challenges: Challenge[], ev
       const a = latest.get(sid);
       if (a) attempts.push(a);
     }
+    const fromTests = tests.get(concept.id) ?? [];
+    attempts.push(...fromTests.map((t) => t.attempt));
     let maxBloom: Bloom | null = null;
     let level: Difficulty | null = null;
+    for (const t of fromTests) if (t.attempt.result === 'aprobada' && (maxBloom === null || t.bloom > maxBloom)) maxBloom = t.bloom;
     for (const a of attempts) {
       if (a.result !== 'aprobada' || a.withHelp) continue;
       const stage = stageById.get(a.stageId);
-      if (!stage) continue;
+      if (!stage) continue; // los intentos de test no tienen etapa: su Bloom ya se contó arriba
       if (maxBloom === null || stage.bloom > maxBloom) maxBloom = stage.bloom;
       if (level === null || stage.difficulty > level) level = stage.difficulty;
     }

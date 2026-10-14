@@ -180,5 +180,71 @@
         }
       }
     }
+  ],
+  "finalTest": [
+    {
+      "id": "c011-t1",
+      "conceptId": "math:conditional",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "¿Qué significa $P(A \\mid F) = 0.90$ en el reto?",
+      "options": [
+        "De cada 100 alertas, 90 son phishing.",
+        "De cada 100 correos de phishing, el filtro marca 90.",
+        "El 90 % de los correos son phishing.",
+        "El filtro se equivoca el 90 % de las veces."
+      ],
+      "correctIndex": 1,
+      "explanation": "$P(A \\mid F)$ condiciona en que el correo **es** phishing: es la sensibilidad. Lo que se pide, $P(F \\mid A)$, condiciona al revés y es otra cosa."
+    },
+    {
+      "id": "c011-t2",
+      "conceptId": "math:probability",
+      "bloom": 3,
+      "kind": "opcion_multiple",
+      "prompt": "Con $P(F)=0.02$, $P(A \\mid F)=0.90$ y $P(A \\mid \\bar{F})=0.05$, ¿cuánto vale $P(A)$, la probabilidad de que el filtro marque un correo cualquiera?",
+      "options": [
+        "0.90",
+        "0.018",
+        "0.067",
+        "0.049"
+      ],
+      "correctIndex": 2,
+      "explanation": "Ley de probabilidad total: $0.90 \\cdot 0.02 + 0.05 \\cdot 0.98 = 0.018 + 0.049 = 0.067$."
+    },
+    {
+      "id": "c011-t3",
+      "conceptId": "math:bayes",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "Una prueba médica tiene prevalencia del 1 %, sensibilidad 0,95 y tasa de falsos positivos 0,08. ¿Qué probabilidad hay de estar enfermo con un resultado positivo? Responde en %, con un decimal.",
+      "answer": 10.7,
+      "tolerance": 0.2,
+      "explanation": "$P(+) = 0.95 \\cdot 0.01 + 0.08 \\cdot 0.99 = 0.0887$ y $P(\\text{enfermo} \\mid +) = 0.0095 / 0.0887 \\approx 10.7\\,\\%$."
+    },
+    {
+      "id": "c011-t4",
+      "conceptId": "math:bayes",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "Si la prevalencia del phishing sube del 2 % al 20 % y el filtro no cambia, la probabilidad de que una alerta sea phishing…",
+      "options": [
+        "Baja, porque hay más correos que revisar.",
+        "No cambia: depende solo del filtro.",
+        "Sube: pasa de ~27 % a ~82 %.",
+        "Sube hasta el 100 %."
+      ],
+      "correctIndex": 2,
+      "explanation": "La **tasa base** pesa mucho: con 20 % de phishing, la misma calidad de filtro da una alerta mucho más confiable (81,8 %)."
+    },
+    {
+      "id": "c011-t5",
+      "conceptId": "math:conditional",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "Explica con tus palabras, en dos frases, por qué un filtro que detecta el 90 % del phishing puede tener alertas poco confiables.",
+      "rubric": "Menciona la tasa base baja (el phishing es raro) y que los falsos positivos sobre muchísimos correos legítimos superan a las alertas verdaderas.",
+      "explanation": "El phishing es raro (2 %), así que aunque el filtro detecte el 90 % de ellos, el 5 % de falsos positivos sobre el 98 % de correos legítimos genera más alertas falsas (0,049) que verdaderas (0,018)."
+    }
   ]
 }

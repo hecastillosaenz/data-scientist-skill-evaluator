@@ -1,4 +1,4 @@
-import type { Challenge, Dataset, StageContent } from '../../../../../shared/types';
+import type { Challenge, Dataset, StageContent, TestQuestion } from '../../../../../shared/types';
 import phishing from './phishing.json';
 import rfm from './rfm.json';
 import seguros from './seguros.json';
@@ -7,7 +7,8 @@ interface RfmPatch {
   scenario: string;
   task: string;
   data: Dataset;
-  stage1: { description: string; content: StageContent };
+  stage1: { description: string; conceptIds: string[]; content: StageContent };
+  finalTest: TestQuestion[];
 }
 
 /**
@@ -25,8 +26,11 @@ export function enrichChallenges(base: Challenge[]): Challenge[] {
           scenario: patch.scenario,
           task: patch.task,
           data: patch.data,
+          finalTest: patch.finalTest,
           stages: c.stages.map((s) =>
-            s.number !== 1 ? s : { ...s, description: patch.stage1.description, content: patch.stage1.content },
+            s.number !== 1
+              ? s
+              : { ...s, description: patch.stage1.description, conceptIds: patch.stage1.conceptIds, content: patch.stage1.content },
           ),
         },
   );

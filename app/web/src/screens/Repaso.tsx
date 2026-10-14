@@ -9,7 +9,7 @@ import { DomainTile } from '../components/DomainTile';
 import { FilterChip } from '../components/FilterChip';
 import { Segmented } from '../components/Segmented';
 import { buildReinforcement, type Reinforcement } from '../domain/reinforcement';
-import { buildReviewQueue, PRIORITY_LABEL, REASON_LABEL, type ReviewItem, type ReviewReason } from '../domain/reviewQueue';
+import { buildReviewQueue, PRIORITY_LABEL, REASON_LABEL, reasonText, type ReviewItem, type ReviewReason } from '../domain/reviewQueue';
 import { formatShortDate, relativeTime } from '../charts/format';
 import { useApp } from '../data/DataContext';
 import styles from './Repaso.module.css';
@@ -24,7 +24,7 @@ export function Repaso() {
   const [reason, setReason] = useState<ReviewReason | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const queue = useMemo(() => (data ? buildReviewQueue(data.concepts, data.challenges, data.evidence, now) : []), [data, now]);
+  const queue = useMemo(() => (data ? buildReviewQueue(data.concepts, data.challenges, data.evidence, now, data.testResults) : []), [data, now]);
   if (loading || !data) return <div aria-busy="true"><Skeleton w={200} h={32} /><div style={{ height: 24 }} /><Skeleton h={400} r={16} /></div>;
 
   const visible = reason ? queue.filter((i) => i.reason === reason) : queue;
@@ -106,7 +106,7 @@ function Queue({ items, selectedId: sel, onSelect, insights, now }: { items: Rev
                 <span className={styles.topic}>
                   <strong>{item.concept.name}</strong>
                   <span>Etapa {item.source.stage.number} · {item.source.stage.title} — {item.source.challenge.title}</span>
-                  <em>{REASON_LABEL[item.reason]}</em>
+                  <em>{reasonText(item)}</em>
                 </span>
               </button>
               <div className={styles.rowMeta}>

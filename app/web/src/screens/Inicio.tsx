@@ -14,7 +14,7 @@ import { StackedBars } from '../charts/StackedBars';
 import { addDays, activityDays, averageActualMinutes, averageEstimatedMinutes, completedStageCount, currentStreakDays, isoWeek, longestStreak, stageIndex, stagesCompletedThisWeek, timePoints, userLevel, weeklyByDomain, WEEKLY_GOAL } from '../domain/stats';
 import { formatLongDate, formatWeekday, relativeTime } from '../charts/format';
 import { timeReadingLine } from '../domain/readingLines';
-import { buildReviewQueue, REASON_LABEL, topWeaknesses } from '../domain/reviewQueue';
+import { buildReviewQueue, reasonText, topWeaknesses } from '../domain/reviewQueue';
 import { useApp } from '../data/DataContext';
 import styles from './Inicio.module.css';
 
@@ -38,7 +38,7 @@ export function Inicio() {
       avgReal: averageActualMinutes(data.evidence),
       avgEst: averageEstimatedMinutes(data.evidence, data.challenges),
       level: userLevel(data.challenges, data.evidence),
-      queue: buildReviewQueue(data.concepts, data.challenges, data.evidence, now),
+      queue: buildReviewQueue(data.concepts, data.challenges, data.evidence, now, data.testResults),
       points: timePoints(data.evidence, data.challenges, now, PERIOD_DAYS),
       week: weeklyByDomain(data.evidence, data.challenges, now),
       recent: [...data.evidence].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6).map((e) => ({ e, ref: stages.get(e.stageId) })),
@@ -144,7 +144,7 @@ export function Inicio() {
                   <div className={styles.weakText}>
                     <strong>{item.concept.name}</strong>
                     <span>Etapa {item.source.stage.number} · {item.source.stage.title} — {item.source.challenge.title}</span>
-                    <em>{REASON_LABEL[item.reason]}</em>
+                    <em>{reasonText(item)}</em>
                   </div>
                   <Link className="btn btn-sm" to={`/challenge-actual/${item.source.challenge.id}`}>Practicar</Link>
                 </li>

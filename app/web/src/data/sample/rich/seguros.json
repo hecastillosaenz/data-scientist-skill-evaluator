@@ -369,5 +369,86 @@
         }
       }
     }
+  ],
+  "finalTest": [
+    {
+      "id": "c010-t1",
+      "conceptId": "sql:groupby",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "En `polizas` hay una fila por póliza y en `siniestros` una por siniestro. Si haces un `JOIN` directo y luego `SUM(p.prima_anual)`, ¿qué ocurre?",
+      "options": [
+        "Nada: la suma sale igual.",
+        "La prima de una póliza con 2 siniestros se suma 2 veces.",
+        "Se pierden las pólizas sin siniestros del conteo.",
+        "La consulta da error de sintaxis."
+      ],
+      "correctIndex": 1,
+      "explanation": "Es el *fan-out*: cada póliza se repite por cada siniestro, así que su prima se suma varias veces. La consulta corre sin error, por eso el bug es silencioso."
+    },
+    {
+      "id": "c010-t2",
+      "conceptId": "sql:joins-outer",
+      "bloom": 3,
+      "kind": "opcion_multiple",
+      "prompt": "Hay pólizas que cobraron prima pero no tienen siniestros. Para que entren en el denominador del ratio, desde `polizas` debes usar…",
+      "options": [
+        "`INNER JOIN`",
+        "`LEFT JOIN`",
+        "`CROSS JOIN`",
+        "`UNION`"
+      ],
+      "correctIndex": 1,
+      "explanation": "`LEFT JOIN` conserva todas las filas de la tabla izquierda aunque no tengan coincidencia; el `INNER JOIN` las descartaría y el ratio saldría inflado."
+    },
+    {
+      "id": "c010-t3",
+      "conceptId": "sql:agg",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "Las tres pólizas de auto cobraron 1 200, 1 000 y 800 de prima. Sus siniestros pagados suman 900 + 600 + 300. ¿Cuál es el ratio de siniestralidad de auto, en %?",
+      "answer": 60,
+      "tolerance": 0.01,
+      "explanation": "Siniestros ÷ primas × 100 = 1 800 ÷ 3 000 × 100 = **60 %**. Si te salió 42,86 %, contaste las primas con fan-out."
+    },
+    {
+      "id": "c010-t4",
+      "conceptId": "sql:null",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "¿Para qué sirve `COALESCE(s.total_pagado, 0)` después del `LEFT JOIN`?",
+      "options": [
+        "Para ordenar el resultado.",
+        "Para convertir en 0 el `NULL` de las pólizas sin siniestros.",
+        "Para eliminar duplicados.",
+        "Para redondear a 2 decimales."
+      ],
+      "correctIndex": 1,
+      "explanation": "Tras el `LEFT JOIN`, las pólizas sin siniestros traen `NULL`. `COALESCE` lo reemplaza por 0 para que la suma y la división funcionen."
+    },
+    {
+      "id": "c010-t5",
+      "conceptId": "sql:cte",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "¿Para qué se usó la CTE `siniestros_por_poliza` en el reto?",
+      "options": [
+        "Para guardar el resultado en disco.",
+        "Para pre-agregar los siniestros a una fila por póliza antes de unirlos.",
+        "Para acelerar el `ORDER BY`.",
+        "Para evitar escribir `GROUP BY`."
+      ],
+      "correctIndex": 1,
+      "explanation": "La CTE lleva `siniestros` al grano póliza (1 fila por póliza), de modo que el `JOIN` posterior es uno a uno y no multiplica las primas."
+    },
+    {
+      "id": "c010-t6",
+      "conceptId": "business:risk",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "En una o dos frases: ¿por qué un ratio de 136 % con solo 2 pólizas no basta para subir la tarifa de hogar?",
+      "rubric": "Menciona que la muestra es pequeña o que un solo siniestro grande explica el resultado, y que es una señal para investigar, no evidencia suficiente.",
+      "explanation": "Con 2 pólizas y un único siniestro de \\$1 500 la variabilidad domina: es una **señal para investigar**, no evidencia para retarifar. Haría falta más exposición y más años."
+    }
   ]
 }

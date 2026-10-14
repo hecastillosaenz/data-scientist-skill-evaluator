@@ -23,5 +23,6 @@ export function buildSampleData(scenario: Scenario = 'normal', now: Date = new D
     challenges: buildChallenges(),
     evidence,
     businessAnswers: [],
+    testResults: [],
   };
 }

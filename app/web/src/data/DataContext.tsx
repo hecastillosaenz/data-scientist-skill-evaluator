@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Apoyo, AppData, BusinessAnswer, Challenge, ChallengeStatus, Evidence, StageStatus } from '../../../shared/types';
+import type { Apoyo, AppData, BusinessAnswer, Challenge, ChallengeStatus, Evidence, StageStatus, TestResult } from '../../../shared/types';
 import { computeInsights, type ConceptInsight } from '../domain/conceptState';
 import { challengeStatus, stageStatuses } from '../domain/progress';
 import { loadAppData, scenarioFromSearch } from './repository';
@@ -12,6 +12,8 @@ interface Actions {
   startChallenge: (challengeId: string) => void;
   /** Respuestas de negocio: append-only (R22). */
   addBusinessAnswers: (challengeId: string, items: { questionId: string; text: string }[]) => void;
+  /** Resultados del test final: append-only (R21, R23). */
+  addTestResults: (results: Omit<TestResult, 'id' | 'at'>[]) => void;
 }
 
 interface AppState {
@@ -57,6 +59,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setApoyo: (stageId, apoyo) => setApoyos((prev) => ({ ...prev, [stageId]: apoyo })),
       addEvidence,
       startChallenge: (id) => setStarted((prev) => new Set(prev).add(id)),
+      addTestResults: (results) =>
+        setData((prev) => {
+          if (!prev) return prev;
+          const at = new Date().toISOString();
+          const added: TestResult[] = results.map((r) => ({ ...r, id: `tr-${crypto.randomUUID().slice(0, 8)}`, at }));
+          return { ...prev, testResults: [...prev.testResults, ...added] };
+        }),
       addBusinessAnswers: (challengeId, items) =>
         setData((prev) => {
           if (!prev) return prev;
@@ -75,7 +84,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const insights = useMemo(
-    () => (data ? computeInsights(data.concepts, data.challenges, data.evidence) : new Map<string, ConceptInsight>()),
+    () => (data ? computeInsights(data.concepts, data.challenges, data.evidence, data.testResults) : new Map<string, ConceptInsight>()),
     [data],
   );
 

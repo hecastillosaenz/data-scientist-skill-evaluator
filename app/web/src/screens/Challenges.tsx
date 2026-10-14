@@ -10,6 +10,7 @@ import { FilterChip } from '../components/FilterChip';
 import { StageBar } from '../components/StageBar';
 import { challengeMinutes } from '../domain/progress';
 import { emptyFilters, filterChallenges, sortChallenges, type ChallengeFilters } from '../domain/challengeFilters';
+import { latestResults, scoreOf } from '../domain/finalTest';
 import { useApp } from '../data/DataContext';
 import styles from './Challenges.module.css';
 
@@ -143,7 +144,7 @@ function FilterGroup({ label, children }: { label: string; children: React.React
 }
 
 function ChallengePreview({ challenge }: { challenge: Challenge }) {
-  const { challengeStatusOf, stageStatusesOf, actions } = useApp();
+  const { data, challengeStatusOf, stageStatusesOf, actions } = useApp();
   const navigate = useNavigate();
   const status = challengeStatusOf(challenge);
   const statuses = stageStatusesOf(challenge);
@@ -176,6 +177,7 @@ function ChallengePreview({ challenge }: { challenge: Challenge }) {
           <div className={styles.previewMeta}>
             <DifficultyChip difficulty={challenge.difficulty} />
             <TimeChip minutes={challengeMinutes(challenge)} />
+            {challenge.finalTest && <TestChip challenge={challenge} results={data?.testResults ?? []} />}
           </div>
           <StageBar statuses={challenge.stages.map((s) => statuses.get(s.id) ?? 'pendiente')} segment={28} />
         </div>
@@ -210,6 +212,16 @@ function ChallengePreview({ challenge }: { challenge: Challenge }) {
         <div className={styles.cta}>{cta}</div>
       </Card>
     </StickyPanel>
+  );
+}
+
+/** Chip «Test 5/7» con el último resultado del test final, o «pendiente» si aún no se hace. */
+function TestChip({ challenge, results }: { challenge: Challenge; results: import('../../../shared/types').TestResult[] }) {
+  const score = scoreOf(latestResults(results, challenge.id), challenge.finalTest ?? []);
+  return (
+    <span className={`${styles.testChip} mono`} title="Test final de retención">
+      Test {score ? `${score.correct}/${score.total}` : 'pendiente'}
+    </span>
   );
 }
 
