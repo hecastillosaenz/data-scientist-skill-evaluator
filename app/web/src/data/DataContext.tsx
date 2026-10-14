@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Apoyo, AppData, Challenge, ChallengeStatus, Evidence, StageStatus } from '../../../shared/types';
+import type { Apoyo, AppData, BusinessAnswer, Challenge, ChallengeStatus, Evidence, StageStatus } from '../../../shared/types';
 import { computeInsights, type ConceptInsight } from '../domain/conceptState';
 import { challengeStatus, stageStatuses } from '../domain/progress';
 import { loadAppData, scenarioFromSearch } from './repository';
@@ -10,6 +10,8 @@ interface Actions {
   /** Evidence es append-only: nunca se sobrescribe un intento previo (R10). */
   addEvidence: (evidence: Omit<Evidence, 'id'>) => Evidence;
   startChallenge: (challengeId: string) => void;
+  /** Respuestas de negocio: append-only (R22). */
+  addBusinessAnswers: (challengeId: string, items: { questionId: string; text: string }[]) => void;
 }
 
 interface AppState {
@@ -55,6 +57,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setApoyo: (stageId, apoyo) => setApoyos((prev) => ({ ...prev, [stageId]: apoyo })),
       addEvidence,
       startChallenge: (id) => setStarted((prev) => new Set(prev).add(id)),
+      addBusinessAnswers: (challengeId, items) =>
+        setData((prev) => {
+          if (!prev) return prev;
+          const at = new Date().toISOString();
+          const added: BusinessAnswer[] = items.map((item) => ({
+            id: `ba-${crypto.randomUUID().slice(0, 8)}`,
+            challengeId,
+            questionId: item.questionId,
+            at,
+            text: item.text,
+          }));
+          return { ...prev, businessAnswers: [...prev.businessAnswers, ...added] };
+        }),
     }),
     [addEvidence],
   );

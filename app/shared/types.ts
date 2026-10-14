@@ -182,6 +182,16 @@ export interface Evidence {
   notes?: string;
 }
 
+/** Respuesta a una pregunta de negocio (R22). Append-only: guardar de nuevo crea otro registro. */
+export interface BusinessAnswer {
+  id: string;
+  challengeId: string;
+  questionId: string;
+  /** ISO 8601. */
+  at: string;
+  text: string;
+}
+
 export interface AppData {
   user: { name: string };
   /** ISO 8601 del "ahora" de los datos de ejemplo. */
@@ -189,4 +199,5 @@ export interface AppData {
   concepts: Concept[];
   challenges: Challenge[];
   evidence: Evidence[];
+  businessAnswers: BusinessAnswer[];
 }

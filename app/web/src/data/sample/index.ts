@@ -22,5 +22,6 @@ export function buildSampleData(scenario: Scenario = 'normal', now: Date = new D
     concepts: SAMPLE_CONCEPTS,
     challenges: buildChallenges(),
     evidence,
+    businessAnswers: [],
   };
 }
