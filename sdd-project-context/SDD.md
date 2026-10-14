@@ -68,7 +68,7 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 **Verificación**
 - **R8.** Para etapas `código_assert`, el sistema DEBE ubicar la celda cuya primera línea sea `# Entregable - Etapa X:` y ejecutarla de forma aislada contra los asserts de esa etapa.
 - **R9.** *(Revisado.)* Ningún agente (Generador, Evaluador, Analista) DEBE tener `Bash` habilitado, en ningún modo. La ejecución de código de la celda entregable la realiza el **orquestador** (R27) en un proceso propio con timeout; el Evaluador recibe su salida y, en solo lectura (`Read`/`Grep`/`Glob` acotados con `--add-dir` a `challenge-N/`), redacta el feedback. *Motivo: mismo resultado para el usuario sin darle un shell a un agente; alineado con el patrón de solo lectura de panamahealth.*
-- **R10.** Cada verificación DEBE crear un nuevo registro de Evidence; NO DEBE sobrescribir evidencias previas de la misma etapa.
+- **R10.** *(Revisado y ratificado por el autor el 2026-10-14.)* La **Evidence es el intento oficial** y se crea al pulsar «Registrar etapa» (con el resultado de la última verificación, el tiempo real, el bloqueo y las notas); verificar por sí solo es un borrador que se puede repetir y NO crea Evidence. Cada registro DEBE ser un Evidence nuevo; NO DEBE sobrescribir evidencias previas de la misma etapa.
 - **R11.** El estado de un Concept DEBE calcularse a partir del último intento de cada etapa vinculada, no del historial completo.
 - **R16.** El número de Etapa en el marcador `# Entregable - Etapa X:` DEBE coincidir con el número de etapa declarado en los metadatos del challenge; si no coincide, el sistema DEBE rechazar la verificación con un error explícito, no asumir cuál es la correcta.
 
@@ -97,6 +97,11 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R31.** Cada debilidad de la cola de Repaso DEBE poder abrirse en una ventana de análisis que muestre: el diagnóstico (qué falla y desde cuándo), la evidencia (intentos, bloqueos y notas), las posibles causas raíz (prerrequisitos débiles), el error común del caso y un plan de mejora con pasos concretos.
 - **R32.** El grafo unificado DEBE mostrar nodos de cinco tipos (concepto, challenge, etapa, test y mejora) con sus relaciones, permitir atenuar por tipo y por dominio sin ocultar nada (como R15) y abrir el detalle de cualquier nodo.
 - **R27.** Las celdas del notebook cuya primera línea sea `# Datos` (no editables por el usuario) DEBEN ejecutarse antes de la celda `# Entregable - Etapa X:`; la celda entregable se ejecuta aislada del resto de celdas del usuario (R8). El proceso tiene timeout y tope de salida.
+- **R33.** El orquestador DEBE persistir el progreso de cada challenge real en `challenge-N/progreso.json`: fecha de inicio, Apoyo vigente por etapa, Evidence, respuestas de negocio y resultados del test final. Evidence, respuestas y resultados son append-only (un `id` repetido no duplica el registro). Toda escritura DEBE ser atómica (S6) y serializada por archivo. Si `progreso.json` existe pero es ilegible o inválido, el orquestador NO DEBE sobrescribirlo: rechaza la operación con un error explícito que nombra el archivo.
+- **R34.** Cada registro nuevo DEBE añadirse además, en lenguaje legible y en orden cronológico, a `challenge-N/logs-avance.md` (resultado, Apoyo, tiempo y su origen, bloqueo, notas, respuestas, puntaje del test). `progreso.json` es la fuente de verdad; el `.md` es solo lectura humana y se agrega (append), nunca se reescribe.
+- **R35.** `configuracion-retos/knowledge-graph.json` DEBE contener el catálogo de Concepts con sus prerrequisitos. El orquestador DEBE validarlo al leerlo (ids únicos, dominio válido, prerrequisitos existentes) y, si está corrupto, reportar el error sin modificarlo. Los conceptos que practican las etapas de un challenge DEBEN existir en el catálogo.
+- **R36.** La UI DEBE alimentarse del orquestador (`GET /api/state`). Con un repositorio sin historial muestra los estados vacíos de UI-UX §5. Los datos de ejemplo solo aparecen con `?datos=ejemplo`, se marcan como tales y NUNCA se persisten.
+- **R37.** Si un guardado falla (el orquestador no responde o rechaza el registro), la UI DEBE revertir el cambio local, conservar lo que el usuario escribió y mostrar el error en un aviso visible; NO DEBE encolar ni reintentar en silencio.
 
 ---
 
@@ -113,7 +118,7 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R7 | Dado cualquier etapa, cuando se abre el toggle de Solución, entonces el intento se marca "Con ayuda". |
 | AC-R8 | Dado un notebook con `# Entregable - Etapa X:` como primera línea de una celda, cuando se presiona "Verificar etapa", entonces solo esa celda se ejecuta contra los asserts. |
 | AC-R9 | Dado cualquier rol de agente y cualquier modo de evaluación, cuando se construye su invocación, entonces `Bash` figura en `--disallowedTools` y no en `--allowedTools`. |
-| AC-R10 | Dado un intento fallido previo y un reintento aprobado, entonces existen dos registros Evidence distintos. |
+| AC-R10 | Dado un intento fallido registrado y un reintento aprobado registrado, entonces existen dos registros Evidence distintos; y dado que se verifica varias veces sin registrar, entonces no se crea ninguno. |
 | AC-R11 | Dado un Concept con Evidence antigua (fallo) y reciente (éxito) en la misma etapa, entonces su estado refleja solo la más reciente. |
 | AC-R12 | ⚠️ No verificable — "PUEDE" sin condición asociada. |
 | AC-R13 | Dado una ejecución del Analista, cuando termina, entonces el único archivo modificado bajo `configuracion-retos/` es `knowledge-graph.json`. |
@@ -136,11 +141,16 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R31 | Dada una debilidad por fallos, cuando se abre su análisis, entonces se ven la evidencia, las causas raíz, el error común y los pasos de mejora. |
 | AC-R32 | Dado el grafo unificado recién abierto, entonces se ven nodos de los cinco tipos y los 6 dominios, y filtrar por un tipo atenúa los demás sin ocultarlos. |
 | AC-R27 | Dado un notebook con celdas `# Datos` y `# Entregable - Etapa X:`, cuando se verifica, entonces se ejecutan las de datos y luego la entregable, y un exceso de tiempo termina el proceso con un error explícito. |
+| AC-R33 | Dado un registro de etapa, cuando se guarda y se reinicia el orquestador, entonces la Evidence sigue en `progreso.json`; un mismo `id` enviado dos veces no la duplica; y un `progreso.json` corrupto hace fallar el guardado con un error que nombra el archivo, sin modificarlo. |
+| AC-R34 | Dado un registro de etapa, una respuesta de negocio, un test o un inicio de challenge, cuando se guardan, entonces `logs-avance.md` gana una entrada legible nueva y las anteriores quedan intactas. |
+| AC-R35 | Dado un `knowledge-graph.json` con un prerrequisito inexistente o JSON inválido, cuando el orquestador lo lee, entonces informa el error y el archivo no cambia; y los conceptos de las etapas de `challenge-001` existen en el catálogo. |
+| AC-R36 | Dado un repositorio sin progreso, cuando se abre la app, entonces Inicio muestra el estado de usuario nuevo y no aparece la etiqueta «Datos de ejemplo»; con `?datos=ejemplo` aparece y recargar descarta lo hecho. |
+| AC-R37 | Dado un guardado que falla, cuando el usuario registra una etapa, entonces el registro no aparece en el historial, lo que escribió sigue en pantalla y se muestra el error. |
 
 **Deuda de diseño que bloquea implementación real (marcada, no resuelta por decisión explícita del autor):**
 - Heurística de calibración del Generador (R2/R4).
 - Condición de disparo del Analista para crear/reforzar nodos (R12).
-- Manejo de errores no cubierto por ningún requisito: agotamiento de `--max-budget-usd` a mitad de generación y corrupción de `knowledge-graph.json`. *(Celda `# Entregable` no encontrada y timeout quedan cubiertos por R26/R27.)*
+- Manejo de errores no cubierto por ningún requisito: agotamiento de `--max-budget-usd` a mitad de generación. *(Celda `# Entregable` no encontrada y timeout quedan cubiertos por R26/R27; la corrupción de `knowledge-graph.json` y de `progreso.json` por R33/R35.)*
 - Alcance de "Nivel del usuario" (Trainee→Básico→Intermedio→Avanzado, ver §9.7 Delivery Contract) sin decidir.
 
 ---
@@ -182,14 +192,16 @@ data-scientist-skill-evaluator/
 │   ├── tipos-y-temas.md
 │   ├── reglas-apoyo-nivel.md
 │   ├── plantillas/
-│   └── knowledge-graph.json
+│   ├── usuario.json              # { "name": … }
+│   └── knowledge-graph.json      # catálogo de Concepts y prerrequisitos (R35)
 ├── challenge-001/
 │   ├── challenge.json        # fuente de verdad: metadatos, etapas, contenido, esquema, test final
 │   ├── datos/
 │   │   ├── seed.sql | seed.py
 │   │   └── challenge.duckdb  # generado, ignorado por git (R24)
 │   ├── notebook.ipynb
-│   └── logs-avance.md
+│   ├── progreso.json         # inicio, Apoyo por etapa, Evidence, respuestas y test (R33)
+│   └── logs-avance.md        # bitácora legible, solo se agrega (R34)
 ├── challenge-002/
 └── app/
 ```
@@ -198,10 +210,10 @@ data-scientist-skill-evaluator/
 
 | Módulo | Responsabilidad | Requisitos |
 |---|---|---|
-| `graph-store` | Leer/escribir `knowledge-graph.json` de forma atómica | S5, S6 |
+| `graph-store` | Leer, validar y escribir `knowledge-graph.json` de forma atómica; un archivo corrupto se reporta sin tocarlo | S5, S6, R35 |
 | `notebook-parser` | Ubicar `# Entregable - Etapa X:` en celdas código/markdown, validar número de etapa | R8, R16 |
 | `agent-runner` | Wrapper sobre `spawn('claude', ...)`, parametrizado por rol | S2–S4, R14 |
-| `evidence-log` | Append-only de registros Evidence | R10, R11 |
+| `progress-store` | Leer y añadir (append-only, atómico y serializado) el progreso de cada challenge en `progreso.json` y su bitácora `logs-avance.md` | R10, R11, R33, R34 |
 | `challenge-fs` | Leer/crear/escribir `challenge-N/` y construir `datos/challenge.duckdb` desde el seed | R1, R3, R18, R24 |
 | `notebook-runner` | Ejecutar en un proceso con timeout las celdas `# Datos` + la entregable y comparar con `expected` | R8, R27 |
 | `verify-service` | Orquestar parser → runner → agente evaluador y emitir los eventos NDJSON | R9, R14, R25, R26 |
@@ -271,21 +283,21 @@ data-scientist-skill-evaluator/
 
 - Heurística de calibración del Generador.
 - Condición de disparo del Analista.
-- Manejo de errores (celda no encontrada, budget agotado, JSON corrupto).
+- Manejo de errores: queda solo el agotamiento de `--max-budget-usd` a mitad de generación (el resto lo cubren R26, R27, R33 y R35).
 - Alcance de "Nivel del usuario".
 
 ---
 
 ## Fase 8 — Decisiones y supuestos de la UI con datos de ejemplo
 
-La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sintéticos, detrás de `app/web/src/data/repository.ts`. El PRD de referencia (§11 fórmulas, §25–26 datos) no está en el repo, así que lo siguiente es **provisional** y falta ratificarlo:
+La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sintéticos, detrás de `app/web/src/data/repository.ts`. El PRD de referencia (§11 fórmulas, §25–26 datos) no está en el repo. Las fórmulas siguientes fueron **ratificadas por el autor el 2026-10-14** (salvo «Nivel del usuario», que sigue abierto) y se pueden ajustar más adelante:
 
 - **Estado de Concept** (`domain/conceptState.ts`): sin intentos → No visto; algún último intento fallido → Con fallos; todos aprobados sin ayuda → Dominado; cualquier otro caso (parcial o con ayuda) → Visto. Sigue R11 (solo el último intento de cada etapa).
 - **Prioridad de la cola de repaso** (`domain/reviewQueue.ts`): base por motivo (fallos 100, parcial 70, ayuda 60, olvido 40) + 5 × fallos históricos de la etapa + 2 × conceptos dependientes + 0.3 × días desde la práctica. «Olvido» = dominado hace más de 21 días.
 - **Nivel del usuario** (`domain/stats.ts`): Trainee / Básico / Intermedio (≥3 etapas de dificultad 2 aprobadas sin ayuda) / Avanzado (≥3 de dificultad 3). Sigue siendo la decisión abierta de §7.3.
 - **Meta semanal** de 5 etapas para el subtítulo de Inicio.
 - **Estado de Etapa y de Challenge se derivan** de la evidencia; no se almacenan.
-- **Tensión R10 vs. UI-UX §4.3**: R10 dice que *cada verificación* crea una Evidence, pero el flujo de UI-UX separa "Verificar etapa" de "Registrar etapa" (que captura tiempo real, dónde te trabaste y notas). La UI actual crea la Evidence al **registrar**. Hay que decidir si la verificación crea la Evidence y "Registrar" la completa con un registro adicional, o si el resultado verificado queda pendiente hasta registrar.
+- **R10 resuelta (2026-10-14).** La Evidence se crea al **registrar** la etapa; verificar es un borrador. R10 se reescribió en ese sentido.
 - **Layout del grafo**: un carril horizontal por dominio (R15: los 6 dominios visibles al abrir), capas de izquierda a derecha por camino más largo de prerrequisitos. Con ~240 conceptos, pan/zoom sostiene ~13 ms por frame.
 
 ### 8.1 Cambios tras la primera revisión de la UI
@@ -301,7 +313,6 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Convención de la celda SQL.** La celda entregable asigna el resultado a la variable `resultado` (relación de DuckDB, DataFrame o lista de diccionarios); el orquestador la serializa y la compara con `expected` (mismas columnas sin distinguir mayúsculas, mismas filas en el mismo orden). Por eso el entregable exige el `ROUND` del enunciado.
 - **Respuestas conceptuales en el notebook.** En los challenges reales la respuesta de una etapa conceptual se escribe en la celda markdown `# Entregable - Etapa N:` (como define §6.4.3); la UI ya no ofrece un cuadro de texto para esos casos.
 - **Contenido Markdown.** Los signos de moneda se escapan como `\$` para que KaTeX no los lea como fórmula.
-- **Tensión R10 sin resolver.** La Evidence se sigue creando al pulsar «Registrar etapa» (que añade tiempo, bloqueo y notas), no al verificar. Falta decidir si cada verificación debe crear la suya.
 
 ### 8.2 Cambios tras la segunda revisión de la UI
 
@@ -313,3 +324,12 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Dos modos de validación (R29).** El orquestador valida los challenges reales en **modo estricto**: además de la estructura exige el contenido completo del Generador (todas las capas de ayuda, test final, ≥ 3 preguntas de negocio, `expected` o `asserts` en las etapas de código). Los ejemplos compactos solo cumplen la **estructura**. Un challenge rechazado no se carga y su causa se muestra al verificar y en `GET /api/challenges` (`invalid`).
 - **Contrato para los agentes.** `configuracion-retos/plantillas/` contiene `challenge.schema.json`, `contrato-generador.md` y una plantilla por tipo de reto (SQL, Python/Limpieza, Matemática, ML, Business). Es lo que el Generador (P3) lee antes de producir.
 
+### 8.3 Persistencia real (tras ratificar R10 y las fórmulas)
+
+- **Qué se guarda y dónde (R33–R35).** El progreso de cada challenge real vive en `challenge-N/progreso.json` (fuente de verdad, versionada por git) y se refleja en `logs-avance.md` (bitácora legible). El catálogo de Concepts vive en `configuracion-retos/knowledge-graph.json`, que se sembró con los conceptos del grafo de ejemplo (sin la clave `edges`: los prerrequisitos ya están en cada concepto y las aristas se derivan). El nombre del usuario, en `configuracion-retos/usuario.json`.
+- **Un solo endpoint de lectura.** `GET /api/state` devuelve usuario, conceptos, challenges (y los inválidos con su causa) y todo el progreso. Las escrituras son `POST /api/challenges/:id/{start|evidence|business-answers|test-results}` y `PUT /api/challenges/:id/stages/:stageId/apoyo`. El cliente genera el `id` y la fecha de cada registro (así el guardado es idempotente y la UI puede mostrarlo al instante); el servidor valida la forma, que la etapa pertenezca al challenge y que el `id` no esté repetido.
+- **Serialización de escrituras.** Cada `progreso.json` tiene su propia cola: lee, modifica y escribe de forma atómica, una operación a la vez. Es distinta del mutex de las operaciones de agente (que rechaza la segunda), porque estas escrituras son breves y no deben perderse ni rechazarse.
+- **Lo que sigue en el navegador.** El cronómetro en marcha (`dsc-timer`) y los borradores de respuestas sin guardar; su resultado, el tiempo de la etapa, queda en la Evidence al registrar. No se guarda un historial de pausas.
+- **Modo ejemplo.** `?datos=ejemplo` carga los datos sintéticos de siempre (más los challenges reales), todo en memoria; no escribe nada. Sin ese parámetro la app arranca vacía salvo lo que haya en los archivos.
+- **Fallos (R37).** Se hace el cambio al instante y, si el guardado falla, se revierte, se conserva lo escrito y se muestra el aviso.
+- **Sigue abierto.** El alcance de «Nivel del usuario» (§7.3) y, para P3/P5, la calibración del Generador y el disparo del Analista; no bloquean la persistencia.

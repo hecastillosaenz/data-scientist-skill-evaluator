@@ -95,7 +95,8 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 | Línea de lectura | Frase que interpreta el gráfico | Obligatoria en toda tarjeta de Analítica |
 | Estado vacío | Icono, título, texto, CTA opcional | Borde discontinuo |
 | Panel lateral fijo (sticky) | Detalle del ítem seleccionado | Preview de challenge, refuerzo, nodo del grafo |
-| Etiqueta "Datos de ejemplo" | Chip discontinuo en el pie | Solo mientras se usen datos sintéticos |
+| Etiqueta "Datos de ejemplo" | Chip discontinuo en el pie | Solo con `?datos=ejemplo` (R36); nada de lo que se haga se guarda |
+| Aviso de guardado fallido | Barra fija arriba con el error y «Cerrar» | Cuando el orquestador no guarda un registro (R37); el cambio se revierte y lo escrito se conserva |
 | Cronómetro global | Píldora fija arriba a la derecha con `mm:ss` mono y Iniciar/Pausar; detalle (vuelta actual, reiniciar) en su menú | Uno solo para toda la app; al volver de una ausencia muestra el diálogo de intervalo (R30) |
 | Objetivo del reto | Bloque con «Qué busca este reto», «Al terminar tendrás» y «Habilidades» | En el enunciado, antes de los datos |
 | Ventana de debilidad | Página con diagnóstico, evidencia, causas raíz, error común y plan de mejora | Se abre desde Inicio y Repaso |
