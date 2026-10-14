@@ -176,6 +176,8 @@ export interface Evidence {
   withHelp: boolean;
   apoyo: Apoyo;
   actualMinutes: number;
+  /** `cronometro` si salió del timekeeper; `manual` si el usuario lo editó (R20). Ausente en datos previos al cronómetro. */
+  timeSource?: 'cronometro' | 'manual';
   blocker?: Blocker;
   notes?: string;
 }

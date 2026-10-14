@@ -11,7 +11,7 @@ import { StageBar } from '../components/StageBar';
 import { challengeMinutes } from '../domain/progress';
 import { simulateCodeVerification, simulateConceptEvaluation } from '../domain/simulate';
 import { useApp } from '../data/DataContext';
-import { DeliveryPanel } from './challenge/DeliveryPanel';
+import { StageLogPanel } from './challenge/StageLogPanel';
 import { initialHelp } from '../domain/stageHelp';
 import { initialStageUI, StageCard, type StageUI } from './challenge/StageCard';
 import styles from './ChallengeActual.module.css';
@@ -125,11 +125,11 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
           </Card>
         </div>
 
-        <DeliveryPanel
+        <StageLogPanel
           key={active.id}
           stage={active}
           result={ui(active.id).result}
-          onRegister={({ actualMinutes, blocker, notes }) => {
+          onRegister={({ actualMinutes, timeSource, blocker, notes }) => {
             const result = ui(active.id).result;
             if (!result) return;
             actions.addEvidence({
@@ -141,6 +141,7 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
               withHelp: ui(active.id).solutionOpened,
               apoyo: apoyoOf(active.id, active.apoyo),
               actualMinutes,
+              timeSource,
               ...(blocker ? { blocker } : {}),
               ...(notes ? { notes } : {}),
             });
