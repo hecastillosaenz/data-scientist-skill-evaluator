@@ -13,6 +13,15 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - **Agentes:** `spawn('claude', ...)` sobre la suscripción existente; nunca `ANTHROPIC_API_KEY` ni facturación por API (S2).
 - **Python (`.venv/`):** solo es el entorno para ejecutar los notebooks de los challenges. No es parte de la app.
 
+### Comandos (desde la raíz)
+- `npm run app` — compila el frontend, levanta el orquestador en `127.0.0.1:4317` (o `PORT`) y abre el navegador.
+- `npm run dev` — servidor con `tsx watch` + Vite con proxy a `/api`.
+- `npm test` — vitest (`app/test/`). `npm run typecheck` — `tsc --noEmit`.
+
+### Estructura de `app/` (un solo `package.json`, TypeScript, Fastify)
+- `server/` — `app.ts` (`buildApp`, testeable con `inject()`), `mutex.ts`, `atomic-write.ts`, `ndjson.ts`, `start.ts` (`HOST` fijo en loopback), `paths.ts`, `index.ts`.
+- `web/` — React + Vite; el build (`web/dist`) lo sirve el propio servidor.
+
 ## Standards que no se negocian
 - Persistencia en archivos versionados por git (markdown + JSON); sin base de datos (S1).
 - Cada rol (Generador, Evaluador, Analista) es un proceso hijo independiente con `cwd` neutro (S3) y tools declaradas con `--allowedTools`/`--disallowedTools`/`--settings` (S4).
