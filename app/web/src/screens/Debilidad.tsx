@@ -130,6 +130,26 @@ function Analysis({ analysis }: { analysis: NonNullable<ReturnType<typeof analyz
             )}
           </Card>
 
+          {(analysis.analystNotes.length > 0 || analysis.pendingAnalysis > 0) && (
+            <Card className={styles.card}>
+              <h2>Lo que observó el Analista</h2>
+              <p className={styles.lead}>Lee las notas que dejaste al registrar cada etapa y las vincula con este concepto. No cambia tu estado ni tu nivel: solo explica.</p>
+              {analysis.analystNotes.length > 0 && (
+                <ul className={styles.observations}>
+                  {analysis.analystNotes.map((n) => (
+                    <li key={n.evidenceId}>
+                      <p className={styles.obsHead}><strong>{n.label}</strong><span className="mono">{formatShortDate(new Date(n.at))}</span></p>
+                      <p>{n.diagnosis}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {analysis.pendingAnalysis > 0 && (
+                <p className={styles.lead}>{analysis.pendingAnalysis} {analysis.pendingAnalysis === 1 ? 'registro' : 'registros'} de este concepto aún sin analizar.</p>
+              )}
+            </Card>
+          )}
+
           {analysis.rootCauses.length > 0 && (
             <Card className={styles.card}>
               <h2>Posibles causas raíz</h2>

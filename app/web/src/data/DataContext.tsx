@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Apoyo, AppData, BusinessAnswer, Challenge, ChallengeStatus, Evidence, StageStatus, TestResult } from '../../../shared/types';
 import { computeInsights, type ConceptInsight } from '../domain/conceptState';
 import { challengeStatus, stageStatuses } from '../domain/progress';
+import type { StatePayload } from '../../../shared/state';
 import { loadAppState, progressApi, scenarioFromSearch, sourceFromSearch, type DataSource } from './repository';
 
 interface Actions {
@@ -21,6 +22,8 @@ interface Actions {
   dismissNotice: (id: string) => void;
   /** Vuelve a leer el estado del orquestador (p. ej. tras generar un challenge nuevo). */
   reload: () => Promise<void>;
+  /** «Analizar ahora» (R12): pide al orquestador analizar los registros pendientes y espera el resultado. */
+  analyzePending: () => Promise<void>;
 }
 
 /** Aviso persistente de la barra superior: guardado fallido (R37), progreso ilegible (R33) o challenge inválido (R29). */
@@ -38,6 +41,8 @@ interface AppState {
   /** `ejemplo` = datos sintéticos que no se guardan (R36). */
   source: DataSource;
   notices: Notice[];
+  /** Estado del Analista: registros pendientes, análisis en curso y fallidos (R12, R42). */
+  analysis: StatePayload['analysis'];
   data: AppData | null;
   now: Date;
   insights: Map<string, ConceptInsight>;
@@ -58,6 +63,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [apoyos, setApoyos] = useState<Record<string, Apoyo>>({});
   const [started, setStarted] = useState<Set<string>>(new Set());
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [analysis, setAnalysis] = useState<StatePayload['analysis']>({ pending: [], running: false, failed: {} });
+  const watching = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +76,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setData(loaded.data);
         setApoyos(loaded.apoyos);
         setStarted(new Set(loaded.started));
+        setAnalysis(loaded.analysis);
         setNotices([
           ...loaded.problems.map((detail, i) => ({ id: `problem-${i}`, kind: 'error' as const, title: 'Progreso ilegible', detail })),
           ...loaded.invalid.map((c) => ({
@@ -91,6 +99,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotices((prev) => [...prev.filter((n) => n.id !== 'save-error'), { id: 'save-error', kind: 'error', title: `No se guardó: ${what}`, detail }]);
   }, []);
 
+  const reload = useCallback(async () => {
+    if (!persisted) return;
+    try {
+      const loaded = await loadAppState('real', 'normal');
+      setData(loaded.data);
+      setApoyos(loaded.apoyos);
+      setStarted(new Set(loaded.started));
+      setAnalysis(loaded.analysis);
+    } catch (err) {
+      fail('la recarga de tus datos', err);
+    }
+  }, [persisted, fail]);
+
+  /**
+   * El Analista trabaja en segundo plano tras «Registrar etapa» (R12): se consulta su estado hasta que quede libre y
+   * entonces se recarga para mostrar lo que observó. Un solo observador a la vez; nunca bloquea nada.
+   */
+  const watchAnalysis = useCallback(async () => {
+    if (watching.current || !persisted) return;
+    watching.current = true;
+    setAnalysis((prev) => ({ ...prev, running: true }));
+    try {
+      for (let i = 0; i < 80; i++) {
+        await new Promise((resolve) => window.setTimeout(resolve, 3000));
+        const status = await progressApi.getAnalysis();
+        if (status.running === null && status.queued === 0) break;
+      }
+    } catch {
+      /* si no se puede consultar, la recarga final deja el estado real */
+    } finally {
+      watching.current = false;
+      await reload();
+    }
+  }, [persisted, reload]);
+
   // Guardado optimista (R37): se ve al instante; si el orquestador lo rechaza o no responde, se revierte y se avisa.
   const challengeOfStage = useCallback((stageId: string) => data?.challenges.find((c) => c.stages.some((s) => s.id === stageId))?.id, [data]);
 
@@ -101,6 +144,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!persisted) return true;
       try {
         await progressApi.addEvidence(evidence);
+        void watchAnalysis();
         return true;
       } catch (err) {
         setData((prev) => (prev ? { ...prev, evidence: prev.evidence.filter((e) => e.id !== evidence.id) } : prev));
@@ -108,7 +152,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [persisted, fail],
+    [persisted, fail, watchAnalysis],
   );
 
   const actions = useMemo<Actions>(
@@ -185,19 +229,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       },
       dismissNotice: (id) => setNotices((prev) => prev.filter((n) => n.id !== id)),
-      reload: async () => {
+      reload,
+      analyzePending: async () => {
         if (!persisted) return;
         try {
-          const loaded = await loadAppState('real', 'normal');
-          setData(loaded.data);
-          setApoyos(loaded.apoyos);
-          setStarted(new Set(loaded.started));
+          await progressApi.analyzePending();
+          await watchAnalysis();
         } catch (err) {
-          fail('la recarga de tus datos', err);
+          fail('el análisis de tus registros', err);
         }
       },
     }),
-    [addEvidence, challengeOfStage, persisted, fail],
+    [addEvidence, challengeOfStage, persisted, fail, reload, watchAnalysis],
   );
 
   const insights = useMemo(
@@ -222,6 +265,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       error,
       source,
       notices,
+      analysis,
       data,
       now: data ? new Date(data.now) : new Date(),
       insights,
@@ -231,7 +275,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       currentChallenge: current,
       actions,
     };
-  }, [data, error, source, notices, insights, apoyos, started, actions]);
+  }, [data, error, source, notices, analysis, insights, apoyos, started, actions]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

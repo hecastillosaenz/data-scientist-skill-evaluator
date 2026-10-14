@@ -27,6 +27,8 @@ export interface LoadedState {
   started: string[];
   invalid: InvalidChallengeInfo[];
   problems: string[];
+  /** Estado del Analista (R12): pendientes, en curso y fallidos. */
+  analysis: StatePayload['analysis'];
 }
 
 /** Error legible para mostrar tal cual: el orquestador manda `message`; si no responde, se explica. */
@@ -73,14 +75,25 @@ export async function loadAppState(source: DataSource, scenario: Scenario): Prom
   if (source === 'ejemplo') {
     const [real] = await Promise.all([fetchRealChallenges(), new Promise((resolve) => setTimeout(resolve, 350))]);
     const sample = buildSampleData(scenario);
-    return { source, data: { ...sample, challenges: mergeChallenges(real, sample.challenges) }, apoyos: {}, started: [], invalid: [], problems: [] };
+    return { source, data: { ...sample, challenges: mergeChallenges(real, sample.challenges) }, apoyos: {}, started: [], invalid: [], problems: [], analysis: { pending: [], running: false, failed: {} } };
   }
   const state = await request<StatePayload>('GET', '/api/state');
-  return { source, data: state.data, apoyos: state.apoyos, started: Object.keys(state.started), invalid: state.invalid, problems: state.problems };
+  return { source, data: state.data, apoyos: state.apoyos, started: Object.keys(state.started), invalid: state.invalid, problems: state.problems, analysis: state.analysis };
 }
 
 /** Escrituras de progreso (R33). Cada una lanza `ApiError` con un mensaje legible si el guardado falla. */
+/** Respuesta de `GET /api/analysis`. */
+export interface AnalysisStatus {
+  running: string | null;
+  queued: number;
+  pending: string[];
+  failed: Record<string, string>;
+}
+
 export const progressApi = {
+  getAnalysis: () => request<AnalysisStatus>('GET', '/api/analysis'),
+  /** «Analizar ahora» (R12): encola las Evidence sin observación. */
+  analyzePending: () => request<{ queued: number }>('POST', '/api/analysis/pending'),
   start: (challengeId: string) => request<{ startedAt: string }>('POST', `/api/challenges/${challengeId}/start`),
   setApoyo: (challengeId: string, stageId: string, apoyo: Apoyo) =>
     request<{ apoyo: Apoyo }>('PUT', `/api/challenges/${challengeId}/stages/${stageId}/apoyo`, { apoyo }),

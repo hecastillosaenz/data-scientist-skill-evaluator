@@ -12,7 +12,14 @@ function openBrowser(url: string): void {
   spawn(cmd, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
 }
 
-const app = await buildApp({ autoAnalyze: true });
+const app = await buildApp({
+  autoAnalyze: true,
+  onAnalysisSettled: (id, outcome) => {
+    const cost = 'cost' in outcome ? ` · US$ ${outcome.cost.toFixed(4)}` : '';
+    const detail = outcome.status === 'error' ? ` · ${outcome.message}` : '';
+    console.log(`Analista: ${id} → ${outcome.status}${cost}${detail}`);
+  },
+});
 const url = await startServer(app, Number(process.env.PORT ?? DEFAULT_PORT));
 console.log(`Orquestador local en ${url}`);
 if (process.argv.includes('--open')) openBrowser(url);

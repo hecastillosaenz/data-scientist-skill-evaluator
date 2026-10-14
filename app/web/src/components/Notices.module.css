@@ -10,3 +10,9 @@
 .text p { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink2); overflow-wrap: anywhere; }
 .close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--ink2); }
 .close:hover { background: rgba(0, 0, 0, 0.06); }
+.info { background: var(--accent-soft); }
+.info > svg { color: var(--accent); }
+.text .btn { margin-top: 8px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

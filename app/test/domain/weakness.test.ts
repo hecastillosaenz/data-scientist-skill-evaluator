@@ -186,3 +186,41 @@ describe('analyzeWeakness · límites', () => {
     expect(a.diagnosis.join(' ')).toContain('depende');
   });
 });
+
+describe('analyzeWeakness · observaciones del Analista (R41)', () => {
+  const concept = 'ml:metrics-clf';
+  const withObservations = (): AppData => {
+    const d = clone(base);
+    const mine = d.evidence.filter((e) => d.challenges.flatMap((c) => c.stages).find((s) => s.id === e.stageId)?.conceptIds.includes(concept));
+    const [older, newer] = [...mine].sort((a, b) => a.at.localeCompare(b.at)).slice(-2) as [Evidence, Evidence];
+    d.observations = [
+      { evidenceId: older.id, at: now.toISOString(), status: 'ok', conceptIds: [concept], diagnosis: 'Confunde precisión con recall.' },
+      { evidenceId: newer.id, at: now.toISOString(), status: 'ok', conceptIds: [concept, 'ml:split'], diagnosis: 'No distingue falsos positivos de falsos negativos.' },
+    ];
+    return d;
+  };
+
+  it('lista las observaciones sobre el concepto, de la más reciente a la más antigua, con la etapa', () => {
+    const a = analyzeWeakness(concept, withObservations(), now)!;
+    expect(a.analystNotes).toHaveLength(2);
+    expect(a.analystNotes.map((n) => n.diagnosis)).toEqual(['No distingue falsos positivos de falsos negativos.', 'Confunde precisión con recall.']);
+    expect(a.analystNotes[0]!.label).toMatch(/^Etapa \d+ · /);
+    const dates = a.analystNotes.map((n) => n.at);
+    expect([...dates].sort().reverse()).toEqual(dates);
+  });
+
+  it('ignora las omitidas, las sin hallazgos y las de otros conceptos', () => {
+    const d = withObservations();
+    d.observations![0] = { ...d.observations![0]!, status: 'omitida', conceptIds: [], diagnosis: '' };
+    d.observations![1] = { ...d.observations![1]!, conceptIds: ['sql:select'] };
+    expect(analyzeWeakness(concept, d, now)!.analystNotes).toEqual([]);
+  });
+
+  it('cuenta los registros con notas o bloqueo que aún no se analizaron; sin observaciones (ejemplo) no muestra nada', () => {
+    const d = withObservations();
+    d.observations = [];
+    const pending = analyzeWeakness(concept, d, now)!.pendingAnalysis;
+    expect(pending).toBeGreaterThan(0);
+    expect(analyzeWeakness(concept, clone(base), now)!.pendingAnalysis).toBe(0); // datos de ejemplo: sin Analista
+  });
+});

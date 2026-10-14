@@ -8,7 +8,7 @@ import { streamNdjson } from './ndjson';
 import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
 import { registerStateRoutes } from './persistence/routes';
-import { analyzeEvidence, AnalystQueue, type AnalystDeps } from './analyst/analyst-service';
+import { analyzeEvidence, AnalystQueue, type AnalysisOutcome, type AnalystDeps } from './analyst/analyst-service';
 import { readState } from './persistence/state';
 import { loadCalibration } from './generator/calibration';
 import { generateChallenge, type GenerateDeps } from './generator/generator-service';
@@ -33,6 +33,8 @@ export type BuildAppOptions = {
   autoAnalyze?: boolean;
   /** Dependencias del Analista (agente): se sustituyen en los tests. */
   analystDeps?: Partial<AnalystDeps>;
+  /** Se llama al terminar cada análisis (estado, costo…); `index.ts` lo registra en consola. */
+  onAnalysisSettled?: (evidenceId: string, outcome: AnalysisOutcome) => void;
 };
 
 export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string; analyst: AnalystQueue };
@@ -51,6 +53,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
   const shutdown = new AbortController();
   const analyst = new AnalystQueue((evidenceId) =>
     analyzeEvidence({ repoRoot, evidenceId, signal: shutdown.signal, ...(options.analystDeps ? { deps: { ...options.analystDeps, ...(options.now ? { now: options.now } : {}) } } : options.now ? { deps: { now: options.now } } : {}) }),
+    options.onAnalysisSettled,
   );
   app.decorate('analyst', analyst);
   app.addHook('onClose', async () => {

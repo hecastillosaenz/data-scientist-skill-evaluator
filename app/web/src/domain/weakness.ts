@@ -22,6 +22,16 @@ export interface EvidenceLine {
   minutes?: number;
 }
 
+/** Lo que el Analista observó sobre este concepto en un registro (R41). */
+export interface AnalystNote {
+  evidenceId: string;
+  /** ISO 8601 del registro analizado. */
+  at: string;
+  /** «Etapa 3 · Evaluar con métricas correctas». */
+  label: string;
+  diagnosis: string;
+}
+
 export interface RootCause {
   concept: Concept;
   state: ConceptState;
@@ -55,6 +65,10 @@ export interface WeaknessAnalysis {
   evidence: EvidenceLine[];
   blockers: { blocker: Blocker; count: number }[];
   rootCauses: RootCause[];
+  /** Observaciones del Analista sobre este concepto, de la más reciente a la más antigua. */
+  analystNotes: AnalystNote[];
+  /** Registros de este concepto con notas o bloqueo que el Analista aún no ha revisado. */
+  pendingAnalysis: number;
   /** Cuántos conceptos dependen de este y se ven frenados por él. */
   dependents: number;
   commonError: { text: string; stageTitle: string; challengeTitle: string } | null;
@@ -286,7 +300,22 @@ export function analyzeWeakness(conceptId: string, data: AppData, now: Date): We
     steps.push({ id: 'test', kind: 'test', title: 'Repite el test final', detail: 'Cuando hayas repasado, vuelve a las preguntas que fallaste: cuenta el último resultado de cada una.', ...(practice ? { to: `/challenge-actual/${practice.challenge.id}` } : {}) });
   }
 
-  return { concept, insight, item, headline, diagnosis, stats: { attempts: stageAttempts.length, failures, withHelp, daysSincePractice, testFailures, testTotal: questions.length }, evidence, blockers, rootCauses, dependents, commonError, research, steps, recommendedApoyo, practice };
+  const observed = new Map((data.observations ?? []).map((o) => [o.evidenceId, o]));
+  const stageLabel = (e: { stageId: string }) => {
+    const ref = refByStage.get(e.stageId);
+    return ref ? `Etapa ${ref.stage.number} · ${ref.stage.title}` : 'Etapa';
+  };
+  const analystNotes: AnalystNote[] = data.evidence
+    .filter((e) => stageIds.has(e.stageId))
+    .flatMap((e) => {
+      const o = observed.get(e.id);
+      return o && o.status === 'ok' && o.diagnosis && o.conceptIds.includes(conceptId) ? [{ evidenceId: e.id, at: e.at, label: stageLabel(e), diagnosis: o.diagnosis }] : [];
+    })
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const pendingAnalysis = data.observations
+    ? data.evidence.filter((e) => stageIds.has(e.stageId) && !observed.has(e.id) && ((e.notes?.trim() ?? '') !== '' || e.blocker !== undefined)).length
+    : 0;
+  return { concept, insight, item, headline, diagnosis, stats: { attempts: stageAttempts.length, failures, withHelp, daysSincePractice, testFailures, testTotal: questions.length }, evidence, blockers, rootCauses, analystNotes, pendingAnalysis, dependents, commonError, research, steps, recommendedApoyo, practice };
 }
 
 export const priorityText = (item: ReviewItem | null): string => (item ? PRIORITY_LABEL[item.priority] : '—');
