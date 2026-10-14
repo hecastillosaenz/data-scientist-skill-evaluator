@@ -73,8 +73,8 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R16.** El número de Etapa en el marcador `# Entregable - Etapa X:` DEBE coincidir con el número de etapa declarado en los metadatos del challenge; si no coincide, el sistema DEBE rechazar la verificación con un error explícito, no asumir cuál es la correcta.
 
 **Registro y grafo**
-- **R12.** ⚠️ *Deuda de diseño.* El agente Analista DEBE ejecutarse después de cada Evidence; la condición exacta bajo la cual crea o refuerza nodos `Concept` a partir de `notas_libres` aún no está definida.
-- **R13.** El Analista NO DEBE modificar de forma persistente `configuracion-retos/` salvo `knowledge-graph.json`.
+- **R12.** *(Resuelta y ratificada por el autor el 2026-10-14.)* El orquestador DEBE procesar cada Evidence con el Analista. Si la Evidence trae notas libres o un bloqueo (`notes` o `blocker`), la analiza invocando al agente Analista (solo lectura) y guarda una observación; si no trae ninguno, la registra como *omitida* sin invocar al agente. El análisis corre en segundo plano justo después de «Registrar etapa», en una cola serial, con su propio candado: NO DEBE bloquear ni retrasar ese registro ni la verificación de otras etapas. Al arrancar, el orquestador NO DEBE lanzar por sí solo los análisis que quedaron pendientes; los ofrece con «Analizar ahora».
+- **R13.** El Analista NO DEBE modificar de forma persistente `configuracion-retos/` salvo `knowledge-graph.json` y su copia de seguridad `knowledge-graph.json.prev` (ignorada por git).
 - **R14.** El agente Evaluador NO DEBE compartir contexto de sesión con el agente Generador al evaluar una etapa que ese Generador creó.
 
 **Exploración**
@@ -105,6 +105,8 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R38.** Antes de invocar al Generador, el orquestador DEBE calcular un **plan de calibración** determinista (misma evidencia → mismo plan) y entregárselo con el catálogo de conceptos. El plan fija, por etapa: papel (*refuerzo*, *avance* o *integración*), dominio, `conceptIds`, Bloom, dificultad, Apoyo inicial y mecanismo. Con menos Evidence que el umbral, el plan es de *arranque* (dificultad 1, todo Guiado, solo conceptos sin prerrequisitos pendientes). El orquestador DEBE rechazar un challenge generado cuyas etapas no sigan el plan, además de R19 y R29. Los parámetros viven en `configuracion-retos/calibracion.json`.
 - **R39.** La generación DEBE ser transaccional: el Generador trabaja en `challenge/.generando/challenge-NNN/` y solo se publica en `challenge/challenge-NNN/` (con un `rename`) si pasan todas las compuertas (esquema estricto R29, plan R38, dataset R24, solución de referencia R19 y conceptos existentes R35). Se divide en fases con presupuesto máximo propio (`--max-budget-usd`, configurable); si se agota, NO DEBE reintentarse sola: se informa la fase y se ofrece «Reintentar» (retoma desde la última fase válida) o «Reintentar con el doble». La salida inválida admite como máximo 2 reparaciones automáticas por fase. «Detener» borra el área de trabajo. Si el Analista falla, la Evidence ya guardada NO DEBE verse afectada y «Registrar etapa» NO DEBE bloquearse.
 - **R40.** El **Nivel del usuario** DEBE calcularse por dominio, derivarse de la evidencia y no almacenarse. Escala: Trainee, Básico, Intermedio, Avanzado. Cuenta una etapa si alguno de sus intentos fue aprobado, sin ayuda y con Apoyo Autónomo, una sola vez por etapa; como la evidencia es inmutable (R10), el Nivel solo puede subir. Umbrales en el dominio: Básico con 2 etapas de dificultad ≥ 1; Intermedio con 3 de dificultad ≥ 2; Avanzado con 3 de dificultad 3. El Nivel no baja. El test final y las respuestas de negocio no cuentan. El nivel global que muestra Inicio es la mediana de los seis niveles de dominio (un dominio sin práctica es Trainee), redondeada hacia abajo. El Nivel no bloquea ningún challenge ni etapa.
+- **R41.** El Analista propone y el orquestador decide. Al aplicar una propuesta a `knowledge-graph.json`: (a) se guarda siempre una **observación** por Evidence (`evidenceId`, `conceptIds` existentes, `diagnosis` de hasta 300 caracteres, `status`); (b) un **prerrequisito** nuevo (máximo 2 por análisis) solo se acepta si ambos conceptos existen y son distintos, no estaba ya, no crea un ciclo y el concepto figura en los `conceptIds` de esa observación; (c) un tema sin cubrir se guarda primero como **candidato** con la Evidence que lo originó, y solo se **crea** el concepto (máximo 1 por análisis) cuando el candidato reúne **2 o más Evidence distintas**, su dominio es válido, el id `dominio:slug` y el nombre no existen y sus prerrequisitos existen; el concepto creado queda marcado como creado por el Analista y con su fecha. Una pieza que no cumple se descarta con su motivo y las demás se aplican. El grafo resultante DEBE validarse completo (ids únicos, prerrequisitos existentes, sin ciclos) antes de escribirse.
+- **R42.** Si el Analista falla, se queda sin presupuesto (`presupuestoUsdAnalisis` de `calibracion.json`) o devuelve una salida inválida tras una reparación, el orquestador NO DEBE aplicar nada: `knowledge-graph.json` queda idéntico, la Evidence sigue guardada y figura como pendiente de análisis. Antes de cada escritura se copia el archivo a `knowledge-graph.json.prev`.
 
 ---
 
@@ -123,8 +125,8 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R9 | Dado cualquier rol de agente y cualquier modo de evaluación, cuando se construye su invocación, entonces `Bash` figura en `--disallowedTools` y no en `--allowedTools`. |
 | AC-R10 | Dado un intento fallido registrado y un reintento aprobado registrado, entonces existen dos registros Evidence distintos; y dado que se verifica varias veces sin registrar, entonces no se crea ninguno. |
 | AC-R11 | Dado un Concept con Evidence antigua (fallo) y reciente (éxito) en la misma etapa, entonces su estado refleja solo la más reciente. |
-| AC-R12 | ⚠️ No verificable — "PUEDE" sin condición asociada. |
-| AC-R13 | Dado una ejecución del Analista, cuando termina, entonces el único archivo modificado bajo `configuracion-retos/` es `knowledge-graph.json`. |
+| AC-R12 | (a) Una Evidence sin notas ni bloqueo se omite sin llamar al agente. (b) Una Evidence con notas produce una observación vinculada a conceptos existentes. (c) El análisis corre en segundo plano y «Registrar etapa» responde sin esperarlo. (d) Al arrancar no se lanzan solos los pendientes. |
+| AC-R13 | Dado una ejecución del Analista, cuando termina, entonces los únicos archivos modificados bajo `configuracion-retos/` son `knowledge-graph.json` y su `.prev`. |
 | AC-R14 | Dado una etapa generada por el Generador, cuando el Evaluador la evalúa, entonces se invoca como sesión nueva sin contexto heredado. |
 | AC-R15 | Dado la pantalla de Grafo recién abierta, entonces se muestran nodos de los 6 dominios sin selección previa. |
 | AC-R16 | Dado un marcador `# Entregable - Etapa X:` cuyo X no coincide con los metadatos del challenge, cuando se verifica, entonces el sistema rechaza con error explícito. |
@@ -152,11 +154,12 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R38 | (a) Dado un concepto con 2 fallos, el plan incluye su refuerzo con Apoyo Guiado y Bloom sin subir. (b) Dadas menos Evidence que el umbral, el plan es de dificultad 1 y todo Guiado. (c) El mismo estado produce siempre el mismo plan. (d) Un challenge cuyas etapas no siguen el plan se rechaza nombrando el campo incumplido. |
 | AC-R39 | (a) Dado un Generador que agota el presupuesto en la fase 2, no existe ninguna carpeta nueva en `challenge/`, el error nombra la fase y «Reintentar» retoma desde ella. (b) Dada una salida con un campo inválido, se reintenta como máximo 2 veces y luego se muestra el campo. (c) Dado «Detener», el área de trabajo desaparece. (d) Dado un challenge cuya solución no reproduce `expected`, no se publica. |
 | AC-R40 | (a) Dadas 2 etapas de SQL de dificultad 1 aprobadas sin ayuda en Autónomo, SQL es Básico y los demás dominios siguen en Trainee. (b) Una aprobada con Pistas o con ayuda no suma. (c) Un fallo posterior no baja el Nivel. (d) El global es la mediana de los seis dominios. |
+| AC-R41 | (a) Una propuesta que crea un ciclo de prerrequisitos se descarta y el resto se aplica. (b) Un tema sin cubrir mencionado en una sola Evidence queda como candidato y no crea concepto; mencionado en 2 Evidence distintas crea el concepto. (c) Un concepto o prerrequisito inexistente se descarta. (d) Se guarda una sola observación por Evidence. |
+| AC-R42 | Dado un Analista que falla o agota el presupuesto, `knowledge-graph.json` queda idéntico, la Evidence sigue guardada y aparece como pendiente de análisis; y «Registrar etapa» no se ve afectado. |
 
-**Deuda de diseño pendiente (solo bloquea P5):**
-- Condición de disparo del Analista para crear/reforzar nodos (R12).
+**Deuda de diseño pendiente:** ninguna.
 
-*Resueltas el 2026-10-14: la calibración del Generador (R2/R4 → R38), el manejo de errores y del presupuesto (R39; celda no encontrada y timeout, R26/R27; corrupción de JSON, R33/R35) y el alcance del Nivel del usuario (R40).*
+*Resueltas el 2026-10-14: la condición de disparo del Analista (R12 → R12, R41, R42), la calibración del Generador (R2/R4 → R38), el manejo de errores y del presupuesto (R39; celda no encontrada y timeout, R26/R27; corrupción de JSON, R33/R35) y el alcance del Nivel del usuario (R40).*
 
 ---
 
@@ -221,6 +224,7 @@ data-scientist-skill-evaluator/
 | `graph-store` | Leer, validar y escribir `knowledge-graph.json` de forma atómica; un archivo corrupto se reporta sin tocarlo | S5, S6, R35 |
 | `notebook-parser` | Ubicar `# Entregable - Etapa X:` en celdas código/markdown, validar número de etapa | R8, R16 |
 | `agent-runner` | Wrapper sobre `spawn('claude', ...)`, parametrizado por rol | S2–S4, R14 |
+| `analista` | Analizar una Evidence con notas o bloqueo (agente de solo lectura), aplicar su propuesta con las reglas de R41 y mantener la cola serial | R12, R13, R41, R42 |
 | `progress-store` | Leer y añadir (append-only, atómico y serializado) el progreso de cada challenge en `progreso.json` y su bitácora `logs-avance.md` | R10, R11, R33, R34 |
 | `challenge-fs` | Leer/crear/escribir `challenge/challenge-NNN/` y construir `datos/challenge.duckdb` desde el seed | R1, R3, R18, R24 |
 | `notebook-runner` | Ejecutar en un proceso con timeout las celdas `# Datos` + la entregable y comparar con `expected` | R8, R27 |
@@ -281,16 +285,15 @@ data-scientist-skill-evaluator/
 3. **P2** — `notebook-parser`. *(R8, R16)*
 4. **P3** — Generador (desbloqueado: R38–R40). *(R1–R4, R38, R39)*
 5. **P4** — Evaluador código + conceptual. *(R8–R10, R16)*
-6. **P5** — Analista + `graph-store` (bloqueado por R12 sin resolver). *(R11–R13, S5–S6)*
+6. **P5** — Analista + `graph-store` (desbloqueado: R12, R41, R42). *(R11–R13, R41, R42, S5–S6)*
 7. **P6** — Frontend: Inicio, Challenges, Challenge actual, Repaso, Analítica. *(`UI-UX.md` §§1–4, 6)*
 8. **P7** — Frontend: Grafo de conocimiento con cross-domain-by-default. *(R15, `UI-UX.md` §5)*
 
-> **Nota de orden.** P6 y P7 se construyeron antes que los agentes, sobre datos de ejemplo. Tras revisar la UI, P1 (`agent-runner`), P2 (`notebook-parser`) y una porción de P4 (verificación en vivo, R25–R27) se adelantan con un `challenge-001/` real para probar de punta a punta; P3 quedó desbloqueado el 2026-10-14 (R38–R40) y P5 sigue bloqueado por R12.
+> **Nota de orden.** P6 y P7 se construyeron antes que los agentes, sobre datos de ejemplo. Tras revisar la UI, P1 (`agent-runner`), P2 (`notebook-parser`) y una porción de P4 (verificación en vivo, R25–R27) se adelantan con un `challenge-001/` real para probar de punta a punta; P3 y P5 quedaron desbloqueados el 2026-10-14 (R38–R40; R12, R41, R42).
 
 ### 7.3 Deuda de diseño pendiente
 
-- **P3 (Generador): desbloqueado el 2026-10-14.** La calibración, los errores y el Nivel del usuario se resolvieron en R38–R40 (§7.4).
-- **P5 (Analista): sigue bloqueado** por la condición de disparo del Analista (R12): cuándo crea o refuerza nodos a partir de `notas_libres`. Se resolverá con evidencia real acumulada.
+Ninguna. **P3 (Generador)** se desbloqueó con R38–R40 (§7.4) y **P5 (Analista)** con R12, R41 y R42 (§7.5), ambos el 2026-10-14.
 
 ### 7.4 Resolución de la deuda de P3 *(aprobada por el autor el 2026-10-14; normativa en R38–R40)*
 
@@ -354,7 +357,7 @@ Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, q
 #### Orden de implementación
 C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planChallenge`, con sus tests, antes de invocar a ningún agente), luego B y el Generador (P3) completo sobre `agent-runner`. Cada paso va con sus AC como tests y un commit.
 
-### 7.5 Propuesta para cerrar la deuda de P5: el Analista (R12) *(PROPUESTA, no normativa hasta que el autor la apruebe)*
+### 7.5 Resolución de la deuda de P5: el Analista *(aprobada por el autor el 2026-10-14; normativa en R12, R13, R41 y R42)*
 
 **Idea central: el Analista lee tus notas y propone; el orquestador decide qué se aplica.** El Analista es de solo lectura y devuelve una *propuesta estructurada* (R9, §6.4). El orquestador valida cada pieza con reglas fijas y la aplica de forma atómica a `knowledge-graph.json`. «Crear o reforzar nodos» se concreta en tres acciones, de menor a mayor impacto:
 
@@ -383,11 +386,11 @@ C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planC
 
 **Qué se guarda.** En `knowledge-graph.json`, además de `concepts`: `observations` (una por Evidence procesada) y `candidates` (temas sin cubrir con sus Evidence). Evidence y `progreso.json` no cambian: los registros siguen siendo inmutables (R10).
 
-*Requisitos:* **R12** (reescrito: qué se analiza, cuándo y con qué efectos), **R13** (precisado: también la copia `.prev`), **R41** (reglas de aplicación: observar, enlazar, crear con recurrencia ≥ 2, sin ciclos) y **R42** (fallos: no aplica nada, queda pendiente, nunca bloquea).
+*Requisitos:* **R12**, **R13**, **R41** y **R42** (ya normativos, Fase 3).
 *Criterios:* AC-R12a «una Evidence sin notas ni bloqueo se omite sin llamar al agente»; AC-R12b «una Evidence con notas produce una observación vinculada a conceptos existentes»; AC-R12c «el análisis corre en segundo plano y no bloquea Registrar etapa»; AC-R41a «una propuesta que crea un ciclo de prerrequisitos se descarta y el resto se aplica»; AC-R41b «un tema sin cubrir mencionado una sola vez queda como candidato y no crea concepto; mencionado en 2 Evidence distintas crea el concepto»; AC-R41c «un concepto o prerrequisito inexistente se descarta»; AC-R42 «si el agente falla o se queda sin presupuesto, `knowledge-graph.json` queda idéntico, la Evidence sigue guardada y aparece como pendiente»; AC-R13 «tras un análisis, los únicos archivos modificados son `knowledge-graph.json` y su `.prev`».
-*Valores configurables:* `presupuestoUsdAnalisis` (0,30), recurrencia mínima para crear (2), máximos por análisis (2 enlaces, 1 concepto), 300 caracteres de diagnóstico.
+*Valores:* `presupuestoUsdAnalisis` (0,30, en `calibracion.json`; se fijará con el costo medido); recurrencia mínima para crear (2), máximos por análisis (2 enlaces, 1 concepto) y 300 caracteres de diagnóstico son parte de R41.
 
-#### Orden de implementación (si apruebas)
+#### Orden de implementación
 1. Núcleo puro y testeado: `applyAnalysis(grafo, propuesta, contexto)` con todas las reglas (sin agente).
 2. Servicio del Analista (prompt, extracción, presupuesto, `.prev`) con un agente simulado, y la cola serial.
 3. Endpoints y disparo tras «Registrar etapa», más el estado en `/api/state`.

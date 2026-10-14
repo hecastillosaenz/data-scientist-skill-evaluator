@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { configDir } from '../paths';
 
-/** Parámetros del Generador (SDD R38, R39), ajustables en `configuracion-retos/calibracion.json` sin tocar código. */
+/** Parámetros del Generador y del Analista (SDD R38, R39, R42), ajustables en `configuracion-retos/calibracion.json` sin tocar código. */
 export interface CalibrationConfig {
   /** Evidence registradas a partir de las cuales deja de ser el modo *arranque* (R4). */
   evidenciaSuficiente: number;
@@ -15,6 +15,8 @@ export interface CalibrationConfig {
   presupuestoUsdPorFase: number;
   reparacionesPorFase: number;
   horasConservacion: number;
+  /** Tope de `--max-budget-usd` por análisis del Analista (R42). */
+  presupuestoUsdAnalisis: number;
 }
 
 export const DEFAULT_CALIBRATION: CalibrationConfig = {
@@ -25,6 +27,7 @@ export const DEFAULT_CALIBRATION: CalibrationConfig = {
   presupuestoUsdPorFase: 0.75,
   reparacionesPorFase: 2,
   horasConservacion: 24,
+  presupuestoUsdAnalisis: 0.3,
 };
 
 export class CalibrationError extends Error {
@@ -42,6 +45,7 @@ const RULES: Record<keyof CalibrationConfig, { min: number; max: number; integer
   presupuestoUsdPorFase: { min: 0.05, max: 50, integer: false },
   reparacionesPorFase: { min: 0, max: 5, integer: true },
   horasConservacion: { min: 1, max: 720, integer: true },
+  presupuestoUsdAnalisis: { min: 0.02, max: 20, integer: false },
 };
 
 /** Valida un objeto y completa con los valores por defecto lo que falte. Lo desconocido (salvo `$comentario`) es un error. */

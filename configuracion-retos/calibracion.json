@@ -1,10 +1,11 @@
 {
-  "$comentario": "Parámetros del Generador (SDD R38, R39). Se pueden ajustar sin tocar código. El presupuesto se fijó con el costo medido en una generación real (SDD §8.4).",
+  "$comentario": "Parámetros del Generador y del Analista (SDD R38, R39, R41, R42). Se pueden ajustar sin tocar código. Los presupuestos se fijan con el costo medido en corridas reales (SDD §8.4).",
   "evidenciaSuficiente": 8,
   "etapasPorChallenge": 3,
   "diasOlvido": 21,
   "ventanaTemas": 3,
   "presupuestoUsdPorFase": 0.75,
   "reparacionesPorFase": 2,
-  "horasConservacion": 24
+  "horasConservacion": 24,
+  "presupuestoUsdAnalisis": 0.3
 }
