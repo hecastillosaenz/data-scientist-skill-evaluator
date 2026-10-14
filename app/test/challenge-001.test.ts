@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -31,13 +31,14 @@ const WRONG_JOIN = SOLUTION.replace('LEFT JOIN siniestros_por_poliza', 'JOIN sin
 let tmp: string;
 beforeAll(() => {
   tmp = mkdtempSync(path.join(tmpdir(), 'dsc-real-'));
-  cpSync(path.join(repoRoot, 'challenge-001'), path.join(tmp, 'challenge-001'), { recursive: true });
+  mkdirSync(path.join(tmp, 'challenge'));
+  cpSync(path.join(repoRoot, 'challenge', 'challenge-001'), path.join(tmp, 'challenge', 'challenge-001'), { recursive: true });
 });
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const withNotebook = (stage1Code: string) => {
-  const file = path.join(tmp, 'challenge-001', 'notebook.ipynb');
-  const nb = JSON.parse(readFileSync(path.join(repoRoot, 'challenge-001', 'notebook.ipynb'), 'utf8'));
+  const file = path.join(tmp, 'challenge', 'challenge-001', 'notebook.ipynb');
+  const nb = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'notebook.ipynb'), 'utf8'));
   const idx = nb.cells.findIndex((c: any) => c.cell_type === 'code' && c.source.join('').startsWith('# Entregable - Etapa 1:'));
   nb.cells[idx].source = stage1Code.split('\n').map((l, i, a) => (i < a.length - 1 ? `${l}\n` : l));
   writeFileSync(file, JSON.stringify(nb));
@@ -59,7 +60,7 @@ describe('challenge-001 (reto real)', () => {
     expect(loaded!.challenge.id).toBe('challenge-001');
     expect(loaded!.challenge.stages.map((s) => s.id)).toEqual(['challenge-001-s1', 'challenge-001-s2']);
     expect(loaded!.challenge.data?.tables.map((t) => t.name)).toEqual(['polizas', 'siniestros']);
-    for (const f of ['challenge.json', 'notebook.ipynb', 'datos/seed.sql', 'logs-avance.md']) expect(existsSync(path.join(repoRoot, 'challenge-001', f))).toBe(true);
+    for (const f of ['challenge.json', 'notebook.ipynb', 'datos/seed.sql', 'logs-avance.md']) expect(existsSync(path.join(repoRoot, 'challenge', 'challenge-001', f))).toBe(true);
   });
 
   it('los ids de pregunta de negocio y del test son únicos y de este challenge', async () => {
@@ -70,13 +71,13 @@ describe('challenge-001 (reto real)', () => {
   });
 
   it('la base .duckdb está ignorada por git (R24)', () => {
-    expect(readFileSync(path.join(repoRoot, '.gitignore'), 'utf8')).toContain('challenge-*/datos/*.duckdb');
+    expect(readFileSync(path.join(repoRoot, '.gitignore'), 'utf8')).toContain('challenge/challenge-*/datos/*.duckdb');
   });
 });
 
 describe.skipIf(!hasDuckdb)('challenge-001 con DuckDB real', () => {
   it('construir la base dos veces da el mismo resultado (AC-R24)', async () => {
-    const dir = path.join(tmp, 'challenge-001');
+    const dir = path.join(tmp, 'challenge', 'challenge-001');
     const count = () => spawnSync(python, ['-c', 'import duckdb; c = duckdb.connect("datos/challenge.duckdb", read_only=True); print(c.sql("SELECT (SELECT COUNT(*) FROM polizas), (SELECT COUNT(*) FROM siniestros), (SELECT SUM(prima_anual) FROM polizas)").fetchall())'], { cwd: dir, encoding: 'utf8' }).stdout.trim();
     await prepareDataset({ dir, python });
     const first = count();
@@ -87,7 +88,7 @@ describe.skipIf(!hasDuckdb)('challenge-001 con DuckDB real', () => {
   });
 
   it('el notebook con el esqueleto sin completar NO pasa y lo explica', async () => {
-    const original = JSON.parse(readFileSync(path.join(repoRoot, 'challenge-001', 'notebook.ipynb'), 'utf8'));
+    const original = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'notebook.ipynb'), 'utf8'));
     const skeleton = original.cells.find((c: any) => c.cell_type === 'code' && c.source.join('').startsWith('# Entregable')).source.join('');
     withNotebook(skeleton);
     const events = await run();

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://data-scientist-challenges.local/challenge.schema.json",
   "title": "Challenge",
-  "description": "Contrato de `challenge-N/challenge.json` (SDD R29). Lo lee el Generador para saber qué producir y lo valida el orquestador antes de aceptar un challenge. Todo el texto va en español. Los campos de tipo «Markdown» admiten fórmulas LaTeX ($…$ y $$…$$), tablas y bloques de código; escapa los signos de moneda como \\$.",
+  "description": "Contrato de `challenge/challenge-NNN/challenge.json` (SDD R29). Lo lee el Generador para saber qué producir y lo valida el orquestador antes de aceptar un challenge. Todo el texto va en español. Los campos de tipo «Markdown» admiten fórmulas LaTeX ($…$ y $$…$$), tablas y bloques de código; escapa los signos de moneda como \\$.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "number", "title", "dataset", "difficulty", "recommended", "objectives", "scenario", "task", "businessQuestions", "stages"],

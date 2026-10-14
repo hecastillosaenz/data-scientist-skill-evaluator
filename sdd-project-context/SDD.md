@@ -67,7 +67,7 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 
 **Verificación**
 - **R8.** Para etapas `código_assert`, el sistema DEBE ubicar la celda cuya primera línea sea `# Entregable - Etapa X:` y ejecutarla de forma aislada contra los asserts de esa etapa.
-- **R9.** *(Revisado.)* Ningún agente (Generador, Evaluador, Analista) DEBE tener `Bash` habilitado, en ningún modo. La ejecución de código de la celda entregable la realiza el **orquestador** (R27) en un proceso propio con timeout; el Evaluador recibe su salida y, en solo lectura (`Read`/`Grep`/`Glob` acotados con `--add-dir` a `challenge-N/`), redacta el feedback. *Motivo: mismo resultado para el usuario sin darle un shell a un agente; alineado con el patrón de solo lectura de panamahealth.*
+- **R9.** *(Revisado.)* Ningún agente (Generador, Evaluador, Analista) DEBE tener `Bash` habilitado, en ningún modo. La ejecución de código de la celda entregable la realiza el **orquestador** (R27) en un proceso propio con timeout; el Evaluador recibe su salida y, en solo lectura (`Read`/`Grep`/`Glob` acotados con `--add-dir` a `challenge/challenge-NNN/`), redacta el feedback. *Motivo: mismo resultado para el usuario sin darle un shell a un agente; alineado con el patrón de solo lectura de panamahealth.*
 - **R10.** *(Revisado y ratificado por el autor el 2026-10-14.)* La **Evidence es el intento oficial** y se crea al pulsar «Registrar etapa» (con el resultado de la última verificación, el tiempo real, el bloqueo y las notas); verificar por sí solo es un borrador que se puede repetir y NO crea Evidence. Cada registro DEBE ser un Evidence nuevo; NO DEBE sobrescribir evidencias previas de la misma etapa.
 - **R11.** El estado de un Concept DEBE calcularse a partir del último intento de cada etapa vinculada, no del historial completo.
 - **R16.** El número de Etapa en el marcador `# Entregable - Etapa X:` DEBE coincidir con el número de etapa declarado en los metadatos del challenge; si no coincide, el sistema DEBE rechazar la verificación con un error explícito, no asumir cuál es la correcta.
@@ -88,7 +88,7 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R21.** Al terminar todas las etapas, el sistema DEBE ofrecer un test final de 5 a 8 preguntas aplicadas (opción múltiple, numérica o de texto), cada una atada a un Concept y a un nivel de Bloom 1–3. El test NO es requisito para marcar el challenge como completado.
 - **R22.** Las respuestas a las preguntas de negocio DEBEN guardarse como registros append-only, NO DEBEN determinar Acierto/Fallo, y la guía de reflexión DEBE mostrarse solo después de guardarlas. El número de preguntas es 3 en Nivel 1–2, 4 en Nivel 3 y 5 en Nivel 4–5.
 - **R23.** El último resultado de cada pregunta del test final DEBE contar como un intento del Concept al que está atada (con su Bloom), aplicando el mismo principio que R11.
-- **R24.** Para los challenges con SQL, la base `challenge-N/datos/challenge.duckdb` DEBE construirse desde el seed de forma idempotente, estar ignorada por git y abrirse en el notebook con `read_only=True`.
+- **R24.** Para los challenges con SQL, la base `challenge/challenge-NNN/datos/challenge.duckdb` DEBE construirse desde el seed de forma idempotente, estar ignorada por git y abrirse en el notebook con `read_only=True`.
 - **R25.** Los endpoints del orquestador que lanzan procesos (agente o runner) DEBEN rechazar peticiones cuyo `Host` u `Origin` no sea `127.0.0.1:<puerto>`.
 - **R26.** La verificación DEBE emitir eventos NDJSON (`step`, `output`, `tool`, `feedback`, `result`, `done`, `error`) que la UI muestra en vivo debajo del botón, con opción de cancelar. Los errores (celda no encontrada, R16, `claude` ausente, timeout) DEBEN mostrarse con mensaje explícito en ese mismo panel.
 - **R28.** Todo `challenge.json` DEBE incluir los **objetivos del reto**: qué busca el challenge, qué obtendrá el usuario al terminar (resultados concretos) y las habilidades que entrena.
@@ -97,8 +97,8 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R31.** Cada debilidad de la cola de Repaso DEBE poder abrirse en una ventana de análisis que muestre: el diagnóstico (qué falla y desde cuándo), la evidencia (intentos, bloqueos y notas), las posibles causas raíz (prerrequisitos débiles), el error común del caso y un plan de mejora con pasos concretos.
 - **R32.** El grafo unificado DEBE mostrar nodos de cinco tipos (concepto, challenge, etapa, test y mejora) con sus relaciones, permitir atenuar por tipo y por dominio sin ocultar nada (como R15) y abrir el detalle de cualquier nodo.
 - **R27.** Las celdas del notebook cuya primera línea sea `# Datos` (no editables por el usuario) DEBEN ejecutarse antes de la celda `# Entregable - Etapa X:`; la celda entregable se ejecuta aislada del resto de celdas del usuario (R8). El proceso tiene timeout y tope de salida.
-- **R33.** El orquestador DEBE persistir el progreso de cada challenge real en `challenge-N/progreso.json`: fecha de inicio, Apoyo vigente por etapa, Evidence, respuestas de negocio y resultados del test final. Evidence, respuestas y resultados son append-only (un `id` repetido no duplica el registro). Toda escritura DEBE ser atómica (S6) y serializada por archivo. Si `progreso.json` existe pero es ilegible o inválido, el orquestador NO DEBE sobrescribirlo: rechaza la operación con un error explícito que nombra el archivo.
-- **R34.** Cada registro nuevo DEBE añadirse además, en lenguaje legible y en orden cronológico, a `challenge-N/logs-avance.md` (resultado, Apoyo, tiempo y su origen, bloqueo, notas, respuestas, puntaje del test). `progreso.json` es la fuente de verdad; el `.md` es solo lectura humana y se agrega (append), nunca se reescribe.
+- **R33.** El orquestador DEBE persistir el progreso de cada challenge real en `challenge/challenge-NNN/progreso.json`: fecha de inicio, Apoyo vigente por etapa, Evidence, respuestas de negocio y resultados del test final. Evidence, respuestas y resultados son append-only (un `id` repetido no duplica el registro). Toda escritura DEBE ser atómica (S6) y serializada por archivo. Si `progreso.json` existe pero es ilegible o inválido, el orquestador NO DEBE sobrescribirlo: rechaza la operación con un error explícito que nombra el archivo.
+- **R34.** Cada registro nuevo DEBE añadirse además, en lenguaje legible y en orden cronológico, a `challenge/challenge-NNN/logs-avance.md` (resultado, Apoyo, tiempo y su origen, bloqueo, notas, respuestas, puntaje del test). `progreso.json` es la fuente de verdad; el `.md` es solo lectura humana y se agrega (append), nunca se reescribe.
 - **R35.** `configuracion-retos/knowledge-graph.json` DEBE contener el catálogo de Concepts con sus prerrequisitos. El orquestador DEBE validarlo al leerlo (ids únicos, dominio válido, prerrequisitos existentes) y, si está corrupto, reportar el error sin modificarlo. Los conceptos que practican las etapas de un challenge DEBEN existir en el catálogo.
 - **R36.** La UI DEBE alimentarse del orquestador (`GET /api/state`). Con un repositorio sin historial muestra los estados vacíos de UI-UX §5. Los datos de ejemplo solo aparecen con `?datos=ejemplo`, se marcan como tales y NUNCA se persisten.
 - **R37.** Si un guardado falla (el orquestador no responde o rechaza el registro), la UI DEBE revertir el cambio local, conservar lo que el usuario escribió y mostrar el error en un aviso visible; NO DEBE encolar ni reintentar en silencio.
@@ -181,7 +181,7 @@ Frontend (React, local) ──fetch/NDJSON──► Servidor Node local (127.0.0
                               └──────────────────┴──────────────────┘
                                                │
                              Filesystem del repo (git-versionado)
-                       configuracion-retos/  +  challenge-N/
+                       configuracion-retos/  +  challenge/challenge-NNN/
 ```
 
 ### 6.2 Estructura de repo
@@ -194,17 +194,20 @@ data-scientist-skill-evaluator/
 │   ├── plantillas/
 │   ├── usuario.json              # { "name": … }
 │   └── knowledge-graph.json      # catálogo de Concepts y prerrequisitos (R35)
-├── challenge-001/
-│   ├── challenge.json        # fuente de verdad: metadatos, etapas, contenido, esquema, test final
-│   ├── datos/
-│   │   ├── seed.sql | seed.py
-│   │   └── challenge.duckdb  # generado, ignorado por git (R24)
-│   ├── notebook.ipynb
-│   ├── progreso.json         # inicio, Apoyo por etapa, Evidence, respuestas y test (R33)
-│   └── logs-avance.md        # bitácora legible, solo se agrega (R34)
-├── challenge-002/
+├── challenge/                    # todos los challenges, un subdirectorio por reto
+│   ├── challenge-001/
+│   │   ├── challenge.json        # fuente de verdad: metadatos, etapas, contenido, esquema, test final
+│   │   ├── datos/
+│   │   │   ├── seed.sql | seed.py
+│   │   │   └── challenge.duckdb  # generado, ignorado por git (R24)
+│   │   ├── notebook.ipynb
+│   │   ├── progreso.json         # inicio, Apoyo por etapa, Evidence, respuestas y test (R33)
+│   │   └── logs-avance.md        # bitácora legible, solo se agrega (R34)
+│   └── challenge-002/
 └── app/
 ```
+
+**Regla de ubicación.** Los challenges se guardan en `challenge/challenge-NNN/` (número de al menos tres dígitos, correlativo: el siguiente es el mayor existente + 1). El `id` de un challenge real es el nombre de su carpeta (`challenge-001`) y el orquestador solo busca dentro de `challenge/`; una carpeta `challenge-NNN` fuera de ahí se ignora. *(Cambio del 2026-10-14: antes vivían en la raíz del repo.)*
 
 ### 6.3 Módulos del orquestador
 
@@ -214,7 +217,7 @@ data-scientist-skill-evaluator/
 | `notebook-parser` | Ubicar `# Entregable - Etapa X:` en celdas código/markdown, validar número de etapa | R8, R16 |
 | `agent-runner` | Wrapper sobre `spawn('claude', ...)`, parametrizado por rol | S2–S4, R14 |
 | `progress-store` | Leer y añadir (append-only, atómico y serializado) el progreso de cada challenge en `progreso.json` y su bitácora `logs-avance.md` | R10, R11, R33, R34 |
-| `challenge-fs` | Leer/crear/escribir `challenge-N/` y construir `datos/challenge.duckdb` desde el seed | R1, R3, R18, R24 |
+| `challenge-fs` | Leer/crear/escribir `challenge/challenge-NNN/` y construir `datos/challenge.duckdb` desde el seed | R1, R3, R18, R24 |
 | `notebook-runner` | Ejecutar en un proceso con timeout las celdas `# Datos` + la entregable y comparar con `expected` | R8, R27 |
 | `verify-service` | Orquestar parser → runner → agente evaluador y emitir los eventos NDJSON | R9, R14, R25, R26 |
 
@@ -226,11 +229,11 @@ data-scientist-skill-evaluator/
    - El servidor **no tiene API key ni habla con la API de Anthropic**: lanza el binario `claude` (Claude Code) ya instalado y autenticado en la máquina, que usa la sesión/suscripción del usuario.
    - Invocación con `spawn('claude', args)`, **sin shell**, mensaje enviado por **stdin** (nunca como argumento posicional, para evitar colisión con `--allowedTools`/escapes).
    - Flags base: `-p` (no interactivo) `--output-format stream-json --verbose` (salida JSON línea a línea) `--permission-mode dontAsk` (sin nadie para aprobar, lo no permitido se rechaza) `--max-budget-usd <n>` (tope de gasto por llamada).
-   - Scope de herramientas por rol (S4): Generador y Analista → `--allowedTools Read Grep Glob` con `--disallowedTools Bash Edit Write WebFetch WebSearch Task` (solo lectura, nunca escriben directo — devuelven propuestas que el orquestador aplica). el Evaluador en ambos modos (`código_assert` y `rubric_claude`) también es de solo lectura, con `--add-dir challenge-N/` (R9 revisado): en `código_assert` la celda la ejecuta el `notebook-runner` del orquestador y el agente solo explica el resultado; además cada evaluación usa `--no-session-persistence` (R14).
-   - `--settings` con `permissions.deny` para `.env`, `.git`, `node_modules` y cualquier carpeta fuera de `challenge-N/` o `configuracion-retos/`.
+   - Scope de herramientas por rol (S4): Generador y Analista → `--allowedTools Read Grep Glob` con `--disallowedTools Bash Edit Write WebFetch WebSearch Task` (solo lectura, nunca escriben directo — devuelven propuestas que el orquestador aplica). el Evaluador en ambos modos (`código_assert` y `rubric_claude`) también es de solo lectura, con `--add-dir challenge/challenge-NNN/` (R9 revisado): en `código_assert` la celda la ejecuta el `notebook-runner` del orquestador y el agente solo explica el resultado; además cada evaluación usa `--no-session-persistence` (R14).
+   - `--settings` con `permissions.deny` para `.env`, `.git`, `node_modules` y cualquier carpeta fuera de `challenge/challenge-NNN/` o `configuracion-retos/`.
    - Entorno del proceso hijo: `ANTHROPIC_API_KEY: ''` (vacía explícitamente, para forzar el uso de la suscripción y no de facturación por API) y `cwd` en un directorio temporal neutro (nunca la raíz del repo, para no heredar ningún `CLAUDE.md` propio del proyecto).
    - Salida: se parsea línea a línea (`stream-json`); eventos relevantes son `assistant` (texto + `tool_use`) y `result` (`is_error`, `total_cost_usd`, `session_id`). Se reenvía al frontend como NDJSON.
-   - El Generador y el Analista **nunca escriben archivos directamente** — devuelven un bloque de propuesta estructurada que el orquestador valida y aplica él mismo (mantiene control total sobre qué se escribe en `configuracion-retos/` y `challenge-N/`, incluso con herramientas de escritura deshabilitadas en el agente).
+   - El Generador y el Analista **nunca escriben archivos directamente** — devuelven un bloque de propuesta estructurada que el orquestador valida y aplica él mismo (mantiene control total sobre qué se escribe en `configuracion-retos/` y `challenge/challenge-NNN/`, incluso con herramientas de escritura deshabilitadas en el agente).
 2. **Concurrencia:** mutex en memoria dentro del proceso del servidor — una sola operación de escritura en vuelo; una segunda solicitud se rechaza con mensaje explícito, no se encola.
 3. **Formato del marcador de entregable:** `# Entregable - Etapa X:` como primera línea de cualquier celda (código o markdown). Código → ruta `código_assert` (R8). Markdown → ruta `rubric_claude`, contenido bajo el encabezado se pasa al Evaluador. El número de etapa se valida contra los metadatos del challenge (R16).
 
@@ -326,7 +329,7 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 
 ### 8.3 Persistencia real (tras ratificar R10 y las fórmulas)
 
-- **Qué se guarda y dónde (R33–R35).** El progreso de cada challenge real vive en `challenge-N/progreso.json` (fuente de verdad, versionada por git) y se refleja en `logs-avance.md` (bitácora legible). El catálogo de Concepts vive en `configuracion-retos/knowledge-graph.json`, que se sembró con los conceptos del grafo de ejemplo (sin la clave `edges`: los prerrequisitos ya están en cada concepto y las aristas se derivan). El nombre del usuario, en `configuracion-retos/usuario.json`.
+- **Qué se guarda y dónde (R33–R35).** El progreso de cada challenge real vive en `challenge/challenge-NNN/progreso.json` (fuente de verdad, versionada por git) y se refleja en `logs-avance.md` (bitácora legible). El catálogo de Concepts vive en `configuracion-retos/knowledge-graph.json`, que se sembró con los conceptos del grafo de ejemplo (sin la clave `edges`: los prerrequisitos ya están en cada concepto y las aristas se derivan). El nombre del usuario, en `configuracion-retos/usuario.json`.
 - **Un solo endpoint de lectura.** `GET /api/state` devuelve usuario, conceptos, challenges (y los inválidos con su causa) y todo el progreso. Las escrituras son `POST /api/challenges/:id/{start|evidence|business-answers|test-results}` y `PUT /api/challenges/:id/stages/:stageId/apoyo`. El cliente genera el `id` y la fecha de cada registro (así el guardado es idempotente y la UI puede mostrarlo al instante); el servidor valida la forma, que la etapa pertenezca al challenge y que el `id` no esté repetido.
 - **Serialización de escrituras.** Cada `progreso.json` tiene su propia cola: lee, modifica y escribe de forma atómica, una operación a la vez. Es distinta del mutex de las operaciones de agente (que rechaza la segunda), porque estas escrituras son breves y no deben perderse ni rechazarse.
 - **Lo que sigue en el navegador.** El cronómetro en marcha (`dsc-timer`) y los borradores de respuestas sin guardar; su resultado, el tiempo de la etapa, queda en la Evidence al registrar. No se guarda un historial de pausas.

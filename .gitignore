@@ -37,5 +37,5 @@ knowledge-graph.json.*
 *.swp
 
 # Bases de datos de los challenges (se reconstruyen desde datos/seed.sql, R24)
-challenge-*/datos/*.duckdb
-challenge-*/datos/*.duckdb.wal
+challenge/challenge-*/datos/*.duckdb
+challenge/challenge-*/datos/*.duckdb.wal

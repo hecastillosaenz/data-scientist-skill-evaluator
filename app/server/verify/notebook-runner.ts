@@ -97,7 +97,7 @@ export function mapTraceback(stderr: string, ranges: ScriptRange[]): string {
 
 export interface RunOptions extends ScriptParts {
   python: string;
-  /** Directorio de trabajo: `challenge-N/` (así `datos/challenge.duckdb` se resuelve en relativo). */
+  /** Directorio de trabajo: `challenge/challenge-NNN/` (así `datos/challenge.duckdb` se resuelve en relativo). */
   cwd: string;
   timeoutMs?: number;
   maxOutputBytes?: number;

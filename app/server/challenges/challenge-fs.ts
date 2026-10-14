@@ -2,11 +2,12 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Challenge } from '../../shared/types';
+import { challengesDir } from '../paths';
 import { runPython } from '../verify/notebook-runner';
 import { validateChallenge } from './validate';
 
 export interface LoadedChallenge {
-  /** Ruta absoluta de `challenge-N/`. */
+  /** Ruta absoluta de `challenge/challenge-NNN/`. */
   dir: string;
   challenge: Challenge;
 }
@@ -24,19 +25,19 @@ export interface ChallengeScan {
 }
 
 /**
- * Lee el `challenge.json` de cada carpeta `challenge-N` (fuente de verdad, SDD §6.2) y lo valida contra el contrato
+ * Lee el `challenge.json` de cada carpeta `challenge/challenge-NNN` (fuente de verdad, SDD §6.2) y lo valida contra el contrato
  * (R29, modo estricto). Los inválidos no se cargan, pero se devuelven con sus errores para poder explicarlos.
  */
 export async function scanChallenges(repoRoot: string, options: { strict?: boolean } = {}): Promise<ChallengeScan> {
   let entries: string[];
   try {
-    entries = await readdir(repoRoot);
+    entries = await readdir(challengesDir(repoRoot));
   } catch {
     return { loaded: [], invalid: [] };
   }
   const scan: ChallengeScan = { loaded: [], invalid: [] };
   for (const name of entries.filter((n) => /^challenge-\d+$/.test(n)).sort()) {
-    const dir = path.join(repoRoot, name);
+    const dir = path.join(challengesDir(repoRoot), name);
     let json: unknown;
     try {
       json = JSON.parse(await readFile(path.join(dir, 'challenge.json'), 'utf8'));

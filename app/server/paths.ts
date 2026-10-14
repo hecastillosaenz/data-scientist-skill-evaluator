@@ -7,4 +7,9 @@ export function configDir(repoRoot: string = REPO_ROOT): string {
   return resolve(repoRoot, 'configuracion-retos');
 }
 
+/** Carpeta que contiene los challenges: `challenge/challenge-NNN/`. */
+export function challengesDir(repoRoot: string = REPO_ROOT): string {
+  return resolve(repoRoot, 'challenge');
+}
+
 export const WEB_DIST = resolve(import.meta.dirname, '../web/dist');

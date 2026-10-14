@@ -1,6 +1,6 @@
 import type { Apoyo, AppData } from './types';
 
-/** Un challenge de `challenge-N/` que no cumple el contrato (R29), con sus errores en español. */
+/** Un challenge de `challenge/challenge-NNN/` que no cumple el contrato (R29), con sus errores en español. */
 export interface InvalidChallengeInfo {
   folder: string;
   errors: string[];

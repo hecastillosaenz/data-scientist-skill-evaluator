@@ -8,7 +8,7 @@ import type { StatePayload } from '../shared/state';
 import type { Challenge, Evidence } from '../shared/types';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
-const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
+const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
 const stage1 = challenge.stages[0]!;
 const FIXED = new Date('2026-10-14T15:30:00.000Z');
 
@@ -38,8 +38,8 @@ const read = (...p: string[]) => readFileSync(file(...p), 'utf8');
 
 beforeEach(() => {
   tmp = mkdtempSync(path.join(tmpdir(), 'dsc-persist-'));
-  cpSync(path.join(repoRoot, 'challenge-001', 'challenge.json'), (mkdirSync(file('challenge-001')), file('challenge-001', 'challenge.json')));
-  writeFileSync(file('challenge-001', 'logs-avance.md'), '# Logs de avance · challenge-001\n');
+  cpSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), (mkdirSync(file('challenge', 'challenge-001'), { recursive: true }), file('challenge', 'challenge-001', 'challenge.json')));
+  writeFileSync(file('challenge', 'challenge-001', 'logs-avance.md'), '# Logs de avance · challenge-001\n');
   mkdirSync(file('configuracion-retos'));
   cpSync(path.join(repoRoot, 'configuracion-retos', 'knowledge-graph.json'), file('configuracion-retos', 'knowledge-graph.json'));
 });
@@ -69,7 +69,7 @@ describe('GET /api/state', () => {
   });
 
   it('un progreso ilegible se reporta en `problems` sin romper el resto', async () => {
-    writeFileSync(file('challenge-001', 'progreso.json'), '{no es json');
+    writeFileSync(file('challenge', 'challenge-001', 'progreso.json'), '{no es json');
     await boot();
     const s = await state();
     expect(s.data.challenges).toHaveLength(1);
@@ -100,7 +100,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     const s = await state();
     expect(s.data.evidence.map((e) => e.id)).toEqual(['ev-aaa111']);
 
-    const log = read('challenge-001', 'logs-avance.md');
+    const log = read('challenge', 'challenge-001', 'logs-avance.md');
     expect(log.startsWith('# Logs de avance · challenge-001\n')).toBe(true);
     expect(log).toContain(`Etapa 1 · ${stage1.title} · Aprobada`);
     expect(log).toContain('Apoyo: Pistas · Tiempo real: 24 min (cronómetro)');
@@ -114,7 +114,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     const second = await post('/api/challenges/challenge-001/evidence', evidence('ev-dup001'));
     expect(second.json().duplicate).toBe(true);
     expect((await state()).data.evidence).toHaveLength(1);
-    expect(read('challenge-001', 'logs-avance.md').match(/Etapa 1/g)).toHaveLength(1);
+    expect(read('challenge', 'challenge-001', 'logs-avance.md').match(/Etapa 1/g)).toHaveLength(1);
   });
 
   it('un reintento aprobado tras un fallo deja dos registros distintos (AC-R10)', async () => {
@@ -154,7 +154,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     expect((await put('mucho')).statusCode).toBe(400);
     expect((await state()).apoyos).toEqual({ [stage1.id]: 'autonomo' });
 
-    const log = read('challenge-001', 'logs-avance.md');
+    const log = read('challenge', 'challenge-001', 'logs-avance.md');
     expect(log.match(/Challenge iniciado/g)).toHaveLength(1);
     expect(log.match(/Apoyo/g)).toHaveLength(1);
     expect(log).toContain(`Etapa 1 · Apoyo ${stage1.apoyo === 'guiado' ? 'Guiado' : stage1.apoyo === 'pistas' ? 'Pistas' : 'Autónomo'} → Autónomo`);
@@ -168,7 +168,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     expect(r1.json().saved).toBe(1);
     await post('/api/challenges/challenge-001/business-answers', { answers: [answer('ba-000002', 'Versión corregida')] });
     expect((await state()).data.businessAnswers.map((a) => a.text)).toEqual(['Primera versión', 'Versión corregida']);
-    expect(read('challenge-001', 'logs-avance.md')).toContain('> Versión corregida');
+    expect(read('challenge', 'challenge-001', 'logs-avance.md')).toContain('> Versión corregida');
 
     const bad = await post('/api/challenges/challenge-001/business-answers', { answers: [{ ...answer('ba-000003', 'x'), questionId: 'no-existe' }] });
     expect(bad.statusCode).toBe(400);
@@ -181,7 +181,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     const res = await post('/api/challenges/challenge-001/test-results', { results });
     expect(res.json().saved).toBe(qs.length);
     expect((await state()).data.testResults).toHaveLength(qs.length);
-    expect(read('challenge-001', 'logs-avance.md')).toContain(`Test final · ${qs.length - 1} de ${qs.length}`);
+    expect(read('challenge', 'challenge-001', 'logs-avance.md')).toContain(`Test final · ${qs.length - 1} de ${qs.length}`);
 
     const wrong = await post('/api/challenges/challenge-001/test-results', { results: [{ ...results[1]!, id: 'tr-zzzzzz', conceptId: 'sql:select' }] });
     expect(wrong.statusCode).toBe(400);
@@ -189,14 +189,14 @@ describe('escrituras de progreso (R33, R34)', () => {
 
   it('un progreso.json corrupto rechaza el guardado, nombra el archivo y no lo modifica (AC-R33)', async () => {
     const corrupt = '{"version": 1, "evidence": [';
-    writeFileSync(file('challenge-001', 'progreso.json'), corrupt);
+    writeFileSync(file('challenge', 'challenge-001', 'progreso.json'), corrupt);
     await boot();
     const res = await post('/api/challenges/challenge-001/evidence', evidence('ev-bad001'));
     expect(res.statusCode).toBe(422);
     expect(res.json()).toMatchObject({ error: 'progress_corrupt' });
     expect(res.json().message).toContain('challenge-001/progreso.json');
-    expect(read('challenge-001', 'progreso.json')).toBe(corrupt);
-    expect(read('challenge-001', 'logs-avance.md')).toBe('# Logs de avance · challenge-001\n');
+    expect(read('challenge', 'challenge-001', 'progreso.json')).toBe(corrupt);
+    expect(read('challenge', 'challenge-001', 'logs-avance.md')).toBe('# Logs de avance · challenge-001\n');
   });
 
   it('escrituras concurrentes no se pierden (cola por archivo)', async () => {
@@ -211,7 +211,7 @@ describe('escrituras de progreso (R33, R34)', () => {
     await boot();
     const res = await app!.inject({ method: 'POST', url: '/api/challenges/challenge-001/start', headers: { host: 'evil.example.com' } });
     expect(res.statusCode).toBe(403);
-    expect(() => readFileSync(file('challenge-001', 'progreso.json'))).toThrow();
+    expect(() => readFileSync(file('challenge', 'challenge-001', 'progreso.json'))).toThrow();
   });
 });
 

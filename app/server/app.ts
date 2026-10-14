@@ -50,7 +50,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
   app.get('/api/health', async () => ({ ok: true }));
   app.get('/api/status', async () => mutex.status());
 
-  /** Challenges reales: `challenge-N/challenge.json`. La UI los combina con los de ejemplo. */
+  /** Challenges reales: `challenge/challenge-NNN/challenge.json`. La UI los combina con los de ejemplo. */
   app.get('/api/challenges', async () => {
     const { loaded, invalid } = await scanChallenges(repoRoot, { strict: options.strictChallenges ?? true });
     return { challenges: loaded.map((c) => c.challenge), invalid };

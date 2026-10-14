@@ -6,7 +6,7 @@ un mensaje explícito.
 
 | Archivo | Para qué sirve |
 |---|---|
-| `challenge.schema.json` | Estructura exacta de `challenge-N/challenge.json` (JSON Schema). Es la fuente de verdad del formato. |
+| `challenge.schema.json` | Estructura exacta de `challenge/challenge-NNN/challenge.json` (JSON Schema). Es la fuente de verdad del formato. |
 | `contrato-generador.md` | Reglas de producción: orden de presentación, capas por Apoyo, conteos por nivel, verificación obligatoria. |
 | `plantilla-sql.md` | Retos de **SQL** (datos con `CREATE TABLE` + `INSERT`, tabla esperada, CTE/joins/ventanas). |
 | `plantilla-python.md` | Retos de **Python** y **Limpieza y Visualización** (datos reproducibles, asserts). |

@@ -38,13 +38,13 @@ const challenge = {
 };
 
 function writeNotebook(cells: { type: 'code' | 'markdown'; src: string }[]) {
-  writeFileSync(join(repo, 'challenge-001', 'notebook.ipynb'), nb(cells));
+  writeFileSync(join(repo, 'challenge', 'challenge-001', 'notebook.ipynb'), nb(cells));
 }
 
 beforeAll(() => {
   repo = mkdtempSync(join(tmpdir(), 'dsc-repo-'));
-  mkdirSync(join(repo, 'challenge-001'));
-  writeFileSync(join(repo, 'challenge-001', 'challenge.json'), JSON.stringify(challenge));
+  mkdirSync(join(repo, 'challenge', 'challenge-001'), { recursive: true });
+  writeFileSync(join(repo, 'challenge', 'challenge-001', 'challenge.json'), JSON.stringify(challenge));
 });
 afterAll(() => rmSync(repo, { recursive: true, force: true }));
 
@@ -84,8 +84,8 @@ describe('verifyStage · etapas de código (R8, R26, R27)', () => {
     expect(find(events, 'result')).toMatchObject({ status: 'aprobada' });
     expect(find(events, 'feedback')?.text).toBe('Buen trabajo.');
     expect(find(events, 'done')?.cost).toBe(0.01);
-    // El agente es de solo lectura sobre challenge-N y recibe el código y la ejecución que hizo el orquestador.
-    expect(calls[0]!.addDirs).toEqual([join(repo, 'challenge-001')]);
+    // El agente es de solo lectura sobre challenge-NNN y recibe el código y la ejecución que hizo el orquestador.
+    expect(calls[0]!.addDirs).toEqual([join(repo, 'challenge', 'challenge-001')]);
     expect(calls[0]!.message).toContain('Veredicto ya decidido por el orquestador: APROBADA');
     expect(calls[0]!.system).toContain('solo lectura');
   });

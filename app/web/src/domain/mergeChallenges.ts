@@ -4,7 +4,7 @@ import type { Challenge } from '../../../shared/types';
 export const isRealChallenge = (id: string): boolean => /^challenge-\d+$/.test(id);
 
 /**
- * Combina los challenges reales (`challenge-N/challenge.json`) con los de ejemplo. Si un reto real tiene el mismo
+ * Combina los challenges reales (`challenge/challenge-NNN/challenge.json`) con los de ejemplo. Si un reto real tiene el mismo
  * título que uno de ejemplo, el real lo sustituye: es la misma práctica, ahora con notebook y verificación de verdad.
  */
 export function mergeChallenges(real: Challenge[], sample: Challenge[]): Challenge[] {

@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { Apoyo, BusinessAnswer, Challenge, Evidence, TestResult } from '../../shared/types';
 import { writeFileAtomic } from '../atomic-write';
 
-/** `challenge-N/progreso.json` (R33): fuente de verdad del avance. */
+/** `challenge/challenge-NNN/progreso.json` (R33): fuente de verdad del avance. */
 export interface Progress {
   version: 1;
   /** ISO 8601 del primer «Iniciar challenge»; null si aún no se inició. */
@@ -31,7 +31,7 @@ export const progressPath = (dir: string): string => path.join(dir, 'progreso.js
 export const logPath = (dir: string): string => path.join(dir, 'logs-avance.md');
 
 export async function readProgress(dir: string): Promise<Progress> {
-  const file = `${path.basename(dir)}/progreso.json`;
+  const file = `${path.basename(path.dirname(dir))}/${path.basename(dir)}/progreso.json`;
   let text: string;
   try {
     text = await readFile(progressPath(dir), 'utf8');

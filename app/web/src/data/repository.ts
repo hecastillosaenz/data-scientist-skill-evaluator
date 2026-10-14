@@ -5,7 +5,7 @@ import { buildSampleData, SCENARIOS, type Scenario } from './sample';
 
 /**
  * Único punto de acceso a datos de la UI. Con datos reales (por defecto) todo viene del orquestador y se guarda en
- * `challenge-N/progreso.json` (R33–R36); con `?datos=ejemplo` se cargan datos sintéticos que nunca se persisten.
+ * `challenge/challenge-NNN/progreso.json` (R33–R36); con `?datos=ejemplo` se cargan datos sintéticos que nunca se persisten.
  */
 export type DataSource = 'real' | 'ejemplo';
 

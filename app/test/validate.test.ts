@@ -9,7 +9,7 @@ import { verifyStage } from '../server/verify/verify-service';
 import type { VerifyEvent } from '../shared/verify';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
-const real = JSON.parse(readFileSync(path.join(repoRoot, 'challenge-001', 'challenge.json'), 'utf8'));
+const real = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8'));
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 describe('contrato del challenge (R29)', () => {
@@ -139,16 +139,16 @@ describe('carga de challenges con validación', () => {
 
   it('carga los válidos y explica los inválidos sin mezclarlos', async () => {
     await withRepo(async (root) => {
-      mkdirSync(path.join(root, 'challenge-001'));
-      writeFileSync(path.join(root, 'challenge-001', 'challenge.json'), JSON.stringify(real));
-      mkdirSync(path.join(root, 'challenge-002'));
+      mkdirSync(path.join(root, 'challenge', 'challenge-001'), { recursive: true });
+      writeFileSync(path.join(root, 'challenge', 'challenge-001', 'challenge.json'), JSON.stringify(real));
+      mkdirSync(path.join(root, 'challenge', 'challenge-002'), { recursive: true });
       const broken = clone(real);
       broken.id = 'challenge-002';
       delete broken.objectives;
-      writeFileSync(path.join(root, 'challenge-002', 'challenge.json'), JSON.stringify(broken));
-      mkdirSync(path.join(root, 'challenge-003'));
-      mkdirSync(path.join(root, 'challenge-004'));
-      writeFileSync(path.join(root, 'challenge-004', 'challenge.json'), '{ no es json');
+      writeFileSync(path.join(root, 'challenge', 'challenge-002', 'challenge.json'), JSON.stringify(broken));
+      mkdirSync(path.join(root, 'challenge', 'challenge-003'), { recursive: true });
+      mkdirSync(path.join(root, 'challenge', 'challenge-004'), { recursive: true });
+      writeFileSync(path.join(root, 'challenge', 'challenge-004', 'challenge.json'), '{ no es json');
 
       const scan = await scanChallenges(root);
       expect(scan.loaded.map((c) => c.challenge.id)).toEqual(['challenge-001']);
@@ -161,8 +161,8 @@ describe('carga de challenges con validación', () => {
 
   it('el id debe coincidir con el nombre de la carpeta', async () => {
     await withRepo(async (root) => {
-      mkdirSync(path.join(root, 'challenge-009'));
-      writeFileSync(path.join(root, 'challenge-009', 'challenge.json'), JSON.stringify(real)); // id: challenge-001
+      mkdirSync(path.join(root, 'challenge', 'challenge-009'), { recursive: true });
+      writeFileSync(path.join(root, 'challenge', 'challenge-009', 'challenge.json'), JSON.stringify(real)); // id: challenge-001
       const scan = await scanChallenges(root);
       expect(scan.loaded).toHaveLength(0);
       expect(scan.invalid[0]!.errors[0]).toContain('debe coincidir con el nombre de la carpeta');
@@ -171,11 +171,11 @@ describe('carga de challenges con validación', () => {
 
   it('verificar un challenge inválido explica por qué en vez de «no existe»', async () => {
     await withRepo(async (root) => {
-      mkdirSync(path.join(root, 'challenge-002'));
+      mkdirSync(path.join(root, 'challenge', 'challenge-002'), { recursive: true });
       const broken = clone(real);
       broken.id = 'challenge-002';
       delete broken.objectives;
-      writeFileSync(path.join(root, 'challenge-002', 'challenge.json'), JSON.stringify(broken));
+      writeFileSync(path.join(root, 'challenge', 'challenge-002', 'challenge.json'), JSON.stringify(broken));
       const events: VerifyEvent[] = [];
       for await (const e of verifyStage({ repoRoot: root, challengeId: 'challenge-002', stageNumber: 1, apoyo: 'pistas' })) events.push(e);
       const err = events.find((e) => e.type === 'error') as Extract<VerifyEvent, { type: 'error' }>;

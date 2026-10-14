@@ -25,7 +25,7 @@ export function hasClaude(bin: string = claudeBin()): boolean {
 
 export interface BuildArgsOptions {
   system?: string;
-  /** Carpetas fuera del cwd que el agente puede leer (solo `challenge-N/`). */
+  /** Carpetas fuera del cwd que el agente puede leer (solo `challenge/challenge-NNN/`). */
   addDirs?: string[];
   maxUsd?: number;
 }
