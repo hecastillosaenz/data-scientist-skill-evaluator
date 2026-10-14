@@ -137,6 +137,19 @@ describe('carga de challenges con validación', () => {
     }
   };
 
+  it('solo busca dentro de challenge/: una carpeta challenge-NNN en la raíz se ignora', async () => {
+    await withRepo(async (root) => {
+      mkdirSync(path.join(root, 'challenge', 'challenge-001'), { recursive: true });
+      writeFileSync(path.join(root, 'challenge', 'challenge-001', 'challenge.json'), JSON.stringify(real));
+      mkdirSync(path.join(root, 'challenge-002'));
+      writeFileSync(path.join(root, 'challenge-002', 'challenge.json'), JSON.stringify(real));
+
+      const scan = await scanChallenges(root);
+      expect(scan.loaded.map((c) => c.challenge.id)).toEqual(['challenge-001']);
+      expect(scan.invalid).toEqual([]);
+    });
+  });
+
   it('carga los válidos y explica los inválidos sin mezclarlos', async () => {
     await withRepo(async (root) => {
       mkdirSync(path.join(root, 'challenge', 'challenge-001'), { recursive: true });

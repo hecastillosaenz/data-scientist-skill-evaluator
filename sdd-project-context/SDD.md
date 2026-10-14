@@ -284,10 +284,74 @@ data-scientist-skill-evaluator/
 
 ### 7.3 Deuda total que debe resolverse antes de P3 y P5
 
+> Las propuestas para cerrar la de P3 están en §7.4, pendientes de aprobación.
+
 - Heurística de calibración del Generador.
 - Condición de disparo del Analista.
 - Manejo de errores: queda solo el agotamiento de `--max-budget-usd` a mitad de generación (el resto lo cubren R26, R27, R33 y R35).
 - Alcance de "Nivel del usuario".
+
+### 7.4 Propuestas para cerrar la deuda de P3 *(PROPUESTA, no normativa hasta que el autor la apruebe)*
+
+Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, qué requisitos y criterios de aceptación nacerían de ella y qué valores concretos elegí yo y tú puedes cambiar. Al aprobarlas, pasan a la Fase 3/4 (R38–R40) y se quitan de §7.3. La condición de disparo del Analista (R12) **sigue abierta**: solo bloquea a P5 y se resolverá después, con evidencia real acumulada.
+
+#### Propuesta A — Calibración del Generador (R2, R4)
+
+**Idea central: el orquestador decide *qué* practicar; el Generador solo escribe *cómo* se presenta.** Antes de invocar al Generador, el orquestador calcula un *plan de calibración* con una función pura y testeable (`planChallenge`), reutilizando lo que ya existe (`computeInsights`, `buildReviewQueue`, `recommendApoyo` y el Nivel por dominio de la Propuesta C), y se lo entrega en el prompt junto con el catálogo de conceptos. Así R2 se cumple con evidencia (el plan sale del grafo y de tus intentos) y no depende de lo que el modelo «decida» mirar.
+
+1. **Umbral de evidencia (R4).** Hay *evidencia suficiente* con **N = 8 Evidence registradas** en total (unos dos challenges). Por debajo: modo **arranque**, Nivel Básico, todas las etapas en Apoyo Guiado, dominios en rotación empezando por los menos practicados, y solo conceptos sin prerrequisitos o con todos sus prerrequisitos ya vistos.
+2. **Tres etapas por challenge** (valor por defecto), cada una con un papel:
+   - **Refuerzo:** el primer concepto de la cola de Repaso (misma prioridad de §8). Si su análisis de debilidad (R31) señala un prerrequisito débil como causa raíz, se refuerza ese prerrequisito. Sin debilidades, pasa a *consolidación*: un concepto dominado hace más de 21 días.
+   - **Avance:** un concepto «No visto» o «Visto» cuyos prerrequisitos estén todos al menos en «Visto» (la frontera del grafo), del dominio con menor cobertura.
+   - **Integración:** una etapa de Business Analytics que interpreta el resultado de las anteriores (como la etapa 2 de `challenge-001`).
+   Empates: por prioridad descendente y luego por id, para que el plan sea reproducible.
+3. **Dificultad.** La dificultad de cada etapa es el Nivel del usuario en su dominio + 1, con tope 3 (Trainee = 0, Básico = 1, Intermedio = 2, Avanzado = 3; Trainee practica dificultad 1 y un Avanzado sigue en 3); en *arranque* es 1. La del challenge es la mayor de sus etapas.
+4. **Bloom.** El objetivo es el Bloom más alto aprobado sin ayuda en ese concepto + 1 (tope 6; sin historial, 3). Si el concepto tiene 2 o más fallos, se mantiene el Bloom del fallo (no se sube mientras no se aprueba).
+5. **Apoyo inicial.** `recommendApoyo` de §8: ≥2 fallos → Guiado; 1 fallo, parcial o con ayuda → Pistas; olvido → Autónomo; concepto «No visto» → Guiado. Coherente con R6.
+6. **Mecanismo.** `código_assert` si el dominio es SQL, Python, Limpieza o ML y el resultado se puede comparar; `rubric_claude` en Matemática y Business.
+7. **Tema y datos.** El Generador elige el escenario de negocio, pero no puede repetir el dataset ni el sector de los últimos 3 challenges.
+8. **El plan es un contrato.** El orquestador rechaza el challenge generado si no cumple el plan (los `conceptIds`, dominio, Bloom, Apoyo y mecanismo de cada etapa). Esto se suma a R29 y R19.
+9. **Elección manual opcional.** «Iniciar nuevo challenge» puede recibir un dominio; por defecto es «Recomendado por mi grafo». No cambia el resto del plan.
+
+*Requisitos candidatos:* **R38** (plan de calibración calculado por el orquestador y cumplido por el challenge) y la revisión de **R4** (umbral N = 8, modo arranque).
+*Criterios candidatos:* AC-R38a «dado un concepto con 2 fallos, el plan incluye su refuerzo con Apoyo Guiado y Bloom sin subir»; AC-R38b «dadas menos de 8 Evidence, el plan es de dificultad 1 y todo en Guiado»; AC-R38c «el mismo estado produce siempre el mismo plan»; AC-R38d «un challenge cuyas etapas no siguen el plan se rechaza con el campo incumplido».
+*Valores que elegí y puedes cambiar:* N = 8, 3 etapas, 21 días de olvido, ventana de 3 challenges para no repetir tema, regla «Nivel + 1».
+
+#### Propuesta B — Fallos y presupuesto de la generación (§7.3 «manejo de errores»)
+
+**Idea central: generar es transaccional.** Nada llega a `challenge/` hasta que todo está validado.
+
+1. **Área de trabajo.** El Generador trabaja en `challenge/.generando/challenge-NNN/` (ignorada por git). Solo cuando pasan todas las compuertas el orquestador la mueve de un `rename` a `challenge/challenge-NNN/`. Las compuertas son: esquema estricto (R29), el plan (Propuesta A), el dataset se construye (R24), la solución de referencia reproduce `expected` (R19) y los conceptos existen en el catálogo (R35). Si algo falla, no queda nada a medias en `challenge/`.
+2. **Fases con puntos de retorno.** Fase 1: esqueleto (objetivos, escenario, diseño de datos, esquema de las etapas). Fase 2: el contenido de cada etapa, una por una. Cada fase se valida y se guarda en `estado.json` dentro del área de trabajo.
+3. **Presupuesto agotado (`--max-budget-usd`).** Tope propuesto: **US$ 1,50 por fase**. Si se agota, el agente se detiene, **no se reintenta solo** (R1: todo es acción tuya) y la UI muestra: «Se agotó el presupuesto en la fase X. No se creó ningún challenge.» con dos botones: **Reintentar** (retoma desde la última fase válida, sin repetir lo ya pagado) y **Reintentar con el doble de presupuesto**. Lo ya validado se conserva hasta 24 h.
+4. **Salida inválida (JSON roto o esquema incumplido).** Hasta **2 reparaciones automáticas por fase**: se devuelven al Generador los errores del validador (con el campo) dentro de la misma operación que tú iniciaste. Al tercer fallo se detiene y se muestran los errores. Las reparaciones cuentan para el presupuesto.
+5. **Cancelar.** «Detener» aborta el proceso (como en R26) y borra el área de trabajo.
+6. **Antes de empezar.** Si `claude` no está instalado o no tiene sesión, falla de inmediato con el mensaje de P1; no se crea nada.
+7. **`knowledge-graph.json` corrupto (ya cubierto por R35).** Para el Analista (P5) se añade: antes de cada escritura se copia el archivo actual a `knowledge-graph.json.prev` (ya ignorado por `.gitignore`) y se valida el nuevo contenido antes de reemplazar. Si el Analista falla o se queda sin presupuesto, **la Evidence ya está guardada** (R33) y el grafo no cambia: la UI muestra un aviso y la evidencia queda pendiente de análisis, nunca bloquea «Registrar etapa».
+
+*Requisitos candidatos:* **R39** (generación transaccional, presupuesto por fase, reparaciones acotadas, sin reintento automático de presupuesto).
+*Criterios candidatos:* AC-R39a «dado un Generador que agota el presupuesto en la fase 2, entonces no existe ninguna carpeta nueva en `challenge/`, el error nombra la fase y "Reintentar" retoma desde la fase 2»; AC-R39b «dada una salida con un campo inválido, entonces se reintenta como máximo 2 veces y luego se muestra el campo»; AC-R39c «dado "Detener", entonces el área de trabajo desaparece»; AC-R39d «dado un challenge cuya solución no reproduce `expected`, entonces no se publica» (refuerza AC-R19).
+*Valores que elegí y puedes cambiar:* US$ 1,50 por fase, 2 reparaciones, 24 h de conservación.
+
+#### Propuesta C — Alcance del «Nivel del usuario» (§9.7 del PRD)
+
+**Idea central: el Nivel es por dominio (Tipo), se deriva de la evidencia y nunca se almacena.** Es lo que ya decían la Épica («Apoyo/Nivel por Tipo») y R6 («una etapa en Guiado o Pistas no sube su Nivel»); un nivel global único escondería que puedes ser Avanzado en SQL y Trainee en ML.
+
+1. **Escala.** Trainee → Básico → Intermedio → Avanzado, **por cada uno de los 6 dominios**.
+2. **Qué cuenta para subir.** Una etapa cuenta si su **último intento** (R11) fue *aprobado, sin ayuda y con Apoyo Autónomo* (así R6 se cumple por construcción). Los reintentos no inflan: cada etapa cuenta una vez.
+3. **Umbrales** (etapas que cuentan, en ese dominio): Trainee → Básico: **2** de dificultad ≥ 1. Básico → Intermedio: **3** de dificultad ≥ 2. Intermedio → Avanzado: **3** de dificultad 3.
+4. **No baja.** Un fallo posterior no quita nivel (HU8: no se penaliza para siempre). Lo que muestra la debilidad es Repaso y el estado del concepto, no el Nivel.
+5. **Qué no cuenta.** El test final (mide recuerdo, Bloom 1–3, ya alimenta el estado del concepto por R23), las respuestas de negocio y las etapas con ayuda.
+6. **Nivel global (solo para mostrar en Inicio).** La **mediana** de los seis niveles de dominio (un dominio sin practicar vale Trainee), redondeada hacia abajo: pide amplitud, no solo un dominio fuerte. Analítica muestra los seis.
+7. **Para qué sirve.** (a) Calibra la dificultad del Generador (Propuesta A, «Nivel + 1»); (b) se muestra en Inicio y Analítica. **No bloquea nada**: ningún challenge ni etapa se cierra por tu nivel.
+8. **Cambio de código.** `stats.ts` pasa de un único cálculo global a `levelByDomain(...)` + `globalLevel(...)`; Inicio muestra el global y Analítica los seis. Nada se guarda en `progreso.json`: se deriva, como el estado de las etapas.
+
+*Requisitos candidatos:* **R40** (Nivel por dominio derivado de la evidencia con las reglas anteriores).
+*Criterios candidatos:* AC-R40a «dadas 2 etapas de SQL de dificultad 1 aprobadas sin ayuda en Autónomo, entonces SQL es Básico y los demás dominios siguen en Trainee»; AC-R40b «una aprobada con Pistas o con ayuda no suma»; AC-R40c «un fallo posterior no baja el Nivel»; AC-R40d «el global es la mediana de los seis».
+*Valores que elegí y puedes cambiar:* los umbrales 2/3/3, la mediana como global, que el test no cuente.
+
+#### Orden si apruebas
+C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planChallenge`, con sus tests, antes de invocar a ningún agente), luego B y el Generador (P3) completo sobre `agent-runner`. Cada paso va con sus AC como tests y un commit.
 
 ---
 
