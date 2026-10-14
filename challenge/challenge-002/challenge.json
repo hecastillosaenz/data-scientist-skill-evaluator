@@ -1,0 +1,678 @@
+{
+  "id": "challenge-002",
+  "number": 2,
+  "title": "Cadena de cafeterías: catálogo y ticket promedio por sucursal",
+  "dataset": "Ventas de cafetería",
+  "difficulty": 1,
+  "recommended": false,
+  "objectives": {
+    "lookingFor": "Que practiques la proyección de columnas con SELECT, el filtrado de filas con WHERE y la interpretación de un KPI de negocio a partir de datos de ventas.",
+    "outcomes": [
+      "Un listado de productos proyectado, ordenado y con alias correctos",
+      "Un subconjunto de ventas filtrado por sucursal y cantidad",
+      "El cálculo e interpretación del ticket promedio de una sucursal, con una recomendación concreta"
+    ],
+    "skills": [
+      "SELECT y alias",
+      "ORDER BY con criterios múltiples",
+      "WHERE con condiciones compuestas",
+      "Cálculo de KPIs de negocio",
+      "Interpretación para toma de decisiones"
+    ]
+  },
+  "scenario": "Eres analista de datos en **Café Andino**, una cadena de 4 cafeterías en Bogotá. El gerente de operaciones quiere entender qué productos tienen mejor margen potencial (por precio) y cómo se comporta la sucursal **Centro** en volumen y valor de venta, para decidir en qué sucursal reforzar las promociones del próximo mes.",
+  "task": "Primero necesitas un catálogo de productos ordenado por precio. Luego, aislar las ventas relevantes de la sucursal Centro. Finalmente, calcular el **ticket promedio** de esa sucursal: $$\\text{Ticket promedio} = \\frac{\\text{Ingresos totales}}{\\text{Número de ventas (transacciones)}}$$ donde los ingresos de cada venta son $\\text{precio} \\times \\text{cantidad}$.",
+  "data": {
+    "engine": "duckdb",
+    "tables": [
+      {
+        "name": "sucursales",
+        "description": "Sucursales de la cadena de cafeterías",
+        "columns": [
+          {
+            "name": "id_sucursal",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "nombre",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "ciudad",
+            "type": "VARCHAR",
+            "nullable": false
+          }
+        ],
+        "rowCount": 4,
+        "sampleRows": [
+          [
+            1,
+            "Centro",
+            "Bogotá"
+          ],
+          [
+            2,
+            "Norte",
+            "Bogotá"
+          ],
+          [
+            3,
+            "Chapinero",
+            "Bogotá"
+          ],
+          [
+            4,
+            "Kennedy",
+            "Bogotá"
+          ]
+        ]
+      },
+      {
+        "name": "productos",
+        "description": "Catálogo de productos vendidos",
+        "columns": [
+          {
+            "name": "id_producto",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "nombre",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "categoria",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "precio",
+            "type": "DECIMAL(5,2)",
+            "nullable": false
+          }
+        ],
+        "rowCount": 6,
+        "sampleRows": [
+          [
+            1,
+            "Café americano",
+            "Bebidas calientes",
+            3.5
+          ],
+          [
+            2,
+            "Capuchino",
+            "Bebidas calientes",
+            4.2
+          ],
+          [
+            3,
+            "Té verde",
+            "Bebidas calientes",
+            3
+          ],
+          [
+            4,
+            "Jugo de naranja",
+            "Bebidas frías",
+            3.8
+          ],
+          [
+            5,
+            "Croissant",
+            "Panadería",
+            2.5
+          ],
+          [
+            6,
+            "Muffin de arándanos",
+            "Panadería",
+            2.8
+          ]
+        ]
+      },
+      {
+        "name": "ventas",
+        "description": "Transacciones de venta por sucursal y producto",
+        "columns": [
+          {
+            "name": "id_venta",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "id_sucursal",
+            "type": "INTEGER",
+            "fk": {
+              "table": "sucursales",
+              "column": "id_sucursal"
+            },
+            "nullable": false
+          },
+          {
+            "name": "id_producto",
+            "type": "INTEGER",
+            "fk": {
+              "table": "productos",
+              "column": "id_producto"
+            },
+            "nullable": false
+          },
+          {
+            "name": "fecha",
+            "type": "DATE",
+            "nullable": false
+          },
+          {
+            "name": "cantidad",
+            "type": "INTEGER",
+            "nullable": false
+          }
+        ],
+        "rowCount": 16,
+        "sampleRows": [
+          [
+            1,
+            1,
+            1,
+            "2026-01-05",
+            2
+          ],
+          [
+            2,
+            1,
+            2,
+            "2026-01-05",
+            1
+          ],
+          [
+            3,
+            1,
+            5,
+            "2026-01-06",
+            3
+          ],
+          [
+            4,
+            1,
+            1,
+            "2026-01-07",
+            1
+          ],
+          [
+            5,
+            2,
+            2,
+            "2026-01-05",
+            2
+          ],
+          [
+            6,
+            2,
+            4,
+            "2026-01-06",
+            1
+          ],
+          [
+            7,
+            2,
+            6,
+            "2026-01-07",
+            2
+          ],
+          [
+            8,
+            2,
+            1,
+            "2026-01-08",
+            1
+          ]
+        ]
+      }
+    ],
+    "seedSql": "CREATE TABLE sucursales (id_sucursal INTEGER PRIMARY KEY, nombre VARCHAR NOT NULL, ciudad VARCHAR NOT NULL); INSERT INTO sucursales VALUES (1, 'Centro', 'Bogotá'), (2, 'Norte', 'Bogotá'), (3, 'Chapinero', 'Bogotá'), (4, 'Kennedy', 'Bogotá'); CREATE TABLE productos (id_producto INTEGER PRIMARY KEY, nombre VARCHAR NOT NULL, categoria VARCHAR NOT NULL, precio DECIMAL(5,2) NOT NULL); INSERT INTO productos VALUES (1, 'Café americano', 'Bebidas calientes', 3.50), (2, 'Capuchino', 'Bebidas calientes', 4.20), (3, 'Té verde', 'Bebidas calientes', 3.00), (4, 'Jugo de naranja', 'Bebidas frías', 3.80), (5, 'Croissant', 'Panadería', 2.50), (6, 'Muffin de arándanos', 'Panadería', 2.80); CREATE TABLE ventas (id_venta INTEGER PRIMARY KEY, id_sucursal INTEGER NOT NULL REFERENCES sucursales(id_sucursal), id_producto INTEGER NOT NULL REFERENCES productos(id_producto), fecha DATE NOT NULL, cantidad INTEGER NOT NULL); INSERT INTO ventas VALUES (1, 1, 1, '2026-01-05', 2), (2, 1, 2, '2026-01-05', 1), (3, 1, 5, '2026-01-06', 3), (4, 1, 1, '2026-01-07', 1), (5, 2, 2, '2026-01-05', 2), (6, 2, 4, '2026-01-06', 1), (7, 2, 6, '2026-01-07', 2), (8, 2, 1, '2026-01-08', 1), (9, 3, 3, '2026-01-05', 1), (10, 3, 2, '2026-01-06', 3), (11, 3, 5, '2026-01-07', 2), (12, 3, 1, '2026-01-08', 1), (13, 4, 4, '2026-01-05', 2), (14, 4, 6, '2026-01-06', 1), (15, 4, 2, '2026-01-07', 1), (16, 4, 1, '2026-01-08', 2);"
+  },
+  "businessQuestions": [
+    {
+      "id": "challenge-002-bq1",
+      "text": "El producto más caro (Capuchino, \\$4.20) no es el más vendido en todas las sucursales. ¿Subirías su precio, lo promocionarías más, o dejarías el catálogo igual?",
+      "reflectionGuide": "Piensa en volumen vs. margen: un precio alto con poco volumen puede aportar menos ingreso total que un producto más barato con más rotación. La decisión depende de si el objetivo es margen unitario o ingreso total."
+    },
+    {
+      "id": "challenge-002-bq2",
+      "text": "Si el ticket promedio de Centro resulta bajo frente a otras sucursales, ¿invertirías en promociones ahí o en la sucursal con mejor ticket para maximizar retorno?",
+      "reflectionGuide": "Un ticket bajo puede indicar oportunidad de upselling (más valor por visita) o simplemente menor tráfico; conviene cruzar el ticket promedio con el número de transacciones antes de decidir dónde invertir."
+    },
+    {
+      "id": "challenge-002-bq3",
+      "text": "Las ventas filtradas con cantidad mayor a 1 en Centro son solo 2 de 4 transacciones. ¿Diseñarías una promoción de 'compra 2 y ahorra' para incentivar ese comportamiento?",
+      "reflectionGuide": "Antes de lanzar la promoción, valida si la baja cantidad por transacción es un patrón general de la sucursal o un efecto de muestra pequeña, y si el margen del producto soporta un descuento por volumen."
+    }
+  ],
+  "finalTest": [
+    {
+      "conceptId": "sql:select",
+      "bloom": 1,
+      "kind": "opcion_multiple",
+      "prompt": "Tienes una tabla `sucursales` con columnas `id_sucursal`, `nombre`, `ciudad` y `fecha_apertura`. Solo necesitas el nombre y la ciudad de cada sucursal para un reporte. ¿Qué instrucción SQL es la correcta?",
+      "options": [
+        "SELECT nombre, ciudad FROM sucursales;",
+        "SELECT * FROM sucursales WHERE nombre, ciudad;",
+        "SELECT sucursales FROM nombre, ciudad;",
+        "FILTER nombre, ciudad FROM sucursales;"
+      ],
+      "correctIndex": 0,
+      "explanation": "SELECT proyecta solo las columnas pedidas; WHERE no sirve para elegir columnas, y las otras opciones invierten la sintaxis de SELECT/FROM.",
+      "id": "challenge-002-t1"
+    },
+    {
+      "conceptId": "sql:select",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "En la tabla `productos` del catálogo de la cadena de cafeterías existen las columnas `id_producto`, `nombre_producto`, `categoria`, `precio` y `costo`. Quieres mostrar el nombre del producto y su margen (precio menos costo) sin traer el resto de columnas. ¿Cuál consulta logra esto?",
+      "options": [
+        "SELECT nombre_producto, precio - costo AS margen FROM productos;",
+        "SELECT * FROM productos WHERE precio - costo;",
+        "SELECT nombre_producto, margen FROM productos;",
+        "SELECT precio, costo FROM productos GROUP BY margen;"
+      ],
+      "correctIndex": 0,
+      "explanation": "SELECT permite proyectar columnas existentes y también expresiones calculadas con alias (AS margen); `margen` no existe como columna, y WHERE/GROUP BY no son necesarios aquí.",
+      "id": "challenge-002-t2"
+    },
+    {
+      "conceptId": "sql:where",
+      "bloom": 3,
+      "kind": "opcion_multiple",
+      "prompt": "En la tabla `ventas` (columnas `id_venta`, `id_sucursal`, `monto`, `fecha`) quieres quedarte solo con los tickets de la sucursal 'Centro' cuyo monto sea mayor a \\$50. ¿Qué condición WHERE es correcta?",
+      "options": [
+        "WHERE id_sucursal = 'Centro' AND monto > 50",
+        "WHERE id_sucursal = 'Centro' OR monto > 50",
+        "WHERE id_sucursal == 'Centro', monto > 50",
+        "SELECT id_sucursal = 'Centro' AND monto > 50"
+      ],
+      "correctIndex": 0,
+      "explanation": "AND exige que ambas condiciones se cumplan a la vez; OR traería también ventas de otras sucursales con monto alto, y las otras opciones tienen sintaxis inválida.",
+      "id": "challenge-002-t3"
+    },
+    {
+      "conceptId": "sql:where",
+      "bloom": 2,
+      "kind": "numerica",
+      "prompt": "La tabla `ventas` tiene estos 6 tickets: (sucursal='Norte', monto=30), (sucursal='Norte', monto=65), (sucursal='Sur', monto=80), (sucursal='Norte', monto=45), (sucursal='Sur', monto=20), (sucursal='Norte', monto=90). Si filtras con `WHERE sucursal = 'Norte' AND monto > 40`, ¿cuántas filas devuelve la consulta?",
+      "answer": 3,
+      "tolerance": 0,
+      "explanation": "Cumplen ambas condiciones los tickets de Norte con monto 65, 45 y 90 (3 filas); el de 30 no supera 40 y los de Sur no son de la sucursal Norte.",
+      "id": "challenge-002-t4"
+    },
+    {
+      "conceptId": "business:kpis",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "La sucursal 'Centro' de la cadena de cafeterías registró 4 tickets en un día: \\$42, \\$58, \\$36 y \\$64. ¿Cuál es el ticket promedio (KPI) de esa sucursal ese día?",
+      "answer": 50,
+      "tolerance": 0.01,
+      "explanation": "El ticket promedio es la suma de los montos (200) dividida entre el número de tickets (4), lo que da \\$50.",
+      "id": "challenge-002-t5"
+    },
+    {
+      "conceptId": "business:kpis",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "El gerente de la cadena de cafeterías calculó que la sucursal 'Norte' tiene un ticket promedio de \\$55 con 200 tickets al mes, mientras que la sucursal 'Centro' tiene un ticket promedio de \\$70 pero solo 90 tickets al mes. El gerente concluye: \"Centro es la mejor sucursal porque su ticket promedio es más alto\". ¿Qué le falta considerar a esta conclusión para evaluar el desempeño real de cada sucursal como KPI de negocio?",
+      "rubric": "La respuesta debe señalar que el ticket promedio es solo un KPI parcial: hay que considerar también el volumen de tickets (o el ingreso total = ticket promedio × número de tickets) para comparar el desempeño real; Norte genera \\$11,000 totales frente a \\$6,300 de Centro, por lo que un solo KPI aislado puede llevar a conclusiones equivocadas si no se cruza con otras métricas como volumen o ingreso total.",
+      "explanation": "Un KPI aislado (ticket promedio) no captura el panorama completo; hay que combinarlo con volumen o ingreso total para decidir correctamente qué sucursal rinde mejor.",
+      "id": "challenge-002-t6"
+    }
+  ],
+  "stages": [
+    {
+      "id": "challenge-002-s1",
+      "challengeId": "challenge-002",
+      "number": 1,
+      "title": "Catálogo de productos ordenado",
+      "domain": "sql",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 20,
+      "mechanism": "codigo_assert",
+      "description": "Escribe una consulta sobre la tabla `productos` que devuelva las columnas `producto` (alias de `nombre`), `categoria` y `precio`, ordenadas por `precio` de mayor a menor y, en caso de empate, por `producto` ascendente.",
+      "conceptIds": [
+        "sql:select"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "SELECT y proyección de columnas",
+            "body": "La cláusula `SELECT` define **qué columnas** salen en el resultado, y en **qué orden**. Puedes elegir un subconjunto de columnas de una tabla (proyección) y renombrarlas con `AS` para que el resultado tenga nombres claros de negocio, por ejemplo `nombre AS producto`."
+          },
+          {
+            "title": "Alias de columnas con AS",
+            "body": "`columna AS alias` cambia el nombre con el que aparece una columna en el resultado, sin modificar la tabla original. Es útil cuando el nombre interno (`nombre`) no coincide con el nombre que el negocio espera ver (`producto`)."
+          },
+          {
+            "title": "ORDER BY con múltiples claves",
+            "body": "`ORDER BY col1 DESC, col2 ASC` ordena primero por `col1` de mayor a menor; cuando dos filas tienen el mismo valor en `col1`, el segundo criterio (`col2`) decide el orden entre ellas (orden ascendente alfabético para texto)."
+          },
+          {
+            "title": "Por qué importa ordenar un catálogo",
+            "body": "Un catálogo ordenado por precio descendente permite identificar rápido los productos con mayor valor unitario, que suelen tener mejor margen potencial. El criterio de empate (`producto` ascendente) garantiza un resultado **determinista**: sin él, dos productos con el mismo precio podrían aparecer en cualquier orden."
+          }
+        ],
+        "workedExample": {
+          "domain": "Librería independiente",
+          "body": "Supón una tabla `libros` con columnas `titulo`, `genero` y `precio`:\n\n| titulo | genero | precio |\n|---|---|---|\n| Cien años de soledad | Novela | 12.00 |\n| El Aleph | Cuentos | 9.50 |\n| Rayuela | Novela | 9.50 |\n\nConsulta:\n```sql\nSELECT titulo AS libro, genero, precio\nFROM libros\nORDER BY precio DESC, libro ASC;\n```\n\nResultado:\n\n| libro | genero | precio |\n|---|---|---|\n| Cien años de soledad | Novela | 12.00 |\n| El Aleph | Cuentos | 9.50 |\n| Rayuela | Novela | 9.50 |\n\nNota que \"El Aleph\" y \"Rayuela\" empatan en precio (9.50), y como \"El Aleph\" es alfabéticamente anterior a \"Rayuela\", aparece primero gracias al segundo criterio de orden."
+        },
+        "steps": [
+          "Identifica la tabla de origen: `productos`.",
+          "Decide qué columnas necesitas en el resultado final: nombre del producto, categoría y precio.",
+          "Aplica el alias que pide el negocio para la columna de nombre.",
+          "Define el criterio principal de orden (precio) y la dirección (mayor a menor).",
+          "Define el criterio de desempate (producto) y su dirección (ascendente).",
+          "Revisa que el número de filas en el resultado coincida con el número de productos en la tabla."
+        ],
+        "hints": [
+          "Revisa qué columna de la tabla `productos` corresponde al nombre y cómo renombrarla sin cambiar los datos.",
+          "Piensa en qué pasa si dos productos tienen exactamente el mismo precio: ¿qué columna decide cuál va primero?",
+          "`ORDER BY` acepta más de una columna separadas por coma, cada una con su propia dirección."
+        ],
+        "research": [
+          {
+            "conceptId": "sql:select",
+            "why": "Es la base para elegir y renombrar las columnas del catálogo que pide el gerente.",
+            "searchEs": "cláusula SELECT SQL alias AS ejemplos",
+            "searchEn": "SQL SELECT clause column alias AS examples"
+          },
+          {
+            "conceptId": "sql:select",
+            "why": "El orden de las columnas en el SELECT determina el orden en que aparecen en el resultado.",
+            "searchEs": "orden de columnas en SELECT SQL",
+            "searchEn": "SQL SELECT column order in result set"
+          },
+          {
+            "conceptId": "sql:select",
+            "why": "ORDER BY con varias columnas es la herramienta para resolver empates de forma determinista.",
+            "searchEs": "ORDER BY múltiples columnas SQL ASC DESC",
+            "searchEn": "SQL ORDER BY multiple columns ASC DESC"
+          }
+        ],
+        "deliverables": [
+          "La consulta devuelve exactamente 3 columnas en este orden: `producto`, `categoria`, `precio`.",
+          "`producto` es un alias de la columna `nombre` de la tabla `productos`.",
+          "Las filas están ordenadas por `precio` de mayor a menor.",
+          "En caso de empate en `precio`, las filas están ordenadas por `producto` de A a Z.",
+          "El resultado incluye los 6 productos de la tabla, sin filtrar ninguno.",
+          "Terminado cuando: la consulta corre sin error sobre el seed y el orden de filas coincide exactamente con el esperado."
+        ],
+        "solution": {
+          "code": "SELECT nombre AS producto, categoria, precio\nFROM productos\nORDER BY precio DESC, producto ASC;",
+          "expectedResult": "6 filas: Capuchino (4.20), Jugo de naranja (3.80), Café americano (3.50), Té verde (3.00), Muffin de arándanos (2.80), Croissant (2.50), cada una con su categoría.",
+          "reasoning": "Se proyectan las tres columnas pedidas con el alias `producto` para `nombre`, y se ordena primero por `precio` de forma descendente. Como en este conjunto de datos no hay dos productos con exactamente el mismo precio, el criterio de desempate por `producto` ascendente no cambia el orden ya determinado por el precio, pero queda definido para cualquier empate futuro.",
+          "conceptLinks": "sql:select se usa en la proyección de columnas (SELECT nombre AS producto, categoria, precio) y en la definición del orden de salida (ORDER BY).",
+          "businessInterpretation": "Capuchino y Jugo de naranja encabezan el catálogo por precio unitario, lo que sugiere mayor margen potencial si el costo de insumos no crece en la misma proporción; sin embargo, el precio de venta por sí solo no mide margen real, ya que no se conoce el costo de cada producto.",
+          "commonError": "Olvidar el alias y dejar la columna como `nombre` en vez de `producto` (el orquestador rechazaría el resultado por nombre de columna incorrecto), o escribir `ORDER BY precio ASC` por error, lo que daría Croissant (2.50) primero en vez de Capuchino (4.20).",
+          "dsFlow": "Esta etapa ocurre al inicio de un análisis de catálogo, cuando el analista necesita un primer vistazo ordenado de los productos antes de cruzar con datos de ventas.",
+          "skill": "Proyección y ordenamiento básico en SQL (SELECT, AS, ORDER BY)."
+        },
+        "skeleton": {
+          "language": "sql",
+          "code": "SELECT\n  -- TODO: selecciona 'nombre' con el alias 'producto'\n  -- TODO: selecciona 'categoria'\n  -- TODO: selecciona 'precio'\nFROM productos\n-- TODO: ordena por precio (de mayor a menor) y, en caso de empate, por producto (ascendente)\n;"
+        },
+        "expected": {
+          "columns": [
+            "producto",
+            "categoria",
+            "precio"
+          ],
+          "rows": [
+            [
+              "Capuchino",
+              "Bebidas calientes",
+              4.2
+            ],
+            [
+              "Jugo de naranja",
+              "Bebidas frías",
+              3.8
+            ],
+            [
+              "Café americano",
+              "Bebidas calientes",
+              3.5
+            ],
+            [
+              "Té verde",
+              "Bebidas calientes",
+              3
+            ],
+            [
+              "Muffin de arándanos",
+              "Panadería",
+              2.8
+            ],
+            [
+              "Croissant",
+              "Panadería",
+              2.5
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s2",
+      "challengeId": "challenge-002",
+      "number": 2,
+      "title": "Ventas filtradas de la sucursal Centro",
+      "domain": "sql",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 20,
+      "mechanism": "codigo_assert",
+      "description": "Sobre la tabla `ventas`, filtra las filas donde `id_sucursal = 1` y `cantidad > 1`. Devuelve las columnas `id_venta`, `id_producto` y `cantidad`, ordenadas por `id_venta` ascendente.",
+      "conceptIds": [
+        "sql:where",
+        "sql:select"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Filtrar filas con WHERE",
+            "body": "La cláusula `WHERE` se evalúa **antes** de decidir qué filas entran al resultado. Para combinar dos condiciones sobre la misma fila (sucursal y cantidad) se usa `AND`, de modo que solo sobreviven las filas que cumplen ambas a la vez."
+          },
+          {
+            "title": "Comparadores numéricos",
+            "body": "`=` compara igualdad exacta (como `id_sucursal = 1`) mientras que `>` compara magnitud (como `cantidad > 1`). Mezclar ambos tipos de comparador en un mismo `WHERE` es una operación muy común al preparar datos para análisis."
+          },
+          {
+            "title": "Proyección después del filtro",
+            "body": "Aunque el filtro y la proyección se escriben en orden distinto en el SQL (`SELECT` antes que `WHERE`), lógicamente primero se filtran las filas y luego se seleccionan solo las columnas que interesan al negocio."
+          },
+          {
+            "title": "Orden determinista con ORDER BY",
+            "body": "Sin `ORDER BY`, el motor no garantiza un orden estable entre ejecuciones. Para que el reporte sea reproducible (y verificable), se ordena explícitamente por `id_venta ASC`."
+          }
+        ],
+        "workedExample": {
+          "domain": "Biblioteca pública: préstamos de libros",
+          "body": "Tabla `prestamos(id_prestamo, id_sucursal, dias_atraso)` con filas: (1,2,0), (2,2,5), (3,1,3), (4,2,2).\n\nConsulta: filas donde `id_sucursal = 2` y `dias_atraso > 1`, mostrando `id_prestamo` y `dias_atraso`, ordenadas por `id_prestamo`.\n\n```sql\nSELECT id_prestamo, dias_atraso\nFROM prestamos\nWHERE id_sucursal = 2 AND dias_atraso > 1\nORDER BY id_prestamo ASC;\n```\n\nResultado verificado:\n\n| id_prestamo | dias_atraso |\n|---|---|\n| 2 | 5 |\n| 4 | 2 |\n\nLa fila 1 queda fuera por `dias_atraso = 0` (no cumple `> 1`) y la fila 3 queda fuera por `id_sucursal = 1` (no cumple `= 2`)."
+        },
+        "steps": [
+          "Identifica la tabla fuente (`ventas`) y las dos condiciones que debe cumplir cada fila a la vez.",
+          "Escribe la condición de sucursal como una igualdad sobre `id_sucursal`.",
+          "Escribe la condición de cantidad como una desigualdad estricta sobre `cantidad`.",
+          "Combina ambas condiciones con el operador que exige que se cumplan simultáneamente.",
+          "Proyecta únicamente las tres columnas pedidas, en el orden solicitado.",
+          "Ordena el resultado de forma ascendente por el identificador de venta para que sea reproducible."
+        ],
+        "hints": [
+          "Repasa qué fila de `ventas` corresponde a `id_sucursal = 1`: hay cuatro, pero no todas tienen `cantidad` mayor a 1.",
+          "Revisa cada valor de `cantidad` uno por uno antes de decidir si la fila entra o no.",
+          "Piensa en qué operador lógico exige que dos condiciones se cumplan al mismo tiempo, no basta con que se cumpla una sola.",
+          "Verifica el orden final de las columnas pedidas: no es necesariamente el orden en que aparecen en la tabla original."
+        ],
+        "research": [
+          {
+            "conceptId": "sql:select",
+            "why": "Antes de filtrar necesitas saber cómo proyectar solo las columnas que el gerente quiere ver.",
+            "searchEs": "cláusula SELECT proyección de columnas SQL",
+            "searchEn": "SQL SELECT clause column projection"
+          },
+          {
+            "conceptId": "sql:where",
+            "why": "Es el concepto central de esta etapa: aislar filas según condiciones combinadas con AND.",
+            "searchEs": "cláusula WHERE con AND SQL ejemplos",
+            "searchEn": "SQL WHERE clause with AND operator examples"
+          },
+          {
+            "conceptId": "sql:where",
+            "why": "Entender el orden de ejecución lógico ayuda a razonar por qué WHERE se aplica antes que la proyección final.",
+            "searchEs": "orden de ejecución lógico de una consulta SQL",
+            "searchEn": "SQL query logical order of execution"
+          }
+        ],
+        "deliverables": [
+          "La consulta usa la tabla `ventas` y aplica `WHERE id_sucursal = 1 AND cantidad > 1`.",
+          "Las columnas devueltas son exactamente `id_venta`, `id_producto`, `cantidad`, en ese orden y sin columnas adicionales.",
+          "El resultado está ordenado ascendentemente por `id_venta`.",
+          "Interpretación de negocio: estas son las ventas de volumen (más de 1 unidad) en la sucursal Centro, útiles para detectar qué productos se compran en cantidad.",
+          "Terminado cuando la consulta devuelve exactamente 2 filas: (1, 1, 2) y (3, 5, 3)."
+        ],
+        "solution": {
+          "code": "SELECT id_venta, id_producto, cantidad\nFROM ventas\nWHERE id_sucursal = 1 AND cantidad > 1\nORDER BY id_venta ASC;",
+          "expectedResult": "Dos filas: (1, 1, 2) y (3, 5, 3)",
+          "reasoning": "De las 4 ventas con `id_sucursal = 1` (id_venta 1,2,3,4), se descartan las de `cantidad = 1` (id_venta 2 y 4). Quedan id_venta 1 (producto 1, cantidad 2) e id_venta 3 (producto 5, cantidad 3), ordenadas por id_venta.",
+          "conceptLinks": "sql:select se usa en la proyección de las tres columnas finales; sql:where se usa para combinar la condición de sucursal con la de cantidad mediante AND.",
+          "businessInterpretation": "Estas son las transacciones de la sucursal Centro donde se vendió más de una unidad por ticket, lo que ayuda a identificar productos con compras de volumen; limitación: no incluye el valor monetario de cada venta, solo cantidades.",
+          "commonError": "Olvidar el AND y filtrar solo por `cantidad > 1` sin restringir `id_sucursal = 1` incluiría ventas de otras sucursales, como la venta 5 (sucursal 2, cantidad 2), que no pertenece a este reporte.",
+          "dsFlow": "Esta etapa ocurre en la fase de extracción y limpieza inicial, cuando el analista aísla el subconjunto de datos relevante para una sucursal específica antes de calcular métricas agregadas.",
+          "skill": "Filtrado de filas con condiciones múltiples en SQL"
+        },
+        "skeleton": {
+          "language": "sql",
+          "code": "SELECT -- TODO: columnas id_venta, id_producto, cantidad\nFROM ventas\nWHERE -- TODO: condición de sucursal\n  AND -- TODO: condición de cantidad\nORDER BY -- TODO: orden ascendente por id_venta"
+        },
+        "expected": {
+          "columns": [
+            "id_venta",
+            "id_producto",
+            "cantidad"
+          ],
+          "rows": [
+            [
+              1,
+              1,
+              2
+            ],
+            [
+              3,
+              5,
+              3
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s3",
+      "challengeId": "challenge-002",
+      "number": 3,
+      "title": "Ticket promedio de la sucursal Centro",
+      "domain": "business",
+      "difficulty": 1,
+      "bloom": 4,
+      "estimatedMinutes": 25,
+      "mechanism": "rubric_claude",
+      "description": "Usando los datos de `ventas` y `productos` de la sucursal Centro (id_sucursal = 1), calcula el ticket promedio con la fórmula $\\text{Ticket promedio} = \\frac{\\sum (\\text{precio} \\times \\text{cantidad})}{\\text{número de ventas}}$. Reporta el valor con su fórmula, una recomendación de 2–4 líneas para el gerente de operaciones y una limitación del análisis.",
+      "conceptIds": [
+        "business:kpis"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Un KPI es una fórmula, no un número suelto",
+            "body": "Un indicador clave (KPI) como el **ticket promedio** siempre se define primero como fórmula y después se calcula. Aquí: $$\\text{Ticket promedio} = \\frac{\\text{Ingresos totales}}{\\text{Número de ventas}}$$ Si no fijas la fórmula antes de mirar los datos, es fácil mezclar \"ingresos\" con \"unidades vendidas\" y obtener un número que parece razonable pero no responde la pregunta de negocio."
+          },
+          {
+            "title": "Ingresos por transacción vs. ingresos totales",
+            "body": "Cada fila de `ventas` es una transacción con un solo producto y una cantidad. El ingreso de esa fila es $\\text{precio} \\times \\text{cantidad}$. El ingreso total de la sucursal es la suma de esos ingresos por fila, no la suma de las cantidades ni el número de filas."
+          },
+          {
+            "title": "El denominador es el número de ventas, no de unidades",
+            "body": "El \"número de ventas\" es el número de transacciones (filas) de la sucursal, aunque cada transacción incluya varias unidades. Confundir \"transacción\" con \"unidad vendida\" es el error más común al calcular tickets promedio."
+          },
+          {
+            "title": "Un KPI aislado no explica causas",
+            "body": "El ticket promedio te dice *cuánto* gasta en promedio un cliente por visita, pero no te dice *por qué*: no distingue si es por mezcla de productos, por volumen de unidades, o por el precio de cada producto. Por eso toda cifra de KPI debe acompañarse de una interpretación de negocio y de sus límites."
+          },
+          {
+            "title": "Redondeo con criterio de negocio",
+            "body": "Un valor monetario como el ticket promedio normalmente se reporta con 2 decimales (centavos), igual que los precios de la tabla `productos`. Redondear a 0 decimales perdería información relevante para decisiones de precio."
+          }
+        ],
+        "workedExample": {
+          "domain": "Librería independiente",
+          "body": "**Librería El Tintero** vende libros. En la sucursal **Sur** se registraron 3 ventas: (a) 2 unidades a \\$15.00 c/u, (b) 1 unidad a \\$22.00, (c) 3 unidades a \\$8.00 c/u.\n\nIngreso de cada venta: $2 \\times 15.00 = 30.00$, $1 \\times 22.00 = 22.00$, $3 \\times 8.00 = 24.00$.\n\nIngresos totales $= 30.00 + 22.00 + 24.00 = 76.00$.\n\nNúmero de ventas (transacciones) $= 3$.\n\n$$\\text{Ticket promedio} = \\frac{76.00}{3} = 25.33$$\n\nNota que el resultado **no** es el promedio de las cantidades vendidas (2, 1, 3) ni el promedio de los precios unitarios (15.00, 22.00, 8.00): es el promedio de los **ingresos por transacción**."
+        },
+        "steps": [
+          "Identifica qué filas de `ventas` corresponden a la sucursal Centro (id_sucursal = 1).",
+          "Para cada una de esas ventas, calcula su ingreso individual combinando la cantidad con el precio del producto correspondiente en `productos`.",
+          "Suma los ingresos individuales para obtener los ingresos totales de la sucursal Centro.",
+          "Cuenta cuántas filas (transacciones) de ventas tiene la sucursal Centro.",
+          "Divide los ingresos totales entre el número de transacciones para obtener el ticket promedio.",
+          "Redondea el resultado a 2 decimales y repórtalo junto con la fórmula usada.",
+          "Escribe la interpretación de negocio: qué significa ese valor para el gerente de operaciones y qué limitación tiene el análisis."
+        ],
+        "hints": [
+          "Revisa primero cuántas filas de `ventas` tienen id_sucursal = 1 y cuáles son.",
+          "Para cada una de esas filas necesitas el precio del producto, que está en una tabla distinta a `ventas`.",
+          "Piensa qué representa cada fila de `ventas`: ¿una unidad vendida o una transacción completa (que puede incluir varias unidades)?",
+          "El denominador de la fórmula es un conteo de filas, no una suma de cantidades."
+        ],
+        "research": [
+          {
+            "conceptId": "business:kpis",
+            "why": "El ticket promedio es un KPI operativo clásico en retail y necesitas entender qué lo hace útil para decisiones gerenciales.",
+            "searchEs": "qué es un KPI ejemplos de indicadores clave de negocio",
+            "searchEn": "what is a KPI key performance indicator examples"
+          },
+          {
+            "conceptId": "business:kpis",
+            "why": "El ticket promedio (average order value) es el KPI específico que debes calcular e interpretar en este reto.",
+            "searchEs": "ticket promedio valor promedio de pedido fórmula retail",
+            "searchEn": "average order value AOV formula retail"
+          },
+          {
+            "conceptId": "business:kpis",
+            "why": "Toda cifra de negocio debe presentarse con sus límites para evitar decisiones mal fundamentadas.",
+            "searchEs": "limitaciones de un indicador de negocio al interpretar datos",
+            "searchEn": "limitations of a business metric when interpreting data"
+          }
+        ],
+        "deliverables": [
+          "El valor del ticket promedio de la sucursal Centro se reporta explícitamente, con 2 decimales.",
+          "La fórmula del ticket promedio se muestra junto con el valor (numerador y denominador identificados).",
+          "Se indica explícitamente cuántas ventas (transacciones) y cuántos ingresos totales se usaron para el cálculo.",
+          "La recomendación para el gerente de operaciones tiene entre 2 y 4 líneas y se basa en el valor calculado, no es genérica.",
+          "Se menciona al menos una limitación concreta del análisis (por ejemplo: pocas transacciones, periodo corto, no compara con otras sucursales, no distingue mezcla de productos, etc.).",
+          "Terminado cuando: el valor numérico coincide con el cálculo correcto, la fórmula está explícita, y la respuesta incluye recomendación y limitación."
+        ],
+        "solution": {
+          "expectedResult": "Ticket promedio de la sucursal Centro = \\$5.55 (ingresos totales de \\$22.20 entre 4 ventas).",
+          "reasoning": "Las ventas de la sucursal Centro (id_sucursal = 1) son 4 filas: venta 1 (café americano, cantidad 2, precio 3.50 → 7.00), venta 2 (capuchino, cantidad 1, precio 4.20 → 4.20), venta 3 (croissant, cantidad 3, precio 2.50 → 7.50) y venta 4 (café americano, cantidad 1, precio 3.50 → 3.50). Ingresos totales = 7.00 + 4.20 + 7.50 + 3.50 = \\$22.20. Número de ventas = 4. Ticket promedio = 22.20 / 4 = \\$5.55.",
+          "conceptLinks": "La etapa 1 (SELECT y proyección) y la etapa 2 (filtrado con WHERE) ya aislaron las ventas de la sucursal Centro; aquí (business:kpis) se agregan esos valores en un indicador único y se interpreta para la decisión de negocio.",
+          "businessInterpretation": "Un ticket promedio de \\$5.55 en Centro sugiere que las visitas combinan típicamente una bebida y un producto de panadería, más que compras grandes; si el gerente busca subir el ticket, podría promover combos (bebida + panadería) en esa sucursal. Limitación: el cálculo se basa en solo 4 transacciones de pocos días, por lo que no es representativo de un mes completo ni permite comparar de forma robusta contra las otras sucursales sin más datos.",
+          "commonError": "Un error común es dividir las unidades vendidas entre el número de ventas en vez de los ingresos: sumar las cantidades (2+1+3+1 = 7) y dividir entre 4 da 1.75, que no es un valor monetario y no corresponde al ticket promedio; otro error es dividir los ingresos totales (22.20) entre el número de unidades vendidas (7), obteniendo 3.17, que tampoco es el ticket promedio correcto.",
+          "dsFlow": "Esto ocurre al final de un análisis exploratorio, cuando ya se filtró y agregó la información relevante y se debe traducir un cálculo técnico en un indicador que un gerente sin conocimientos técnicos pueda usar para tomar una decisión.",
+          "skill": "Cálculo e interpretación de un KPI de negocio (ticket promedio) a partir de datos agregados, comunicando resultado, fórmula, recomendación y limitación."
+        }
+      }
+    }
+  ]
+}
