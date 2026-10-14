@@ -1,0 +1,11 @@
+{
+  "name": "data-scientist-skill-evaluator",
+  "private": true,
+  "description": "Raíz del repo: solo delega scripts a app/ (sin dependencias propias).",
+  "scripts": {
+    "app": "npm --prefix app run app",
+    "dev": "npm --prefix app run dev",
+    "test": "npm --prefix app test",
+    "typecheck": "npm --prefix app run typecheck"
+  }
+}
