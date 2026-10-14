@@ -55,16 +55,20 @@ describe('plan de calibración (R38)', () => {
     expect(plan.rationale[0]).toContain('Modo arranque');
   });
 
-  it('arranque: avance en el dominio menos cubierto, solo conceptos sin prerrequisitos pendientes, e integración de Business', () => {
+  it('arranque: avance en el dominio menos cubierto (secuencial, sin saltarse prerrequisitos) e integración de Business', () => {
     const plan = planChallenge(input());
     expect(plan.id).toBe('challenge-001');
     expect(plan.domain).toBe('sql');
     const avance = plan.stages.filter((s) => s.role === 'avance');
     expect(avance[0]!.conceptIds).toEqual(['sql:select']); // más dependientes entre las raíces de SQL (select ← where)
+    // Las etapas son secuenciales: lo que no tiene prerrequisitos pendientes, o depende de una etapa anterior del mismo challenge.
+    const planned = new Set<string>();
     for (const s of avance) {
       const c = CONCEPTS.find((c) => c.id === s.conceptIds[0])!;
-      expect(c.prerequisites).toEqual([]);
+      expect(c.prerequisites.every((p) => planned.has(p))).toBe(true);
+      planned.add(c.id);
     }
+    expect(avance[1]!.conceptIds).toEqual(['sql:where']); // sigue en SQL y depende de «select»
     const last = plan.stages.at(-1)!;
     expect(last.role).toBe('integracion');
     expect(last.domain).toBe('business');

@@ -156,12 +156,13 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     });
   };
 
-  // Frontera del grafo: conceptos no firmes cuyos prerrequisitos ya están al menos «Vistos».
+  // Frontera del grafo: conceptos no firmes cuyos prerrequisitos ya están al menos «Vistos» (o van antes en este challenge).
   const frontier = (domain: DomainId | null) =>
     concepts
       .filter((c) => !used.has(c.id) && (domain === null || c.domain === domain))
       .filter((c) => stateOf(c.id) === 'no_visto' || stateOf(c.id) === 'visto')
-      .filter((c) => c.prerequisites.every((p) => ['visto', 'dominado'].includes(stateOf(p))))
+      // Un prerrequisito planeado en una etapa anterior del mismo challenge cuenta como cubierto: las etapas son secuenciales.
+      .filter((c) => c.prerequisites.every((p) => ['visto', 'dominado'].includes(stateOf(p)) || used.has(p)))
       .sort((a, b) => (stateOf(a.id) === 'no_visto' ? 0 : 1) - (stateOf(b.id) === 'no_visto' ? 0 : 1) || deps(b.id) - deps(a.id) || byIdOrder(a, b));
   const pickAvance = (): Concept | undefined => frontier(technical)[0] ?? frontier(null).filter((c) => c.domain !== 'business')[0];
 
