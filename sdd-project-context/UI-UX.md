@@ -7,23 +7,26 @@
 ## 1. Sistema visual
 
 ### 1.1 Principios
-- Base neutra y clara con tarjetas blancas; un único color de acento.
+- Base neutra con tarjetas elevadas y un único color de acento. Dos temas (claro y oscuro) más «sistema»; **el tema por defecto es claro**, con selector en la barra lateral.
 - Color semántico solo para dificultad y para el estado "con fallos".
 - Monoespaciada solo para números, tiempos y código.
 - Sin emojis ni ilustraciones de personajes.
 
 ### 1.2 Tipografía
-| Uso | Fuente | Peso | Tamaño |
-|---|---|---|---|
-| H1 de pantalla | Geist | 600 | clamp(22px, 2.4vw, 28px) |
-| H1 del challenge | Geist | 600 | clamp(26px, 3vw, 36px) |
-| H2 de tarjeta | Geist | 600 | 16–17px |
-| H3 / etiqueta de bloque | Geist | 500 | 12px, color `--muted` |
-| Cuerpo | Geist | 400 | 15px / interlineado 1.5 |
-| Enunciado largo | Geist | 400 | 16px / 1.7, máx. 68ch |
-| KPI | Geist Mono | 500 | 28px |
-| Tiempos, conteos | Geist Mono | 400–500 | 12–13px |
-| Código | Geist Mono | 400 | 13px / 1.75 |
+Regla de jerarquía: **un título siempre pesa más (tamaño, peso o color) que el texto que encabeza**. Las etiquetas de sección no pueden ser más pequeñas ni más tenues que el cuerpo.
+
+| Uso | Fuente | Peso | Tamaño | Color |
+|---|---|---|---|---|
+| H1 de pantalla | Geist | 600 | clamp(26px, 2.6vw, 32px) | `--ink` |
+| H1 del challenge | Geist | 600 | clamp(28px, 3vw, 36px) | `--ink` |
+| H2 de tarjeta | Geist | 600 | 20px | `--ink` |
+| H3 de sección dentro de tarjeta | Geist | 600 | 15px | `--ink` |
+| Etiqueta de campo / metadato | Geist | 500 | 13px | `--muted` |
+| Cuerpo | Geist | 400 | 15px / 1.6 | `--ink2` |
+| Enunciado largo | Geist | 400 | 15px / 1.7, máx. 68ch | `--ink2` |
+| KPI | Geist Mono | 500 | 28px | `--ink` |
+| Tiempos, conteos | Geist Mono | 400–500 | 12–13px | — |
+| Código | Geist Mono | 400 | 13px / 1.75 | — |
 
 ### 1.3 Tokens de color
 | Token | Claro | Oscuro | Uso |
@@ -52,6 +55,8 @@
 
 > **[DECISIÓN ABIERTA]** El ámbar se comparte entre "Intermedio" y "con fallos". Si resulta ambiguo en uso real, usar un rojo propio (`--fail`).
 
+> Los valores de la tabla se aplican por tema con `data-theme="light" | "dark"` en `<html>`; el tema «sistema» resuelve a uno de los dos según `prefers-color-scheme`.
+
 ### 1.4 Paleta de estados (común a Challenge actual, Repaso y Grafo)
 | Estado de etapa | Estado de concepto | Color | Etiqueta |
 |---|---|---|---|
@@ -64,7 +69,8 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 
 ### 1.5 Forma, espacio y sombra
 - Radio: tarjetas 16px, botones/campos 10–12px, chips 7–8px, tiles de icono 9px.
-- Sombra de tarjeta: `0 0 0 1px #E7E9EF, 0 1px 2px rgba(16,24,40,.04), 0 4px 14px -6px rgba(16,24,40,.08)`. En oscuro, solo el borde.
+- **Tarjetas sin anillo** (un borde gris uniforme se ve genérico): se elevan por sombra y por contraste con el fondo. Claro: `0 1px 2px rgba(16,24,40,.04), 0 10px 28px -12px rgba(16,24,40,.14)`. Oscuro: la tarjeta es un tono más clara que el fondo, con `inset 0 1px 0 rgba(255,255,255,.04)` y una sombra profunda. Los divisores *dentro* de una tarjeta sí usan `--line`.
+- La etapa activa se marca con una barra de acento lateral y más elevación, no con un anillo de 2px.
 - Espaciado: grid de 4px; separación entre tarjetas 20px; padding interno 20–32px.
 - Ancho máximo del contenido: 1320px. Barra lateral: 240px.
 - Objetivo táctil mínimo: 44×44px.
@@ -88,6 +94,10 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 | Estado vacío | Icono, título, texto, CTA opcional | Borde discontinuo |
 | Panel lateral fijo (sticky) | Detalle del ítem seleccionado | Preview de challenge, refuerzo, nodo del grafo |
 | Etiqueta "Datos de ejemplo" | Chip discontinuo en el pie | Solo mientras se usen datos sintéticos |
+| Cronómetro | `mm:ss` mono, Iniciar/Pausar/Reiniciar y barra contra el objetivo de tiempo | Por etapa; un chip global cuando hay uno en marcha |
+| Diagrama relacional | Tarjetas de tabla con columnas, tipos, PK/FK y conectores con cardinalidad 1–N | Con lista de relaciones en texto accesible |
+| Vista previa de datos | Pestañas por tabla con filas de muestra y `NULL` en gris cursivo | "8 de 8 filas", copiar SQL |
+| Panel de verificación | Línea de tiempo en vivo, salida colapsable, feedback en Markdown y resultado | Estados: en curso, correcto, con fallos, error; botón Detener |
 | Tooltip de gráfico | Fondo #15171C, texto blanco | Fecha, etapa, real, estimado |
 
 ---
@@ -95,7 +105,7 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 ## 3. Navegación
 
 ```
-[logo]
+[logo «DS» + Data Scientist Challenges]
 Inicio
 Challenges
 Challenge actual
@@ -103,6 +113,7 @@ Repaso
 Grafo de conocimiento
 Analítica
 ---
+[selector de tema: Claro · Oscuro · Sistema]
 [usuario]
 ```
 
@@ -131,15 +142,20 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 
 ### 4.3 Challenge actual
 - Encabezado: título, tiles de dominios, dificultad, tiempo total, progreso por etapas.
-- Enunciado del challenge + esquema de datos.
-- Una tarjeta por etapa: cabecera (número, título, tile+dominio, dificultad, chip Bloom, tiempo, estado, chevron) con el control **Apoyo** (Guiado/Pistas/Autónomo) propio de esa etapa a la derecha. La etapa activa tiene anillo de acento de 2px.
-- Cuerpo al expandir: descripción; según Apoyo (Guiado→paso sugerido, Pistas→botón "Ver pista", Autónomo→nota "sin pistas"); conceptos para investigar (chips con estado del grafo, clic abre el grafo); entregables numerados.
-  - Variante código: bloque "Verificación", botón "Verificar etapa", resultado pass/fail con detalle.
-  - Variante conceptual: textarea + botón "Evaluar respuesta", resultado Correcta/Parcial + feedback.
-  - Solución colapsada: "Revélala después de verificar tu intento".
-- Preguntas de negocio del challenge (3–5).
-- Columna lateral fija: formulario de entrega (Pegar/Subir/Enlace), tiempo real, "¿Dónde te trabaste?" (5 chips), botón "Registrar etapa".
-- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar solución antes de verificar marca "con ayuda" (R7).
+- **Enunciado** (Markdown con fórmulas): escenario de negocio (rol, organización, decisión) y tarea concreta. Bloque **Datos** con pestañas *Diagrama* (relacional), *Tablas* (filas de muestra) y *SQL* (seed).
+- Una tarjeta por etapa: cabecera (número, título, tile+dominio, dificultad, chip Bloom, tiempo, estado, chevron), **cronómetro** y el control **Apoyo** (Guiado/Pistas/Autónomo) propio de esa etapa. La etapa activa lleva barra de acento lateral.
+- Cuerpo al expandir, según el Apoyo (R17):
+  - *Guiado*: teoría aplicada (con fórmulas), ejemplo resuelto en otro dominio, paso a paso y esqueleto de código.
+  - *Pistas*: pistas ordenadas (qué, no cómo; se pueden mostrar y ocultar) y conceptos para investigar.
+  - *Autónomo*: solo conceptos y entregable.
+  - Siempre: conceptos para investigar (con búsquedas en español e inglés; clic abre el grafo), entregable como checklist con el resultado esperado, y «Cómo marcar el resultado».
+  - Variante código: botón **Verificar etapa** y, debajo, el **panel de verificación** (R26): línea de tiempo en vivo (buscar celda → ejecutar → comparar → analizar), salida colapsable, feedback en Markdown, resultado y Detener/Reintentar.
+  - Variante conceptual: textarea + **Evaluar respuesta**, con el mismo panel.
+  - Solución colapsada por secciones; revelarla marca «Con ayuda» de forma permanente aunque luego se oculte.
+- **Preguntas de negocio** (3–5): un campo por pregunta, «Guardar respuestas» y, solo después, la guía de reflexión (R22).
+- **Test final de retención** (R21): tarjeta bloqueada hasta completar las etapas; al calificar muestra aciertos, explicaciones y conceptos a reforzar.
+- Columna lateral fija **Registro de la etapa** (sustituye a «Entrega»; ya no hay Pegar/Subir/Enlace porque la resolución ocurre en el notebook de VS Code): cronómetro con el tiempo real (de solo lectura; «Editar» lo marca manual), «¿Dónde te trabaste?» (5 chips), notas y «Registrar etapa».
+- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); solo un cronómetro corre a la vez.
 
 ### 4.4 Repaso
 - Encabezado + control "Por prioridad / Por motivo".
