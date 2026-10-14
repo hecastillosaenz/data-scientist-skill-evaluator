@@ -1,10 +1,10 @@
 import { NavLink, Outlet } from 'react-router';
 import { ChartLine, House, ListChecks, Network, PlayCircle, RefreshCw } from 'lucide-react';
-import { SampleDataTag } from '../components/cards';
+import { EmptyState, SampleDataTag } from '../components/cards';
+import { Notices } from '../components/Notices';
 import { GapDialog } from '../components/GapDialog';
 import { GlobalTimer } from '../components/GlobalTimer';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { USING_SAMPLE_DATA } from '../data/repository';
 import { useApp } from '../data/DataContext';
 import styles from './AppShell.module.css';
 
@@ -18,7 +18,7 @@ const NAV = [
 ];
 
 export function AppShell() {
-  const { data } = useApp();
+  const { data, error, source } = useApp();
   const name = data?.user.name ?? '';
   return (
     <div className={styles.shell}>
@@ -50,8 +50,17 @@ export function AppShell() {
       <GapDialog />
       <main className={styles.main}>
         <div className={styles.content}>
-          <Outlet />
-          {USING_SAMPLE_DATA && (
+          <Notices />
+          {error ? (
+            <EmptyState
+              title="No pude cargar tus datos"
+              text={error}
+              action={<button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>Reintentar</button>}
+            />
+          ) : (
+            <Outlet />
+          )}
+          {source === 'ejemplo' && (
             <footer className={styles.footer}>
               <SampleDataTag />
             </footer>

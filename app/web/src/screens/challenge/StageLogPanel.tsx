@@ -20,7 +20,7 @@ interface Props {
   stage: Stage;
   result: StageResult | null;
   /** Registrar crea un Evidence nuevo (R10); nunca sobrescribe. */
-  onRegister: (payload: RegisterPayload) => void;
+  onRegister: (payload: RegisterPayload) => Promise<boolean>;
 }
 
 const BLOCKERS = Object.keys(BLOCKER_LABEL) as Blocker[];
@@ -36,6 +36,7 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
   const [blocker, setBlocker] = useState<Blocker | null>(null);
   const [notes, setNotes] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const measured = toMinutes(lap);
   const minutes = manual ?? measured;
@@ -111,20 +112,24 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
         <button
           type="button"
           className="btn btn-primary"
-          disabled={!canRegister}
-          onClick={() => {
-            onRegister({
+          disabled={!canRegister || saving}
+          onClick={async () => {
+            setSaving(true);
+            const ok = await onRegister({
               actualMinutes: minutes,
               timeSource: manual === null ? 'cronometro' : 'manual',
               ...(blocker ? { blocker } : {}),
               ...(notes.trim() ? { notes: notes.trim() } : {}),
             });
+            setSaving(false);
+            // Si el guardado falló (R37) no se toma la vuelta ni se limpia nada: puedes reintentar sin perder lo escrito.
+            if (!ok) return;
             // Toma la vuelta: la siguiente etapa empieza a contar desde aquí (el reloj global no se reinicia).
             takeLap();
             setSaved(true);
           }}
         >
-          Registrar etapa
+          {saving ? 'Guardando…' : 'Registrar etapa'}
         </button>
         {!canRegister && (
           <p className={styles.hint}>

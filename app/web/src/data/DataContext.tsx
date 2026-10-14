@@ -2,23 +2,40 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Apoyo, AppData, BusinessAnswer, Challenge, ChallengeStatus, Evidence, StageStatus, TestResult } from '../../../shared/types';
 import { computeInsights, type ConceptInsight } from '../domain/conceptState';
 import { challengeStatus, stageStatuses } from '../domain/progress';
-import { loadAppData, scenarioFromSearch } from './repository';
+import { loadAppState, progressApi, scenarioFromSearch, sourceFromSearch, type DataSource } from './repository';
 
 interface Actions {
   /** El Apoyo es independiente por etapa (R5). */
   setApoyo: (stageId: string, apoyo: Apoyo) => void;
-  /** Evidence es append-only: nunca se sobrescribe un intento previo (R10). */
-  addEvidence: (evidence: Omit<Evidence, 'id'>) => Evidence;
+  /**
+   * Evidence es append-only: nunca se sobrescribe un intento previo (R10). Se muestra al instante y se guarda en el
+   * orquestador; si el guardado falla se revierte (R37) y devuelve `false` para que la pantalla conserve lo escrito.
+   */
+  addEvidence: (evidence: Omit<Evidence, 'id'>) => Promise<boolean>;
   startChallenge: (challengeId: string) => void;
   /** Respuestas de negocio: append-only (R22). */
-  addBusinessAnswers: (challengeId: string, items: { questionId: string; text: string }[]) => void;
+  addBusinessAnswers: (challengeId: string, items: { questionId: string; text: string }[]) => Promise<boolean>;
   /** Resultados del test final: append-only (R21, R23). */
-  addTestResults: (results: Omit<TestResult, 'id' | 'at'>[]) => void;
+  addTestResults: (results: Omit<TestResult, 'id' | 'at'>[]) => Promise<boolean>;
+  /** Cierra un aviso de la barra superior. */
+  dismissNotice: (id: string) => void;
+}
+
+/** Aviso persistente de la barra superior: guardado fallido (R37), progreso ilegible (R33) o challenge inválido (R29). */
+export interface Notice {
+  id: string;
+  kind: 'error' | 'warning';
+  title: string;
+  detail: string;
 }
 
 interface AppState {
   loading: boolean;
-  error: boolean;
+  /** Mensaje si no se pudo cargar el estado inicial. */
+  error: string | null;
+  /** `ejemplo` = datos sintéticos que no se guardan (R36). */
+  source: DataSource;
+  notices: Notice[];
   data: AppData | null;
   now: Date;
   insights: Map<string, ConceptInsight>;
@@ -34,53 +51,140 @@ const Ctx = createContext<AppState | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<DataSource>('real');
   const [apoyos, setApoyos] = useState<Record<string, Apoyo>>({});
   const [started, setStarted] = useState<Set<string>>(new Set());
+  const [notices, setNotices] = useState<Notice[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    loadAppData(scenarioFromSearch(window.location.search))
-      .then((d) => !cancelled && setData(d))
-      .catch(() => !cancelled && setError(true));
+    const wanted = sourceFromSearch(window.location.search);
+    loadAppState(wanted, scenarioFromSearch(window.location.search))
+      .then((loaded) => {
+        if (cancelled) return;
+        setSource(loaded.source);
+        setData(loaded.data);
+        setApoyos(loaded.apoyos);
+        setStarted(new Set(loaded.started));
+        setNotices([
+          ...loaded.problems.map((detail, i) => ({ id: `problem-${i}`, kind: 'error' as const, title: 'Progreso ilegible', detail })),
+          ...loaded.invalid.map((c) => ({
+            id: `invalid-${c.folder}`,
+            kind: 'warning' as const,
+            title: `${c.folder} no cumple el contrato y no se cargó`,
+            detail: c.errors.slice(0, 3).join(' '),
+          })),
+        ]);
+      })
+      .catch((err: unknown) => !cancelled && setError(err instanceof Error ? err.message : 'No pude cargar los datos.'));
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const addEvidence = useCallback((partial: Omit<Evidence, 'id'>): Evidence => {
-    const evidence: Evidence = { ...partial, id: `ev-${crypto.randomUUID().slice(0, 8)}` };
-    setData((prev) => (prev ? { ...prev, evidence: [...prev.evidence, evidence] } : prev));
-    return evidence;
+  const persisted = source === 'real';
+  const fail = useCallback((what: string, err: unknown) => {
+    const detail = err instanceof Error ? err.message : 'Error desconocido.';
+    setNotices((prev) => [...prev.filter((n) => n.id !== 'save-error'), { id: 'save-error', kind: 'error', title: `No se guardó: ${what}`, detail }]);
   }, []);
+
+  // Guardado optimista (R37): se ve al instante; si el orquestador lo rechaza o no responde, se revierte y se avisa.
+  const challengeOfStage = useCallback((stageId: string) => data?.challenges.find((c) => c.stages.some((s) => s.id === stageId))?.id, [data]);
+
+  const addEvidence = useCallback(
+    async (partial: Omit<Evidence, 'id'>): Promise<boolean> => {
+      const evidence: Evidence = { ...partial, id: `ev-${crypto.randomUUID().slice(0, 8)}` };
+      setData((prev) => (prev ? { ...prev, evidence: [...prev.evidence, evidence] } : prev));
+      if (!persisted) return true;
+      try {
+        await progressApi.addEvidence(evidence);
+        return true;
+      } catch (err) {
+        setData((prev) => (prev ? { ...prev, evidence: prev.evidence.filter((e) => e.id !== evidence.id) } : prev));
+        fail('el registro de la etapa', err);
+        return false;
+      }
+    },
+    [persisted, fail],
+  );
 
   const actions = useMemo<Actions>(
     () => ({
-      setApoyo: (stageId, apoyo) => setApoyos((prev) => ({ ...prev, [stageId]: apoyo })),
+      setApoyo: (stageId, apoyo) => {
+        let previous: Apoyo | undefined;
+        setApoyos((prev) => {
+          previous = prev[stageId];
+          return { ...prev, [stageId]: apoyo };
+        });
+        const challengeId = challengeOfStage(stageId);
+        if (!persisted || !challengeId) return;
+        progressApi.setApoyo(challengeId, stageId, apoyo).catch((err: unknown) => {
+          setApoyos((prev) => {
+            const next = { ...prev };
+            if (previous) next[stageId] = previous;
+            else delete next[stageId];
+            return next;
+          });
+          fail('el cambio de Apoyo', err);
+        });
+      },
       addEvidence,
-      startChallenge: (id) => setStarted((prev) => new Set(prev).add(id)),
-      addTestResults: (results) =>
-        setData((prev) => {
-          if (!prev) return prev;
-          const at = new Date().toISOString();
-          const added: TestResult[] = results.map((r) => ({ ...r, id: `tr-${crypto.randomUUID().slice(0, 8)}`, at }));
-          return { ...prev, testResults: [...prev.testResults, ...added] };
-        }),
-      addBusinessAnswers: (challengeId, items) =>
-        setData((prev) => {
-          if (!prev) return prev;
-          const at = new Date().toISOString();
-          const added: BusinessAnswer[] = items.map((item) => ({
-            id: `ba-${crypto.randomUUID().slice(0, 8)}`,
-            challengeId,
-            questionId: item.questionId,
-            at,
-            text: item.text,
-          }));
-          return { ...prev, businessAnswers: [...prev.businessAnswers, ...added] };
-        }),
+      startChallenge: (id) => {
+        let was = false;
+        setStarted((prev) => {
+          was = prev.has(id);
+          return new Set(prev).add(id);
+        });
+        if (!persisted || was) return;
+        progressApi.start(id).catch((err: unknown) => {
+          setStarted((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          fail('el inicio del challenge', err);
+        });
+      },
+      addTestResults: async (results) => {
+        const at = new Date().toISOString();
+        const added: TestResult[] = results.map((r) => ({ ...r, id: `tr-${crypto.randomUUID().slice(0, 8)}`, at }));
+        setData((prev) => (prev ? { ...prev, testResults: [...prev.testResults, ...added] } : prev));
+        if (!persisted || added.length === 0) return true;
+        try {
+          await progressApi.addTestResults(added[0]!.challengeId, added);
+          return true;
+        } catch (err) {
+          const ids = new Set(added.map((r) => r.id));
+          setData((prev) => (prev ? { ...prev, testResults: prev.testResults.filter((r) => !ids.has(r.id)) } : prev));
+          fail('el resultado del test final', err);
+          return false;
+        }
+      },
+      addBusinessAnswers: async (challengeId, items) => {
+        const at = new Date().toISOString();
+        const added: BusinessAnswer[] = items.map((item) => ({
+          id: `ba-${crypto.randomUUID().slice(0, 8)}`,
+          challengeId,
+          questionId: item.questionId,
+          at,
+          text: item.text,
+        }));
+        setData((prev) => (prev ? { ...prev, businessAnswers: [...prev.businessAnswers, ...added] } : prev));
+        if (!persisted || added.length === 0) return true;
+        try {
+          await progressApi.addBusinessAnswers(challengeId, added);
+          return true;
+        } catch (err) {
+          const ids = new Set(added.map((a) => a.id));
+          setData((prev) => (prev ? { ...prev, businessAnswers: prev.businessAnswers.filter((a) => !ids.has(a.id)) } : prev));
+          fail('las respuestas de negocio', err);
+          return false;
+        }
+      },
+      dismissNotice: (id) => setNotices((prev) => prev.filter((n) => n.id !== id)),
     }),
-    [addEvidence],
+    [addEvidence, challengeOfStage, persisted, fail],
   );
 
   const insights = useMemo(
@@ -103,6 +207,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return {
       loading: !data && !error,
       error,
+      source,
+      notices,
       data,
       now: data ? new Date(data.now) : new Date(),
       insights,
@@ -112,7 +218,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       currentChallenge: current,
       actions,
     };
-  }, [data, error, insights, apoyos, started, actions]);
+  }, [data, error, source, notices, insights, apoyos, started, actions]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

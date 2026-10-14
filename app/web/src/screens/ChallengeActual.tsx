@@ -149,10 +149,10 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
           key={active.id}
           stage={active}
           result={ui(active.id).result}
-          onRegister={({ actualMinutes, timeSource, blocker, notes }) => {
+          onRegister={async ({ actualMinutes, timeSource, blocker, notes }) => {
             const result = ui(active.id).result;
-            if (!result) return;
-            actions.addEvidence({
+            if (!result) return false;
+            const ok = await actions.addEvidence({
               challengeId: challenge.id,
               stageId: active.id,
               at: new Date().toISOString(),
@@ -165,12 +165,14 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
               ...(blocker ? { blocker } : {}),
               ...(notes ? { notes } : {}),
             });
-            patch(active.id, { result: null, ...initialHelp });
+            if (ok) patch(active.id, { result: null, ...initialHelp });
+            return ok;
           }}
         />
       </div>
       <p className={styles.footnote}>
-        Dificultad {DIFFICULTY_LABEL[challenge.difficulty]} · la verificación y la evaluación son simuladas hasta conectar los agentes.
+        Dificultad {DIFFICULTY_LABEL[challenge.difficulty]}
+        {!real && ' · la verificación y la evaluación son simuladas hasta conectar los agentes.'}
       </p>
     </>
   );
