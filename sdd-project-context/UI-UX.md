@@ -97,7 +97,7 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 | Panel lateral fijo (sticky) | Detalle del ítem seleccionado | Preview de challenge, refuerzo, nodo del grafo |
 | Etiqueta "Datos de ejemplo" | Chip discontinuo en el pie | Solo con `?datos=ejemplo` (R36); nada de lo que se haga se guarda |
 | Aviso de guardado fallido | Barra fija arriba con el error y «Cerrar» | Cuando el orquestador no guarda un registro (R37); el cambio se revierte y lo escrito se conserva |
-| Cronómetro global | Píldora fija arriba a la derecha con `mm:ss` mono y Iniciar/Pausar; detalle (vuelta actual, reiniciar) en su menú | Uno solo para toda la app; al volver de una ausencia muestra el diálogo de intervalo (R30) |
+| Cronómetro del challenge | Píldora fija arriba a la derecha con `mm:ss` mono y Iniciar/Pausar; detalle (challenge, vuelta actual, reiniciar) en su menú | Uno por challenge y solo uno en marcha: en Challenge actual muestra el de ese challenge; en otras pantallas, el que corre (con enlace a su challenge). Al volver de una ausencia muestra el diálogo de intervalo (R30) |
 | Objetivo del reto | Bloque con «Qué busca este reto», «Al terminar tendrás» y «Habilidades» | En el enunciado, antes de los datos |
 | Ventana de debilidad | Página con diagnóstico, evidencia, causas raíz, error común y plan de mejora | Se abre desde Inicio y Repaso |
 | Diagrama relacional | Tarjetas de tabla con columnas, tipos, PK/FK y conectores con cardinalidad 1–N | Con lista de relaciones en texto accesible |
@@ -117,6 +117,8 @@ Challenge actual
 Repaso
 Grafo de conocimiento
 Analítica
+Objetivos
+Agentes
 ---
 [selector de tema: Claro · Oscuro · Sistema]
 [usuario]
@@ -162,7 +164,7 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - **Preguntas de negocio** (3–5): un campo por pregunta, «Guardar respuestas» y, solo después, la guía de reflexión (R22).
 - **Test final de retención** (R21): tarjeta bloqueada hasta completar las etapas; al calificar muestra aciertos, explicaciones y conceptos a reforzar.
 - Columna lateral fija **Registro de la etapa** (sustituye a «Entrega»; ya no hay Pegar/Subir/Enlace porque la resolución ocurre en el notebook de VS Code): el **tiempo de esta vuelta** (desde el último registro; de solo lectura, «Editar» lo marca manual) frente al objetivo de la etapa, «¿Dónde te trabaste?» (5 chips), notas y «Registrar etapa».
-- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); hay un único cronómetro global y cada registro toma el tiempo desde el anterior.
+- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); cada challenge tiene su propio cronómetro y cada registro toma el tiempo desde el anterior de ese challenge.
 
 ### 4.4 Repaso
 - Encabezado + control "Por prioridad / Por motivo".
@@ -199,6 +201,21 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - Rendimiento por dificultad (tabla acumulada desde el inicio).
 - Actividad por día (heatmap, 4 niveles + vacío).
 - Cada tarjeta tiene una línea de lectura generada a partir de los datos (ver §6).
+
+---
+
+### 4.7 Objetivos *(propuesto, R44–R45)*
+- Cabecera con tu **rol** (editable en línea) y un botón «Nuevo foco».
+- Una tarjeta por foco: título, estado (Activo/Pausado/Logrado como `Segmented`), fechas, conceptos del grafo vinculados (chips con buscador) y el **material** en un área de texto grande con contador frente a `materialMaxCaracteres`. Aviso: «El material se usa solo como contexto para generar tus retos».
+- Máximo 3 focos activos; al intentar un cuarto se pide pausar uno. Guardado optimista con aviso si falla (R37).
+- Vacío: «Cuéntale al sistema qué estás estudiando para que tus retos se relacionen con ese material».
+
+### 4.8 Agentes *(propuesto, R46–R48)*
+- Fila superior: **cuatro tarjetas** (Generador, Evaluador de código, Evaluador conceptual, Analista) con estado (En ejecución con pulso / Inactivo), última ejecución, costo del día y acumulado.
+- Debajo, a la izquierda, la **línea de tiempo** de ejecuciones (filtros por rol, resultado y challenge) y, a la derecha, el **detalle** de la seleccionada: entrada, eventos, salida, costo, error. Los **traspasos** de un challenge se muestran como una cadena de ejecuciones enlazadas, nunca como un chat.
+- Sección «Últimos análisis» con lo que aplicó el Analista (observaciones, enlaces, candidatos) y «Errores recientes».
+- Solo lectura: ningún botón lanza ni reintenta ejecuciones. Mientras haya una en curso, se actualiza sola.
+- En el diálogo de generar (§4.2) se añade el campo **Tema** («¿Algo concreto? p. ej. descenso del gradiente») con sugerencias del grafo; sin tema, el plan muestra qué focos activos influyeron.
 
 ---
 
