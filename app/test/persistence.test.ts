@@ -215,6 +215,35 @@ describe('escrituras de progreso (R33, R34)', () => {
   });
 });
 
+describe('GET /api/plan (R38)', () => {
+  it('devuelve el plan del próximo challenge a partir del catálogo y del progreso real', async () => {
+    await boot();
+    const res = await app!.inject('/api/plan');
+    expect(res.statusCode).toBe(200);
+    const plan = res.json();
+    expect(plan).toMatchObject({ mode: 'arranque', id: 'challenge-002', number: 2 });
+    expect(plan.stages.length).toBe(3);
+    expect(plan.avoid.datasets).toEqual([challenge.dataset]);
+  });
+
+  it('acepta un dominio y rechaza uno desconocido', async () => {
+    await boot();
+    const ok = await app!.inject('/api/plan?dominio=ml');
+    expect(ok.json().domain).toBe('ml');
+    const bad = await app!.inject('/api/plan?dominio=cocina');
+    expect(bad.statusCode).toBe(400);
+    expect(bad.json().message).toContain('dominio');
+  });
+
+  it('un calibracion.json inválido da 422 con el motivo', async () => {
+    writeFileSync(file('configuracion-retos', 'calibracion.json'), JSON.stringify({ etapasPorChallenge: 99 }));
+    await boot();
+    const res = await app!.inject('/api/plan');
+    expect(res.statusCode).toBe(422);
+    expect(res.json().message).toContain('etapasPorChallenge');
+  });
+});
+
 describe('graph-store', () => {
   it('valida ids únicos, dominios y prerrequisitos existentes', () => {
     const r = validateGraph({

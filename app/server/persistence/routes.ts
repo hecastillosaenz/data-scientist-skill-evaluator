@@ -4,6 +4,10 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Apoyo, Challenge } from '../../shared/types';
 import type { StatePayload } from '../../shared/state';
 import { scanChallenges, type LoadedChallenge } from '../challenges/challenge-fs';
+import { CalibrationError, loadCalibration } from '../generator/calibration';
+import { planChallenge } from '../generator/plan';
+import { DOMAINS } from '../../shared/domains';
+import type { DomainId } from '../../shared/types';
 import { configDir } from '../paths';
 import { GraphError, readGraph } from './graph-store';
 import {
@@ -57,36 +61,67 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
   const invalid = (reply: FastifyReply, errors: string[]) =>
     reply.code(400).send({ error: 'invalid_record', message: errors[0] ?? 'Registro inválido.', errors });
 
+  /** Lee catálogo, challenges y todo el progreso; un progreso ilegible se reporta en `problems` sin romper el resto. */
+  const gatherState = async (): Promise<StatePayload> => {
+    const [graph, scan, name] = await Promise.all([
+      readGraph(opts.repoRoot),
+      scanChallenges(opts.repoRoot, { strict: opts.strict }),
+      readUserName(opts.repoRoot),
+    ]);
+    const payload: StatePayload = {
+      data: { user: { name }, now: now().toISOString(), concepts: graph.concepts, challenges: [], evidence: [], businessAnswers: [], testResults: [] },
+      apoyos: {},
+      started: {},
+      invalid: scan.invalid,
+      problems: [],
+    };
+    for (const { dir, challenge } of scan.loaded) {
+      payload.data.challenges.push(challenge);
+      try {
+        const p = await readProgress(dir);
+        payload.data.evidence.push(...p.evidence);
+        payload.data.businessAnswers.push(...p.businessAnswers);
+        payload.data.testResults.push(...p.testResults);
+        Object.assign(payload.apoyos, p.apoyos);
+        if (p.startedAt) payload.started[challenge.id] = p.startedAt;
+      } catch (err) {
+        if (!(err instanceof ProgressCorruptError)) throw err;
+        payload.problems.push(err.message);
+      }
+    }
+    return payload;
+  };
+
   app.get('/api/state', async (_req, reply) => {
     try {
-      const [graph, scan, name] = await Promise.all([
-        readGraph(opts.repoRoot),
-        scanChallenges(opts.repoRoot, { strict: opts.strict }),
-        readUserName(opts.repoRoot),
-      ]);
-      const payload: StatePayload = {
-        data: { user: { name }, now: now().toISOString(), concepts: graph.concepts, challenges: [], evidence: [], businessAnswers: [], testResults: [] },
-        apoyos: {},
-        started: {},
-        invalid: scan.invalid,
-        problems: [],
-      };
-      for (const { dir, challenge } of scan.loaded) {
-        payload.data.challenges.push(challenge);
-        try {
-          const p = await readProgress(dir);
-          payload.data.evidence.push(...p.evidence);
-          payload.data.businessAnswers.push(...p.businessAnswers);
-          payload.data.testResults.push(...p.testResults);
-          Object.assign(payload.apoyos, p.apoyos);
-          if (p.startedAt) payload.started[challenge.id] = p.startedAt;
-        } catch (err) {
-          if (!(err instanceof ProgressCorruptError)) throw err;
-          payload.problems.push(err.message);
-        }
-      }
-      return payload;
+      return await gatherState();
     } catch (err) {
+      return sendError(reply, err);
+    }
+  });
+
+  /**
+   * Plan de calibración del próximo challenge (R38): qué practicar según el grafo y la evidencia. `?dominio=` es la
+   * elección manual opcional; por defecto lo recomienda el grafo. Es de solo lectura: no genera nada.
+   */
+  app.get<{ Querystring: { dominio?: string } }>('/api/plan', async (req, reply) => {
+    const wanted = req.query.dominio;
+    if (wanted !== undefined && !DOMAINS.some((d) => d.id === wanted)) {
+      return invalid(reply, [`«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.`]);
+    }
+    try {
+      const [state, config] = await Promise.all([gatherState(), loadCalibration(opts.repoRoot)]);
+      return planChallenge({
+        concepts: state.data.concepts,
+        challenges: state.data.challenges,
+        evidence: state.data.evidence,
+        testResults: state.data.testResults,
+        config,
+        now: now(),
+        ...(wanted ? { domain: wanted as DomainId } : {}),
+      });
+    } catch (err) {
+      if (err instanceof CalibrationError) return reply.code(422).send({ error: 'calibration_invalid', message: err.message });
       return sendError(reply, err);
     }
   });
