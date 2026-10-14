@@ -1,0 +1,46 @@
+.filters { display: flex; flex-wrap: wrap; gap: 16px 32px; margin-bottom: var(--gap); padding: 20px 24px; }
+.group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.clear { align-self: flex-end; margin-left: auto; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--gap); align-items: start; }
+.tableCard { padding: 8px 8px 8px; }
+.scroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.table th, .table td { text-align: left; padding: 14px 12px; vertical-align: middle; }
+.table thead th { font-size: 12px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); }
+.table tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; }
+.table tbody tr:last-child { border-bottom: 0; }
+.table tbody tr:hover { background: var(--sel); }
+.table tbody th { font-weight: inherit; }
+.selected, .selected:hover { background: var(--sel); box-shadow: inset 3px 0 0 var(--accent); }
+.rowBtn { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; border: 0; background: none; padding: 0; text-align: left; min-height: 44px; justify-content: center; }
+.rowTitle { font-weight: 500; font-size: 14px; }
+.rowSub { font-size: 12px; color: var(--muted); }
+.tiles { display: inline-flex; gap: 4px; }
+
+.preview { padding: 0; overflow: hidden; }
+.previewHead { padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.previewMeta { display: flex; gap: 8px; flex-wrap: wrap; }
+.stages { list-style: none; margin: 0; padding: 0; }
+.stage { border-bottom: 1px solid var(--line); }
+.stageBtn { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; width: 100%; padding: 14px 20px; border: 0; background: none; text-align: left; min-height: 44px; }
+.stageBtn:hover { background: var(--sel); }
+.stageNum { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 50%; background: var(--sunk); font-size: 12px; }
+.stageMain { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.stageTitle { font-weight: 500; font-size: 14px; }
+.stageChips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chevOpen { transform: rotate(180deg); }
+.detail { padding: 0 20px 16px 56px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--ink2); }
+.detail dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 0; }
+.detail dl div { display: flex; flex-direction: column; }
+.detail dt { font-size: 11px; color: var(--muted); }
+.detail dd { margin: 0; }
+.conceptsLabel { font-size: 11px; color: var(--muted); }
+.concepts { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.concepts li { padding: 2px 8px; border-radius: 7px; background: var(--sunk); font-size: 12px; }
+.cta { padding: 16px 20px; display: flex; }
+.cta :global(.btn) { flex: 1; }
+
+@media (max-width: 1279px) { .layout { grid-template-columns: minmax(0, 1fr) 360px; } }
+@media (max-width: 1099px) { .layout { grid-template-columns: 1fr; } }
