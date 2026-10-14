@@ -354,6 +354,46 @@ Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, q
 #### Orden de implementación
 C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planChallenge`, con sus tests, antes de invocar a ningún agente), luego B y el Generador (P3) completo sobre `agent-runner`. Cada paso va con sus AC como tests y un commit.
 
+### 7.5 Propuesta para cerrar la deuda de P5: el Analista (R12) *(PROPUESTA, no normativa hasta que el autor la apruebe)*
+
+**Idea central: el Analista lee tus notas y propone; el orquestador decide qué se aplica.** El Analista es de solo lectura y devuelve una *propuesta estructurada* (R9, §6.4). El orquestador valida cada pieza con reglas fijas y la aplica de forma atómica a `knowledge-graph.json`. «Crear o reforzar nodos» se concreta en tres acciones, de menor a mayor impacto:
+
+1. **Observar (reforzar):** vincular lo que escribiste con conceptos que **ya existen** y dejar un diagnóstico breve. No cambia la estructura del grafo; es lo que más se usará.
+2. **Enlazar:** añadir un prerrequisito entre dos conceptos existentes cuando tu nota lo evidencia.
+3. **Crear:** añadir un concepto nuevo, solo si lo que describes no está en el catálogo **y reaparece**.
+
+**Cuándo se ejecuta.**
+- **Se analiza** una Evidence que tenga **notas libres o un bloqueo marcado** (`notes` o `blocker`). Es donde hay algo que aprender.
+- **Se omite** (sin costo, sin llamar al agente) una Evidence sin notas ni bloqueo; queda registrada como «omitida» y ya cuenta para el estado del concepto por R11. Esto afina el «después de cada Evidence» de R12: cada Evidence se *procesa*, pero solo se *analiza* la que trae información.
+- Corre **en segundo plano justo después de «Registrar etapa»**, nunca la bloquea, y en una cola serial (una Evidence a la vez). Al arrancar el servidor **no** se lanza solo lo que quedó pendiente (evita gasto sorpresa): aparece un aviso «N registros sin analizar» con el botón «Analizar ahora».
+- El Analista usa su propio candado (no el de verificación ni generación): puedes verificar la etapa siguiente mientras analiza. Solo escribe `knowledge-graph.json`, así que no choca con ellos.
+
+**Qué recibe.** La Evidence (resultado, Apoyo, bloqueo, notas, tiempo frente al objetivo), la etapa y sus conceptos con prerrequisitos, los conceptos del mismo dominio (id y nombre), las últimas 5 observaciones de esos conceptos y los *candidatos* abiertos.
+
+**Qué devuelve** (un bloque JSON): `conceptIds` (los existentes a los que se refiere tu nota), `diagnosis` (≤ 300 caracteres), `uncovered` (temas que tu nota menciona y no están en el catálogo, con dominio), `addPrerequisites` (≤ 2, cada una con su motivo) y `createConcepts` (≤ 1).
+
+**Reglas del orquestador al aplicar** (si algo no cumple, se descarta esa pieza y se registra el motivo; las demás se aplican):
+- **Observación.** Siempre se guarda una por Evidence (`evidenceId`, `conceptIds`, `diagnosis`, `status`). Es el registro de «ya analizada». Los `conceptIds` deben existir.
+- **Enlazar.** Ambos conceptos existen y son distintos, el prerrequisito no estaba ya, **no crea un ciclo** y el concepto objetivo figura en los `conceptIds` de esa observación (la nota trata de él). Máximo 2 por análisis.
+- **Crear.** Cada tema de `uncovered` se guarda primero como **candidato** (con la Evidence que lo originó). Solo se crea el concepto cuando un candidato tiene **al menos 2 Evidence distintas**, tiene dominio válido, el id `dominio:slug` y el nombre no existen, y sus prerrequisitos existen. Máximo 1 por análisis. El concepto nuevo queda marcado como creado por el Analista y con fecha, para poder revisarlo.
+- **Presupuesto.** Tope por análisis en `calibracion.json` (`presupuestoUsdAnalisis`, valor inicial US$ 0,30; se fijará con el costo medido, como se hizo con el Generador). Si se agota o el JSON es inválido, **no se aplica nada**, la Evidence queda pendiente de análisis y «Registrar etapa» no se ve afectado (R39).
+- **Seguridad (S6, R13).** Antes de cada escritura se copia el archivo a `knowledge-graph.json.prev` (ignorado por git) y se valida el resultado completo (ids únicos, prerrequisitos existentes, sin ciclos). Los únicos archivos que escribe el Analista son `knowledge-graph.json` y esa copia.
+
+**Cómo lo ves en la app.** (a) En la ventana de debilidad, una sección «Lo que observó el Analista» con el diagnóstico de cada registro; (b) un aviso con «Analizar ahora» cuando hay registros pendientes o un análisis falló; (c) en el grafo, el concepto creado por el Analista indica su origen. Nada de esto cambia el estado de un concepto ni el Nivel: siguen saliendo solo de la evidencia (R11, R40).
+
+**Qué se guarda.** En `knowledge-graph.json`, además de `concepts`: `observations` (una por Evidence procesada) y `candidates` (temas sin cubrir con sus Evidence). Evidence y `progreso.json` no cambian: los registros siguen siendo inmutables (R10).
+
+*Requisitos:* **R12** (reescrito: qué se analiza, cuándo y con qué efectos), **R13** (precisado: también la copia `.prev`), **R41** (reglas de aplicación: observar, enlazar, crear con recurrencia ≥ 2, sin ciclos) y **R42** (fallos: no aplica nada, queda pendiente, nunca bloquea).
+*Criterios:* AC-R12a «una Evidence sin notas ni bloqueo se omite sin llamar al agente»; AC-R12b «una Evidence con notas produce una observación vinculada a conceptos existentes»; AC-R12c «el análisis corre en segundo plano y no bloquea Registrar etapa»; AC-R41a «una propuesta que crea un ciclo de prerrequisitos se descarta y el resto se aplica»; AC-R41b «un tema sin cubrir mencionado una sola vez queda como candidato y no crea concepto; mencionado en 2 Evidence distintas crea el concepto»; AC-R41c «un concepto o prerrequisito inexistente se descarta»; AC-R42 «si el agente falla o se queda sin presupuesto, `knowledge-graph.json` queda idéntico, la Evidence sigue guardada y aparece como pendiente»; AC-R13 «tras un análisis, los únicos archivos modificados son `knowledge-graph.json` y su `.prev`».
+*Valores configurables:* `presupuestoUsdAnalisis` (0,30), recurrencia mínima para crear (2), máximos por análisis (2 enlaces, 1 concepto), 300 caracteres de diagnóstico.
+
+#### Orden de implementación (si apruebas)
+1. Núcleo puro y testeado: `applyAnalysis(grafo, propuesta, contexto)` con todas las reglas (sin agente).
+2. Servicio del Analista (prompt, extracción, presupuesto, `.prev`) con un agente simulado, y la cola serial.
+3. Endpoints y disparo tras «Registrar etapa», más el estado en `/api/state`.
+4. UI: sección en la ventana de debilidad, aviso «Analizar ahora» y origen en el grafo.
+5. Una corrida real para medir el costo y fijar el presupuesto.
+
 ---
 
 ## Fase 8 — Decisiones y supuestos de la UI con datos de ejemplo
