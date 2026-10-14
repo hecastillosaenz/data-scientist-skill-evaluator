@@ -1,0 +1,267 @@
+{
+  "scenario": "Eres analista de datos en una tienda en línea. **Marketing** quiere dejar de enviar la misma campaña a todos los clientes. Para segmentarlos usarás el análisis **RFM**: *Recency* (qué tan reciente compró), *Frequency* (cuántas veces compró) y *Monetary* (cuánto gastó).",
+  "task": "Más adelante agruparás a los clientes con K-means y propondrás una acción por segmento. Primero necesitas la tabla base: una fila por cliente con sus tres métricas, calculadas **a la fecha de corte 2026-10-01**.",
+  "data": {
+    "engine": "duckdb",
+    "seedSql": "CREATE TABLE customers (\n    id INTEGER PRIMARY KEY,\n    joined_at DATE NOT NULL,\n    country VARCHAR(20) NOT NULL\n);\n\nINSERT INTO customers (id, joined_at, country) VALUES\n(1, '2025-11-02', 'Panamá'),\n(2, '2026-01-15', 'Costa Rica'),\n(3, '2026-03-20', 'Panamá'),\n(4, '2026-05-08', 'Colombia'),\n(5, '2026-08-30', 'Panamá');\n\nCREATE TABLE orders (\n    id INTEGER PRIMARY KEY,\n    customer_id INTEGER NOT NULL REFERENCES customers(id),\n    ordered_at DATE NOT NULL,\n    total NUMERIC(10,2) NOT NULL\n);\n\nINSERT INTO orders (id, customer_id, ordered_at, total) VALUES\n(1, 1, '2026-09-25', 120.00),\n(2, 1, '2026-08-14', 80.50),\n(3, 1, '2026-06-02', 200.00),\n(4, 2, '2026-09-30', 45.00),\n(5, 2, '2026-04-10', 60.00),\n(6, 3, '2026-07-19', 310.00),\n(7, 4, '2026-02-11', 150.00),\n(8, 4, '2026-09-12', 95.00),\n(9, 4, '2026-09-28', 20.00),\n(10, 4, '2026-05-30', 500.00);\n",
+    "tables": [
+      {
+        "name": "customers",
+        "description": "una fila por cliente",
+        "rowCount": 5,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "pk": true
+          },
+          {
+            "name": "joined_at",
+            "type": "date"
+          },
+          {
+            "name": "country",
+            "type": "varchar"
+          }
+        ],
+        "sampleRows": [
+          [
+            1,
+            "2025-11-02",
+            "Panamá"
+          ],
+          [
+            2,
+            "2026-01-15",
+            "Costa Rica"
+          ],
+          [
+            3,
+            "2026-03-20",
+            "Panamá"
+          ],
+          [
+            4,
+            "2026-05-08",
+            "Colombia"
+          ],
+          [
+            5,
+            "2026-08-30",
+            "Panamá"
+          ]
+        ]
+      },
+      {
+        "name": "orders",
+        "description": "una fila por pedido",
+        "rowCount": 10,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "pk": true
+          },
+          {
+            "name": "customer_id",
+            "type": "integer",
+            "fk": {
+              "table": "customers",
+              "column": "id"
+            }
+          },
+          {
+            "name": "ordered_at",
+            "type": "date"
+          },
+          {
+            "name": "total",
+            "type": "numeric"
+          }
+        ],
+        "sampleRows": [
+          [
+            1,
+            1,
+            "2026-09-25",
+            120.0
+          ],
+          [
+            2,
+            1,
+            "2026-08-14",
+            80.5
+          ],
+          [
+            3,
+            1,
+            "2026-06-02",
+            200.0
+          ],
+          [
+            4,
+            2,
+            "2026-09-30",
+            45.0
+          ],
+          [
+            5,
+            2,
+            "2026-04-10",
+            60.0
+          ],
+          [
+            6,
+            3,
+            "2026-07-19",
+            310.0
+          ],
+          [
+            7,
+            4,
+            "2026-02-11",
+            150.0
+          ],
+          [
+            8,
+            4,
+            "2026-09-12",
+            95.0
+          ],
+          [
+            9,
+            4,
+            "2026-09-28",
+            20.0
+          ],
+          [
+            10,
+            4,
+            "2026-05-30",
+            500.0
+          ]
+        ]
+      }
+    ]
+  },
+  "stage1": {
+    "description": "Escribe una consulta que devuelva **por cliente**: `recency_days` (días entre su última compra y el 2026-10-01), `frequency` (número de pedidos) y `monetary` (suma de `total`). Los clientes **sin pedidos** deben aparecer, con frecuencia 0, monto 0 y recencia `NULL`.",
+    "content": {
+      "theory": [
+        {
+          "title": "RFM",
+          "body": "Tres métricas por cliente: **R**ecencia (días desde la última compra), **F**recuencia (n.º de pedidos) y **M**onto (gasto total). Un cliente que compró ayer, muchas veces y mucho, es un buen cliente; uno que no compra hace meses, con poco gasto, está en riesgo."
+        },
+        {
+          "title": "Agregar por cliente",
+          "body": "`GROUP BY customer` colapsa los pedidos en una fila por cliente. `MAX(fecha)` da la última compra, `COUNT(*)` los pedidos y `SUM(total)` el gasto."
+        },
+        {
+          "title": "Aritmética de fechas",
+          "body": "En DuckDB, restar dos `DATE` devuelve los **días** de diferencia: `DATE '2026-10-01' - MAX(fecha)`. Fija siempre una **fecha de corte** explícita; con `CURRENT_DATE` el resultado cambia cada día y no es reproducible."
+        },
+        {
+          "title": "Clientes sin pedidos",
+          "body": "Un `JOIN` normal los pierde. Con `LEFT JOIN` aparecen con `NULL`: `COUNT(o.id)` cuenta 0 (no cuenta `NULL`), y `COALESCE(SUM(..), 0)` evita un monto vacío. Fíjate en `COUNT(o.id)` frente a `COUNT(*)`: este último contaría 1."
+        }
+      ],
+      "workedExample": {
+        "domain": "gimnasio",
+        "body": "Visitas por socio con fecha de corte `2026-10-01`. Datos **distintos**:\n\n```sql\nCREATE TABLE socios (id INTEGER PRIMARY KEY, nombre VARCHAR(20));\nINSERT INTO socios VALUES (1,'Ana'),(2,'Luis'),(3,'Eva');\nCREATE TABLE visitas (id INTEGER PRIMARY KEY, socio_id INTEGER, dia DATE);\nINSERT INTO visitas VALUES (1,1,'2026-09-29'),(2,1,'2026-09-20'),(3,2,'2026-08-01');\n\nSELECT s.id,\n       DATE '2026-10-01' - MAX(v.dia) AS dias_desde_ultima,   -- Recencia\n       COUNT(v.id)                    AS visitas              -- Frecuencia (0 si no hay)\nFROM socios s\nLEFT JOIN visitas v ON v.socio_id = s.id                       -- Eva (sin visitas) se conserva\nGROUP BY s.id\nORDER BY s.id;\n-- (1, 2, 2) · (2, 61, 1) · (3, NULL, 0)\n```"
+      },
+      "steps": [
+        "Parte de `customers` y haz `LEFT JOIN` con `orders` por `customer_id`.",
+        "Agrupa por `customers.id`.",
+        "Recencia: resta `MAX(ordered_at)` a la fecha de corte `DATE '2026-10-01'`.",
+        "Frecuencia: `COUNT(o.id)` (no `COUNT(*)`).",
+        "Monto: `COALESCE(SUM(o.total), 0)`.",
+        "Ordena por `customer_id` y compara con la tabla esperada."
+      ],
+      "hints": [
+        "¿Qué tipo de JOIN conserva al cliente 5, que no tiene pedidos?",
+        "¿Qué función te da la fecha de la última compra de cada cliente?",
+        "¿`COUNT(*)` y `COUNT(o.id)` dan lo mismo para el cliente 5?"
+      ],
+      "skeleton": {
+        "language": "sql",
+        "code": "SELECT\n    c.id AS customer_id\n    -- TODO: recency_days (fecha de corte DATE '2026-10-01' menos la última compra)\n    -- TODO: frequency (¿COUNT(*) o COUNT(o.id)?)\n    -- TODO: monetary (cuidado con los clientes sin pedidos)\nFROM customers c\n-- TODO: ¿qué JOIN conserva a los clientes sin pedidos?\n-- TODO: agrupa por cliente\nORDER BY c.id;"
+      },
+      "research": [
+        {
+          "conceptId": "sql:agg",
+          "why": "MAX, COUNT y SUM resumen los pedidos de cada cliente.",
+          "searchEs": "funciones de agregación SQL",
+          "searchEn": "SQL aggregate functions MAX COUNT SUM"
+        },
+        {
+          "conceptId": "sql:date-funcs",
+          "why": "Calcular la recencia exige restar fechas.",
+          "searchEs": "diferencia entre fechas DuckDB",
+          "searchEn": "DuckDB date difference"
+        },
+        {
+          "conceptId": "sql:joins-outer",
+          "why": "Conserva a los clientes sin pedidos.",
+          "searchEs": "LEFT JOIN conservar filas sin coincidencia",
+          "searchEn": "SQL LEFT JOIN keep unmatched rows"
+        }
+      ],
+      "deliverables": [
+        "Una única consulta con las columnas `customer_id`, `recency_days`, `frequency` y `monetary`, ordenada por `customer_id`.",
+        "El resultado coincide con la tabla esperada (5 filas, incluido el cliente 5 sin pedidos).",
+        "Restricción: fecha de corte explícita (`DATE '2026-10-01'`), sin `CURRENT_DATE`.",
+        "Terminado cuando: la consulta corre sin error y las 5 filas coinciden."
+      ],
+      "expected": {
+        "columns": [
+          "customer_id",
+          "recency_days",
+          "frequency",
+          "monetary"
+        ],
+        "rows": [
+          [
+            1,
+            6,
+            3,
+            400.5
+          ],
+          [
+            2,
+            1,
+            2,
+            105
+          ],
+          [
+            3,
+            74,
+            1,
+            310
+          ],
+          [
+            4,
+            3,
+            4,
+            765
+          ],
+          [
+            5,
+            null,
+            0,
+            0
+          ]
+        ]
+      },
+      "solution": {
+        "code": "SELECT\n    c.id AS customer_id,\n    DATE '2026-10-01' - MAX(o.ordered_at) AS recency_days,\n    COUNT(o.id) AS frequency,\n    COALESCE(SUM(o.total), 0) AS monetary\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nGROUP BY c.id\nORDER BY c.id;",
+        "expectedResult": "Cinco filas; el cliente 5 aparece con `recency_days = NULL`, `frequency = 0` y `monetary = 0`.",
+        "reasoning": "1. El `LEFT JOIN` conserva al cliente 5. 2. Se agrupa por cliente. 3. `MAX(ordered_at)` es la última compra; restarla a la fecha de corte da la recencia. 4. `COUNT(o.id)` ignora los `NULL`, así que da 0 para el cliente 5. 5. `COALESCE` evita un monto `NULL`.",
+        "conceptLinks": "- **Agregación** → una fila por cliente. - **Fechas** → recencia con una fecha de corte fija. - **LEFT JOIN** → no pierdes clientes sin pedidos.",
+        "businessInterpretation": "El cliente 4 compra seguido (4 pedidos, 765) y reciente (3 días): es el mejor candidato. El cliente 3 compró una sola vez hace 74 días: está en riesgo. El 5 aún no compra: necesita una campaña de primera compra, no de retención.",
+        "commonError": "Usar `COUNT(*)` en lugar de `COUNT(o.id)`: el cliente 5 aparecería con frecuencia 1 aunque no tiene pedidos. Otro: usar `CURRENT_DATE`, que hace que el resultado cambie cada día.",
+        "dsFlow": "Es la construcción de variables antes de modelar: las métricas RFM serán la entrada de K-means en la etapa siguiente.",
+        "skill": "Construir una tabla de variables por entidad a partir de una tabla de eventos."
+      }
+    }
+  }
+}

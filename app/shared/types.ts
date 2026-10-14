@@ -28,9 +28,79 @@ export interface Concept {
   prerequisites: string[];
 }
 
-export interface TableSchema {
-  table: string;
-  columns: { name: string; type: string }[];
+/** Valor de una celda de muestra; `null` se muestra como NULL. */
+export type Cell = string | number | boolean | null;
+
+export interface TableColumn {
+  name: string;
+  type: string;
+  pk?: boolean;
+  /** Llave foránea hacia `table.column`. */
+  fk?: { table: string; column: string };
+  nullable?: boolean;
+}
+
+export interface TableDef {
+  name: string;
+  description?: string;
+  columns: TableColumn[];
+  rowCount: number;
+  /** Primeras filas, en el orden de `columns`. */
+  sampleRows: Cell[][];
+}
+
+/** Datos sintéticos del challenge (R18): `seedSql` para DuckDB o `seedPython` con semilla fija. */
+export interface Dataset {
+  engine: 'duckdb' | 'pandas';
+  tables: TableDef[];
+  seedSql?: string;
+  seedPython?: string;
+}
+
+export interface TheoryItem {
+  title: string;
+  /** Markdown con fórmulas ($…$ / $$…$$). */
+  body: string;
+}
+
+export interface ResearchItem {
+  conceptId: string;
+  why: string;
+  searchEs: string;
+  searchEn: string;
+}
+
+export interface ExpectedTable {
+  columns: string[];
+  rows: Cell[][];
+}
+
+export interface StageSolution {
+  code?: string;
+  expectedResult?: string;
+  reasoning?: string;
+  conceptLinks?: string;
+  businessInterpretation?: string;
+  commonError?: string;
+  dsFlow?: string;
+  skill?: string;
+}
+
+/** Contenido rico de una etapa (R17). Todo es opcional; la UI oculta lo que falte. */
+export interface StageContent {
+  theory?: TheoryItem[];
+  workedExample?: { domain: string; body: string };
+  /** Paso a paso (Apoyo Guiado). */
+  steps?: string[];
+  /** Pistas ordenadas: qué mirar, no cómo (Apoyo Pistas). */
+  hints?: string[];
+  skeleton?: { language: 'sql' | 'python'; code: string };
+  research?: ResearchItem[];
+  /** Entregable como checklist. */
+  deliverables?: string[];
+  expected?: ExpectedTable;
+  asserts?: string;
+  solution?: StageSolution;
 }
 
 export interface Stage {
@@ -44,15 +114,36 @@ export interface Stage {
   bloom: Bloom;
   estimatedMinutes: number;
   mechanism: EvalMechanism;
+  /** Tarea de la etapa (Markdown). */
   description: string;
-  deliverables: string[];
+  /** Conceptos del grafo que practica la etapa. */
   conceptIds: string[];
   /** Apoyo actual de la etapa; independiente de las demás (R5). */
   apoyo: Apoyo;
-  suggestedStep: string;
-  hint: string;
-  verification: string;
-  solution: string;
+  content: StageContent;
+}
+
+export interface BusinessQuestion {
+  id: string;
+  text: string;
+  /** Guía de reflexión: se muestra solo tras guardar las respuestas (R22). */
+  reflectionGuide?: string;
+}
+
+export interface TestQuestion {
+  id: string;
+  conceptId: string;
+  bloom: 1 | 2 | 3;
+  kind: 'opcion_multiple' | 'numerica' | 'texto';
+  /** Markdown. */
+  prompt: string;
+  options?: string[];
+  correctIndex?: number;
+  answer?: number;
+  tolerance?: number;
+  /** Criterio de la rúbrica para `texto`. */
+  rubric?: string;
+  explanation: string;
 }
 
 export interface Challenge {
@@ -63,9 +154,13 @@ export interface Challenge {
   difficulty: Difficulty;
   /** Sugerido por la cola de repaso. El estado del challenge se deriva de la evidencia. */
   recommended: boolean;
-  statement: string;
-  schema: TableSchema[];
-  businessQuestions: string[];
+  /** Escenario de negocio: rol, organización y decisión (Markdown). */
+  scenario: string;
+  /** Tarea concreta del challenge (Markdown). */
+  task: string;
+  data?: Dataset;
+  businessQuestions: BusinessQuestion[];
+  finalTest?: TestQuestion[];
   stages: Stage[];
 }
 

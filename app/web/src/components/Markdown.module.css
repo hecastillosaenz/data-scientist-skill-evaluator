@@ -1,0 +1,33 @@
+.md { font-size: var(--fs-body); line-height: 1.7; color: var(--ink2); max-width: 72ch; overflow-wrap: anywhere; }
+.inline { display: inline; max-width: none; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 0.9em; }
+.inline p { display: inline; margin: 0; }
+.md h1, .md h2, .md h3, .md h4 { margin: 1.2em 0 0.5em; color: var(--ink); }
+.md h1 { font-size: 20px; } .md h2 { font-size: 18px; } .md h3, .md h4 { font-size: 15px; }
+.md strong { color: var(--ink); font-weight: 600; }
+.md ul, .md ol { margin: 0 0 0.9em; padding-left: 1.4em; }
+.md li { margin: 0.25em 0; }
+.md a { color: var(--accent); }
+.md blockquote { margin: 0 0 0.9em; padding: 0.4em 1em; border-left: 3px solid var(--accent-3); color: var(--ink2); background: var(--sunk); border-radius: 0 10px 10px 0; }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 1.2em 0; }
+
+.md code { font-family: var(--mono); font-size: 0.88em; padding: 0.1em 0.4em; border-radius: 6px; background: var(--sunk); color: var(--ink); }
+.md pre { margin: 0 0 1em; padding: 14px 16px; border-radius: 12px; background: var(--sunk); overflow-x: auto; max-width: 100%; }
+.md pre code { padding: 0; background: none; font-size: 13px; line-height: 1.75; }
+
+.md table { border-collapse: collapse; margin: 0 0 1em; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; }
+.md th, .md td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.md th { color: var(--ink); font-weight: 600; background: var(--sunk); }
+
+.md :global(.katex-display) { margin: 0.9em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.md :global(.katex) { font-size: 1.05em; color: var(--ink); }
+
+/* Resaltado de sintaxis (highlight.js) con los tokens de color del tema. */
+.md :global(.hljs-keyword), .md :global(.hljs-built_in), .md :global(.hljs-type) { color: var(--accent); font-weight: 500; }
+.md :global(.hljs-string) { color: var(--d1-fg); }
+.md :global(.hljs-number), .md :global(.hljs-literal) { color: var(--d2-fg); }
+.md :global(.hljs-comment) { color: var(--muted); font-style: italic; }
+.md :global(.hljs-title), .md :global(.hljs-function) { color: var(--d3-fg); }
+.md :global(.hljs-params), .md :global(.hljs-variable) { color: var(--ink); }

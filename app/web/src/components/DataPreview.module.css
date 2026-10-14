@@ -1,0 +1,16 @@
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.tabs { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--sunk); flex-wrap: wrap; }
+.tab { min-height: 36px; padding: 0 14px; border: 0; border-radius: 9px; background: none; font-size: 13px; color: var(--muted); }
+.tab:hover { color: var(--ink); }
+.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow-card); }
+.tableWrap { overflow-x: auto; border-radius: 12px; background: var(--sunk); padding: 4px 4px 0; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th, .table td { padding: 9px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.table th { color: var(--ink); font-weight: 600; font-size: 12px; background: var(--sel); position: sticky; top: 0; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table td { color: var(--ink2); }
+.th { display: inline-flex; align-items: center; gap: 6px; }
+.num { text-align: right; }
+.null { color: var(--muted); font-style: italic; }
+.empty { color: var(--muted); text-align: center; padding: 20px; }
+.caption { margin: 0; padding: 10px 14px; font-size: 12px; color: var(--muted); }

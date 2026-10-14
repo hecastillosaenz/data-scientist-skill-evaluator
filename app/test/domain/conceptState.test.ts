@@ -9,13 +9,13 @@ const ev = (over: Partial<Evidence>): Evidence => ({
 
 const stage = (over: Partial<Stage>): Stage => ({
   id: 'c1-s1', challengeId: 'c1', number: 1, title: 't', domain: 'sql', difficulty: 2, bloom: 3,
-  estimatedMinutes: 20, mechanism: 'codigo_assert', description: '', deliverables: [], conceptIds: ['k'],
-  apoyo: 'autonomo', suggestedStep: '', hint: '', verification: '', solution: '', ...over,
+  estimatedMinutes: 20, mechanism: 'codigo_assert', description: '', conceptIds: ['k'],
+  apoyo: 'autonomo', content: {}, ...over,
 });
 
 const challenge = (stages: Stage[]): Challenge => ({
   id: 'c1', number: 1, title: 'c', dataset: 'd', difficulty: 2, recommended: false,
-  statement: '', schema: [], businessQuestions: [], stages,
+  scenario: '', task: '', businessQuestions: [], stages,
 });
 
 const concept: Concept = { id: 'k', name: 'K', domain: 'sql', prerequisites: [] };

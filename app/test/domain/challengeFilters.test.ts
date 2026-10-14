@@ -16,7 +16,7 @@ describe('filterChallenges', () => {
   it('por dominio incluye el challenge si alguna etapa cumple', () => {
     const f = { ...emptyFilters(), domains: new Set(['math' as const]) };
     const ids = filterChallenges(all, f, statusOf).map((c) => c.title);
-    expect(ids).toEqual(['A/B test del checkout']); // solo ese tiene etapas de Matemática
+    expect(ids).toEqual(['A/B test del checkout', 'Filtro de phishing y probabilidad real de alerta']); // los que tienen etapas de Matemática
     // …aunque su dificultad global no sea "matemática": el filtro mira las etapas
   });
 

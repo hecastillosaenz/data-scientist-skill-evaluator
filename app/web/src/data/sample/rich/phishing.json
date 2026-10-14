@@ -1,0 +1,184 @@
+{
+  "id": "c011",
+  "number": 11,
+  "title": "Filtro de phishing y probabilidad real de alerta",
+  "dataset": "Phishing Filter",
+  "difficulty": 1,
+  "recommended": true,
+  "scenario": "Una empresa usa un filtro que marca correos como sospechosos de **phishing**. Se sabe que:\n\n- El **2 %** de los correos que recibe la empresa son phishing.\n- Si un correo **es** phishing, el filtro lo marca con probabilidad **0,90**.\n- Si un correo **no es** phishing, el filtro lo marca por error con probabilidad **0,05**.",
+  "task": "Un correo llega marcado por el filtro. ¿Qué probabilidad hay de que realmente sea phishing?\n\nNotación: $F$ = «el correo es phishing», $A$ = «el filtro marca alerta», $\\bar{F}$ = «no es phishing».\n\n| Dato | Valor |\n|---|---|\n| $P(F)$ | 0,02 |\n| $P(A \\mid F)$ | 0,90 |\n| $P(A \\mid \\bar{F})$ | 0,05 |",
+  "businessQuestions": [
+    {
+      "id": "c011-bq1",
+      "text": "Si el equipo de seguridad revisa a mano cada alerta, ¿cuánto de su tiempo se va en falsos positivos con la tasa base actual? ¿Cómo se lo explicarías al responsable del área?",
+      "reflectionGuide": "Con 2 % de prevalencia, solo ~27 de cada 100 alertas son phishing real: ~73 % del esfuerzo de revisión se gasta en correos legítimos. Se puede explicar con 1 000 correos: 20 son phishing y el filtro atrapa 18; de los 980 legítimos marca 49 por error."
+    },
+    {
+      "id": "c011-bq2",
+      "text": "¿Qué cambiarías primero para que las alertas sean más confiables: mejorar la sensibilidad del filtro o bajar su tasa de falsos positivos? Justifica con los números.",
+      "reflectionGuide": "Con una tasa base baja, reducir los falsos positivos rinde más: el denominador de la alerta está dominado por los 980 correos legítimos × 5 %. Bajar la tasa de falsos positivos a 1 % elevaría la confiabilidad de la alerta de 27 % a ~65 %, mientras que subir la sensibilidad de 90 % a 99 % apenas la mueve."
+    },
+    {
+      "id": "c011-bq3",
+      "text": "¿Qué dato adicional pedirías antes de confiar en el 2 % de prevalencia, y cómo cambiaría tu conclusión si estuviera mal estimado?",
+      "reflectionGuide": "Pediría el histórico de correos etiquetados por mes y por tipo de usuario: la prevalencia no es constante (campañas dirigidas la elevan). Si fuera 20 %, la alerta pasaría a ser confiable en 82 %."
+    }
+  ],
+  "stages": [
+    {
+      "id": "c011-s1",
+      "challengeId": "c011",
+      "number": 1,
+      "title": "Probabilidad real de que una alerta sea phishing",
+      "domain": "math",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 25,
+      "mechanism": "rubric_claude",
+      "apoyo": "guiado",
+      "conceptIds": [
+        "math:bayes",
+        "math:conditional",
+        "math:probability"
+      ],
+      "description": "Calcula **(a)** $P(F \\mid A)$ con el desarrollo completo; **(b)** repite el cálculo si el 20 % de los correos fueran phishing; **(c)** explica en 2–3 líneas por qué el resultado de (a) sorprende y qué lo causa.",
+      "content": {
+        "theory": [
+          {
+            "title": "Probabilidad condicional",
+            "body": "$P(A \\mid F)$ es la probabilidad de que ocurra $A$ **sabiendo** que ocurrió $F$. **No es lo mismo** que $P(F \\mid A)$: la primera dice «si es phishing, ¿el filtro avisa?»; la segunda, «si el filtro avisó, ¿es phishing?». Confundirlas es el error más común."
+          },
+          {
+            "title": "Ley de probabilidad total",
+            "body": "La probabilidad de que el filtro avise combina los dos mundos posibles (es phishing / no lo es):\n\n$$\nP(A) = P(A \\mid F)\\,P(F) + P(A \\mid \\bar{F})\\,P(\\bar{F})\n$$"
+          },
+          {
+            "title": "Teorema de Bayes",
+            "body": "Invierte la condición:\n\n$$\nP(F \\mid A) = \\frac{P(A \\mid F)\\,P(F)}{P(A)}\n$$\n\nEl denominador es la probabilidad total de alerta. El resultado se llama **probabilidad a posteriori**."
+          },
+          {
+            "title": "Tasa base",
+            "body": "$P(F)$ es la **tasa base**: qué tan frecuente es el fenómeno antes de ver ninguna evidencia. Si $F$ es raro, aun un filtro bueno genera más falsas alarmas que alarmas verdaderas. Ignorarla se llama *falacia de la tasa base*."
+          }
+        ],
+        "workedExample": {
+          "domain": "diagnóstico médico",
+          "body": "Una prueba detecta una enfermedad: prevalencia del **1 %**, sensibilidad **0,95** y tasa de falsos positivos **0,08**. Datos **distintos** a los del reto.\n\n$$\nP(+) = 0.95 \\cdot 0.01 + 0.08 \\cdot 0.99 = 0.0095 + 0.0792 = 0.0887\n$$\n\n$$\nP(\\text{enfermo} \\mid +) = \\frac{0.0095}{0.0887} \\approx 0.107 \\;(10.7\\,\\%)\n$$\n\nAunque la prueba acierta el 95 % de los enfermos, un resultado positivo solo implica ~11 % de probabilidad de estar enfermo: casi todos los positivos vienen de la enorme mayoría de sanos."
+        },
+        "steps": [
+          "Escribe los tres datos con la notación $P(F)$, $P(A \\mid F)$ y $P(A \\mid \\bar{F})$ y calcula $P(\\bar{F}) = 1 - P(F)$.",
+          "Calcula la probabilidad total de alerta $P(A)$ con la ley de probabilidad total.",
+          "Sustituye en Bayes para obtener $P(F \\mid A)$ y exprésalo en porcentaje.",
+          "Repite los pasos 1–3 cambiando la prevalencia a $P(F) = 0.20$.",
+          "Compara (a) y (b) y explica qué variable cambió y por qué se mueve tanto el resultado."
+        ],
+        "hints": [
+          "¿Cuántos de cada 1 000 correos son phishing? ¿Y cuántos de esos marca el filtro?",
+          "¿Cuántos de los correos **legítimos** marca el filtro por error? Compáralos con los phishing atrapados.",
+          "El denominador de Bayes es la probabilidad de **cualquier** alerta, no solo la de phishing."
+        ],
+        "research": [
+          {
+            "conceptId": "math:bayes",
+            "why": "Es la herramienta central: invierte P(A|F) en P(F|A).",
+            "searchEs": "teorema de Bayes ejemplo falso positivo",
+            "searchEn": "Bayes theorem false positive example"
+          },
+          {
+            "conceptId": "math:conditional",
+            "why": "Distinguir P(A|F) de P(F|A) evita el error más común.",
+            "searchEs": "probabilidad condicional",
+            "searchEn": "conditional probability"
+          },
+          {
+            "conceptId": "math:probability",
+            "why": "La ley de probabilidad total arma el denominador.",
+            "searchEs": "ley de probabilidad total",
+            "searchEn": "law of total probability"
+          }
+        ],
+        "deliverables": [
+          "(a) $P(F \\mid A)$ con el desarrollo completo (fórmula, sustitución y resultado en %).",
+          "(b) El mismo cálculo con una prevalencia del 20 %.",
+          "(c) 2–3 líneas explicando por qué el resultado de (a) sorprende y qué lo causa.",
+          "Terminado cuando: tu respuesta nombra la tasa base como causa y tus dos resultados coinciden con la guía."
+        ],
+        "solution": {
+          "reasoning": "**(a)** Probabilidad total de alerta y posterior:\n\n$$\nP(A) = 0.90 \\cdot 0.02 + 0.05 \\cdot 0.98 = 0.018 + 0.049 = 0.067\n$$\n\n$$\nP(F \\mid A) = \\frac{0.018}{0.067} \\approx 0.2687 \\;(26.9\\,\\%)\n$$\n\n**(b)** Con prevalencia del 20 %:\n\n$$\nP(A) = 0.90 \\cdot 0.20 + 0.05 \\cdot 0.80 = 0.22, \\qquad P(F \\mid A) = \\frac{0.18}{0.22} \\approx 0.8182 \\;(81.8\\,\\%)\n$$",
+          "conceptLinks": "- **Probabilidad condicional** → separas $P(A \\mid F) = 0.90$ de lo que se pide, $P(F \\mid A)$.\n- **Probabilidad total** → armas $P(A) = 0.067$.\n- **Bayes** → inviertes la condición.\n- **Tasa base** → explica por qué el resultado sorprende.",
+          "businessInterpretation": "Aunque el filtro detecta el 90 % del phishing, de cada 100 alertas solo unas 27 son phishing real: hay muchísimos más correos legítimos, y aun un 5 % de falsos positivos genera más alertas falsas (0,049) que verdaderas (0,018). Cuando la prevalencia sube al 20 %, la misma calidad de filtro da una alerta mucho más confiable.",
+          "commonError": "Confundir $P(A \\mid F) = 0.90$ con $P(F \\mid A)$ y responder «90 %». Es ignorar la tasa base $P(F) = 0.02$.",
+          "dsFlow": "Es la lógica de las pruebas diagnósticas, la detección de fraude y los clasificadores con clases desbalanceadas: la precisión de una alerta depende de la tasa base.",
+          "skill": "Aplicar Bayes con la ley de probabilidad total y razonar sobre tasas base."
+        }
+      }
+    },
+    {
+      "id": "c011-s2",
+      "challengeId": "c011",
+      "number": 2,
+      "title": "Verificar Bayes en código",
+      "domain": "python",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 15,
+      "mechanism": "codigo_assert",
+      "apoyo": "guiado",
+      "conceptIds": [
+        "python:functions",
+        "math:bayes"
+      ],
+      "description": "Implementa `posterior(prevalencia, sensibilidad, tasa_falsos_positivos) -> float` que devuelva $P(F \\mid A)$ y úsala para comprobar tus dos resultados de la etapa 1.",
+      "content": {
+        "theory": [
+          {
+            "title": "Funciones puras con tipos",
+            "body": "Una función con firma `def f(a: float, b: float) -> float` que solo depende de sus argumentos es fácil de probar con `assert`. Devuelve el valor, no lo imprimas."
+          },
+          {
+            "title": "Redondeo para comparar",
+            "body": "Compara flotantes con `round(x, 4)` o `math.isclose`; nunca con `==` directamente."
+          }
+        ],
+        "workedExample": {
+          "domain": "conversión web",
+          "body": "```python\ndef tasa(conversiones: int, visitas: int) -> float:\n    return conversiones / visitas\n\nassert round(tasa(30, 1000), 3) == 0.03\n```"
+        },
+        "steps": [
+          "Calcula `a = prevalencia * sensibilidad` (el numerador).",
+          "Calcula el denominador: `a + (1 - prevalencia) * tasa_falsos_positivos`.",
+          "Devuelve `a / denominador`.",
+          "Ejecuta los dos `assert` del entregable."
+        ],
+        "hints": [
+          "¿Qué parte del cálculo se repite en el numerador y en el denominador?",
+          "La función solo devuelve un `float`; no necesita `print`."
+        ],
+        "skeleton": {
+          "language": "python",
+          "code": "def posterior(prevalencia: float, sensibilidad: float, tasa_falsos_positivos: float) -> float:\n    # TODO: numerador = prevalencia * sensibilidad\n    # TODO: denominador = numerador + (1 - prevalencia) * tasa_falsos_positivos\n    # TODO: devolver numerador / denominador\n    ...\n"
+        },
+        "research": [
+          {
+            "conceptId": "python:functions",
+            "why": "Define y prueba una función con firma tipada.",
+            "searchEs": "funciones en Python anotaciones de tipos",
+            "searchEn": "Python function type hints"
+          }
+        ],
+        "deliverables": [
+          "Una celda que empiece con `# Entregable - Etapa 2:` y defina `posterior(prevalencia, sensibilidad, tasa_falsos_positivos) -> float`.",
+          "Los asserts de abajo pasan.",
+          "Terminado cuando: la celda corre sin errores."
+        ],
+        "asserts": "assert round(posterior(0.02, 0.90, 0.05), 4) == 0.2687\nassert round(posterior(0.20, 0.90, 0.05), 4) == 0.8182",
+        "solution": {
+          "code": "def posterior(prevalencia: float, sensibilidad: float, tasa_falsos_positivos: float) -> float:\n    numerador = prevalencia * sensibilidad\n    return numerador / (numerador + (1 - prevalencia) * tasa_falsos_positivos)",
+          "reasoning": "El numerador es la probabilidad conjunta de ser phishing **y** recibir alerta; el denominador es la probabilidad total de alerta.",
+          "commonError": "Olvidar el término `(1 - prevalencia) * tasa_falsos_positivos` y devolver `sensibilidad`.",
+          "skill": "Traducir una fórmula de probabilidad a una función verificable."
+        }
+      }
+    }
+  ]
+}

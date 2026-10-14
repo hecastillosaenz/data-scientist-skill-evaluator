@@ -4,7 +4,9 @@ import { DIFFICULTY_LABEL, DOMAIN_BY_ID } from '../../../shared/domains';
 import type { Apoyo, Challenge } from '../../../shared/types';
 import { Card, EmptyState, PageHeader, Skeleton } from '../components/cards';
 import { DifficultyChip, TimeChip } from '../components/chips';
+import { DataBlock } from '../components/DataBlock';
 import { DomainTile } from '../components/DomainTile';
+import { Markdown } from '../components/Markdown';
 import { StageBar } from '../components/StageBar';
 import { challengeMinutes } from '../domain/progress';
 import { simulateCodeVerification, simulateConceptEvaluation } from '../domain/simulate';
@@ -82,22 +84,18 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
 
       <div className={styles.layout}>
         <div className={styles.main}>
-          <Card>
-            <h2>Enunciado</h2>
-            <p className={styles.statement}>{challenge.statement}</p>
-            <h3 className={styles.schemaTitle}>Esquema de datos · {challenge.dataset}</h3>
-            <div className={styles.schemas}>
-              {challenge.schema.map((t) => (
-                <table key={t.table} className={`${styles.schema} mono`}>
-                  <caption>{t.table}</caption>
-                  <tbody>
-                    {t.columns.map((c) => (
-                      <tr key={c.name}><th scope="row">{c.name}</th><td>{c.type}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              ))}
-            </div>
+          <Card className={styles.statementCard}>
+            <section className={styles.block}>
+              <h2>Enunciado</h2>
+              <Markdown>{challenge.scenario}</Markdown>
+              {challenge.task && <Markdown>{challenge.task}</Markdown>}
+            </section>
+            {challenge.data && challenge.data.tables.length > 0 && (
+              <section className={styles.block}>
+                <h3>Datos · {challenge.dataset}</h3>
+                <DataBlock data={challenge.data} />
+              </section>
+            )}
           </Card>
 
           {challenge.stages.map((stage) => {
@@ -122,7 +120,7 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
           <Card>
             <h2>Preguntas de negocio</h2>
             <ol className={styles.questions}>
-              {challenge.businessQuestions.map((q) => <li key={q}>{q}</li>)}
+              {challenge.businessQuestions.map((q) => <li key={q.id}><Markdown inline>{q.text}</Markdown></li>)}
             </ol>
           </Card>
         </div>

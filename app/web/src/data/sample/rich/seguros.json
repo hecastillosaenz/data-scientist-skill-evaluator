@@ -1,0 +1,373 @@
+{
+  "id": "c010",
+  "number": 10,
+  "title": "Seguros: siniestralidad por tipo de póliza",
+  "dataset": "Insurance Claims",
+  "difficulty": 1,
+  "recommended": true,
+  "scenario": "Trabajas como **analista de datos en una aseguradora**. El comité de suscripción va a revisar las tarifas del próximo año y quiere saber qué línea de negocio (auto, hogar, salud) está **perdiendo dinero**.\n\nLa métrica que usan es el **ratio de siniestralidad**:\n\n$$\n\\text{ratio de siniestralidad} = \\frac{\\text{siniestros pagados}}{\\text{primas cobradas}} \\times 100\n$$\n\nUn ratio por encima de 100 % significa que la aseguradora pagó más de lo que cobró en esa línea.",
+  "task": "Calcula, **por tipo de póliza**: el número de pólizas, las primas totales, los siniestros pagados totales y el ratio de siniestralidad en %.\n\nOjo: una póliza puede tener **varios siniestros o ninguno**, y ambas situaciones deben quedar bien contadas.",
+  "data": {
+    "engine": "duckdb",
+    "seedSql": "CREATE TABLE polizas (\n    id INTEGER PRIMARY KEY,\n    tipo VARCHAR(10) NOT NULL,\n    prima_anual NUMERIC(10,2) NOT NULL\n);\n\nINSERT INTO polizas (id, tipo, prima_anual) VALUES\n(1, 'auto', 1200.00),\n(2, 'auto', 1000.00),\n(3, 'auto', 800.00),\n(4, 'hogar', 600.00),\n(5, 'hogar', 500.00),\n(6, 'salud', 2000.00),\n(7, 'salud', 1800.00),\n(8, 'salud', 2200.00);\n\nCREATE TABLE siniestros (\n    id INTEGER PRIMARY KEY,\n    poliza_id INTEGER NOT NULL REFERENCES polizas(id),\n    monto_pagado NUMERIC(10,2) NOT NULL\n);\n\nINSERT INTO siniestros (id, poliza_id, monto_pagado) VALUES\n(1, 1, 900.00),\n(2, 1, 600.00),\n(3, 2, 300.00),\n(4, 4, 1500.00),\n(5, 6, 1000.00),\n(6, 6, 400.00),\n(7, 7, 700.00),\n(8, 8, 500.00);\n",
+    "tables": [
+      {
+        "name": "polizas",
+        "description": "una fila por póliza",
+        "rowCount": 8,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "pk": true
+          },
+          {
+            "name": "tipo",
+            "type": "varchar"
+          },
+          {
+            "name": "prima_anual",
+            "type": "numeric"
+          }
+        ],
+        "sampleRows": [
+          [
+            1,
+            "auto",
+            1200.0
+          ],
+          [
+            2,
+            "auto",
+            1000.0
+          ],
+          [
+            3,
+            "auto",
+            800.0
+          ],
+          [
+            4,
+            "hogar",
+            600.0
+          ],
+          [
+            5,
+            "hogar",
+            500.0
+          ],
+          [
+            6,
+            "salud",
+            2000.0
+          ],
+          [
+            7,
+            "salud",
+            1800.0
+          ],
+          [
+            8,
+            "salud",
+            2200.0
+          ]
+        ]
+      },
+      {
+        "name": "siniestros",
+        "description": "una fila por siniestro",
+        "rowCount": 8,
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "pk": true
+          },
+          {
+            "name": "poliza_id",
+            "type": "integer",
+            "fk": {
+              "table": "polizas",
+              "column": "id"
+            }
+          },
+          {
+            "name": "monto_pagado",
+            "type": "numeric"
+          }
+        ],
+        "sampleRows": [
+          [
+            1,
+            1,
+            900.0
+          ],
+          [
+            2,
+            1,
+            600.0
+          ],
+          [
+            3,
+            2,
+            300.0
+          ],
+          [
+            4,
+            4,
+            1500.0
+          ],
+          [
+            5,
+            6,
+            1000.0
+          ],
+          [
+            6,
+            6,
+            400.0
+          ],
+          [
+            7,
+            7,
+            700.0
+          ],
+          [
+            8,
+            8,
+            500.0
+          ]
+        ]
+      }
+    ]
+  },
+  "businessQuestions": [
+    {
+      "id": "c010-bq1",
+      "text": "Hogar sale por encima de 100 % con solo 2 pólizas y un único siniestro grande. ¿Le recomendarías al comité subir la tarifa de hogar con base en este resultado? ¿Qué tendría que ser cierto para que la recomendación fuera sólida?",
+      "reflectionGuide": "Con 2 pólizas y 1 siniestro, la variabilidad domina: no subiría la tarifa todavía. Sería sólido si el patrón se repite con más pólizas y varios años, o si el siniestro grande refleja un riesgo estructural (zona inundable, tipo de vivienda) y no un evento aislado."
+    },
+    {
+      "id": "c010-bq2",
+      "text": "Explícale a un gerente comercial (no técnico) por qué el ratio de auto es 60 % y no 42,86 % como le salió a otro analista. Hazlo en dos frases, sin mencionar SQL.",
+      "reflectionGuide": "Algo como: «El otro cálculo contaba dos veces la prima de los clientes que tuvieron más de un reclamo, así que parecía que cobramos más de lo que cobramos. Corrigiendo eso, de cada \\$100 que cobramos en auto pagamos \\$60 en reclamos.»"
+    },
+    {
+      "id": "c010-bq3",
+      "text": "El ratio usa siniestros *pagados*. ¿Qué dato adicional pedirías antes de que el comité tome una decisión de tarifas (piensa en siniestros reportados pero aún no pagados, gastos de gestión o la fecha de los siniestros) y cómo podría cambiar la conclusión?",
+      "reflectionGuide": "Siniestros reportados pero no pagados (reservas / IBNR), gastos de ajuste y el período de exposición (prima devengada vs. emitida). Si salud tiene muchos reclamos aún abiertos, su 43 % podría estar subestimado y el ranking cambiar."
+    }
+  ],
+  "stages": [
+    {
+      "id": "c010-s1",
+      "challengeId": "c010",
+      "number": 1,
+      "title": "Ratio de siniestralidad por tipo de póliza",
+      "domain": "sql",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 30,
+      "mechanism": "codigo_assert",
+      "apoyo": "guiado",
+      "conceptIds": [
+        "sql:cte",
+        "sql:joins-outer",
+        "sql:groupby",
+        "sql:null",
+        "sql:agg"
+      ],
+      "description": "Escribe **una única consulta** (DuckDB / PostgreSQL) que devuelva, por tipo de póliza, el número de pólizas, las primas totales, los siniestros pagados totales y el ratio de siniestralidad en %, ordenada del ratio más alto al más bajo.",
+      "content": {
+        "theory": [
+          {
+            "title": "Granularidad (grano) de una tabla",
+            "body": "Es lo que representa **una fila**. En `polizas` una fila = una póliza; en `siniestros` una fila = un siniestro. Importa aquí porque la prima vive en el grano «póliza» y los pagos en el grano «siniestro»: si mezclas granos sin cuidado, los números se distorsionan."
+          },
+          {
+            "title": "Fan-out (multiplicación de filas en un JOIN)",
+            "body": "Cuando unes una tabla «uno» (pólizas) con una tabla «muchos» (siniestros), cada póliza aparece tantas veces como siniestros tenga. Si después haces `SUM(prima_anual)`, la prima de una póliza con 2 siniestros **se suma 2 veces**. Es el error más común en reportes financieros con SQL."
+          },
+          {
+            "title": "CTE (`WITH ... AS (...)`)",
+            "body": "Una *Common Table Expression* es una consulta con nombre que defines antes del `SELECT` principal y luego usas como si fuera una tabla. Aquí sirve para **pre-agregar** los siniestros a nivel póliza (una fila por póliza) ANTES de unirlos, eliminando el fan-out. Además hace la consulta legible por etapas."
+          },
+          {
+            "title": "`LEFT JOIN` frente a `JOIN`",
+            "body": "`JOIN` (inner) descarta las filas sin coincidencia; `LEFT JOIN` conserva todas las filas de la tabla izquierda. Las pólizas sin siniestros siguen cobrando prima, así que deben entrar en el denominador: necesitas `LEFT JOIN` desde `polizas`."
+          },
+          {
+            "title": "`COALESCE()` y división con decimales",
+            "body": "Tras un `LEFT JOIN`, las pólizas sin siniestros traen `NULL` en el total pagado; `COALESCE(x, 0)` lo convierte en 0. Para el porcentaje, multiplica por `100.0` para forzar división decimal y redondea con `ROUND(..., 2)`."
+          }
+        ],
+        "workedExample": {
+          "domain": "restaurantes",
+          "body": "Ventas por cada dólar de costo fijo, por ciudad. Datos **distintos** a los del reto:\n\n```sql\nCREATE TABLE locales (id INTEGER PRIMARY KEY, ciudad VARCHAR(20), costo_fijo_mensual NUMERIC(10,2));\nINSERT INTO locales VALUES (1,'Panamá',3000),(2,'Panamá',2500),(3,'David',1500),(4,'David',1200);\n\nCREATE TABLE pedidos (id INTEGER PRIMARY KEY, local_id INTEGER, monto NUMERIC(10,2));\nINSERT INTO pedidos VALUES (1,1,4000),(2,1,2000),(3,2,3500),(4,3,1800),(5,3,900);\n\nWITH ventas_por_local AS (           -- 1) llevo pedidos al grano \"local\"\n    SELECT local_id, SUM(monto) AS ventas\n    FROM pedidos\n    GROUP BY local_id\n)\nSELECT\n    l.ciudad,\n    COUNT(*) AS n_locales,\n    SUM(l.costo_fijo_mensual) AS costos,\n    SUM(COALESCE(v.ventas, 0)) AS ventas,\n    ROUND(SUM(COALESCE(v.ventas, 0)) * 1.0 / SUM(l.costo_fijo_mensual), 2) AS ventas_por_dolar_costo\nFROM locales l\nLEFT JOIN ventas_por_local v ON v.local_id = l.id   -- 2) conservo locales sin pedidos (el 4)\nGROUP BY l.ciudad\nORDER BY l.ciudad;\n```\n\nResultado: `('David', 2, 2700, 2700, 1.00)` y `('Panamá', 2, 5500, 9500, 1.73)`. Sin la CTE, el local 1 (2 pedidos) contaría su costo de 3000 dos veces."
+        },
+        "steps": [
+          "Identifica el **grano** de cada tabla y en cuál vive cada métrica (prima → póliza; pago → siniestro).",
+          "Escribe una CTE llamada `siniestros_por_poliza` que devuelva una fila por `poliza_id` con la suma de `monto_pagado`.",
+          "En el `SELECT` principal, parte de `polizas` y haz `LEFT JOIN` contra la CTE por `poliza_id = id`.",
+          "Agrupa por `tipo`.",
+          "Calcula `n_polizas` con `COUNT(*)`, `primas_totales` con `SUM(prima_anual)` y `siniestros_totales` con `SUM(COALESCE(total_pagado, 0))`.",
+          "Calcula `ratio_siniestralidad_pct` = 100.0 × siniestros ÷ primas, redondeado a 2 decimales.",
+          "Ordena por el ratio de mayor a menor y compara fila por fila con la tabla esperada del entregable."
+        ],
+        "hints": [
+          "Piensa en qué tabla vive la prima y en cuál el pago: ¿tienen el mismo número de filas por póliza?",
+          "Antes de unir, deja los siniestros con **una sola fila por póliza**.",
+          "Algunas pólizas no tienen siniestros: ¿qué tipo de JOIN las conserva?",
+          "Después del JOIN algunas sumas traen `NULL`: conviértelas antes de dividir.",
+          "Verifica que `SUM(primas_totales)` de tu resultado sea igual al total de la tabla `polizas` (10 100)."
+        ],
+        "skeleton": {
+          "language": "sql",
+          "code": "WITH siniestros_por_poliza AS (\n    -- TODO: una fila por poliza_id con la suma de monto_pagado (alias: total_pagado)\n)\nSELECT\n    p.tipo\n    -- TODO: n_polizas\n    -- TODO: primas_totales\n    -- TODO: siniestros_totales (cuidado con los NULL)\n    -- TODO: ratio_siniestralidad_pct (100.0 * ... / ..., redondeado a 2)\nFROM polizas p\n-- TODO: ¿qué tipo de JOIN contra la CTE, y por qué?\n-- TODO: agrupa por tipo\n-- TODO: ordena por el ratio de mayor a menor\n;"
+        },
+        "research": [
+          {
+            "conceptId": "sql:cte",
+            "why": "Te permite pre-agregar los siniestros a nivel póliza antes de unirlos.",
+            "searchEs": "CTE SQL / expresión de tabla común",
+            "searchEn": "SQL common table expression WITH"
+          },
+          {
+            "conceptId": "sql:joins-outer",
+            "why": "Conserva las pólizas sin siniestros, que sí cobraron prima.",
+            "searchEs": "LEFT JOIN diferencia con INNER JOIN",
+            "searchEn": "SQL LEFT JOIN vs INNER JOIN"
+          },
+          {
+            "conceptId": "sql:null",
+            "why": "Tras el LEFT JOIN aparecen NULL que rompen las sumas si no los conviertes.",
+            "searchEs": "COALESCE SQL valores nulos",
+            "searchEn": "SQL COALESCE NULL handling"
+          },
+          {
+            "conceptId": "sql:groupby",
+            "why": "Agrega por tipo de póliza; la granularidad decide si el resultado es correcto.",
+            "searchEs": "granularidad de datos fan-out join",
+            "searchEn": "data grain join row duplication fan-out"
+          }
+        ],
+        "deliverables": [
+          "Una única consulta SQL (DuckDB / PostgreSQL) que use al menos una CTE y devuelva las columnas `tipo`, `n_polizas`, `primas_totales`, `siniestros_totales`, `ratio_siniestralidad_pct` (redondeado a 2 decimales), ordenada por `ratio_siniestralidad_pct` descendente.",
+          "El resultado coincide con la tabla esperada (3 filas).",
+          "Restricciones: nada de subconsultas correlacionadas ni `DISTINCT` dentro de `SUM` para «arreglar» duplicados; el fan-out se resuelve pre-agregando en la CTE.",
+          "Interpretación de negocio (1–3 líneas): qué línea está perdiendo dinero y una limitación de esta conclusión.",
+          "Terminado cuando: la consulta corre sin error y las 3 filas coinciden exactamente con la tabla esperada."
+        ],
+        "expected": {
+          "columns": [
+            "tipo",
+            "n_polizas",
+            "primas_totales",
+            "siniestros_totales",
+            "ratio_siniestralidad_pct"
+          ],
+          "rows": [
+            [
+              "hogar",
+              2,
+              1100.0,
+              1500.0,
+              136.36
+            ],
+            [
+              "auto",
+              3,
+              3000.0,
+              1800.0,
+              60.0
+            ],
+            [
+              "salud",
+              3,
+              6000.0,
+              2600.0,
+              43.33
+            ]
+          ]
+        },
+        "solution": {
+          "code": "WITH siniestros_por_poliza AS (\n    SELECT poliza_id, SUM(monto_pagado) AS total_pagado\n    FROM siniestros\n    GROUP BY poliza_id\n)\nSELECT\n    p.tipo,\n    COUNT(*) AS n_polizas,\n    ROUND(SUM(p.prima_anual), 2) AS primas_totales,\n    ROUND(SUM(COALESCE(s.total_pagado, 0)), 2) AS siniestros_totales,\n    ROUND(100.0 * SUM(COALESCE(s.total_pagado, 0)) / SUM(p.prima_anual), 2) AS ratio_siniestralidad_pct\nFROM polizas p\nLEFT JOIN siniestros_por_poliza s ON s.poliza_id = p.id\nGROUP BY p.tipo\nORDER BY ratio_siniestralidad_pct DESC;",
+          "expectedResult": "Ver la tabla de 3 filas del entregable; coincide exactamente con la salida de esta consulta.",
+          "reasoning": "1. La CTE lleva `siniestros` al grano póliza: la póliza 1 pasa de 2 filas (900 y 600) a 1 fila con 1500; la 6 pasa a 1400.\n2. El `LEFT JOIN` desde `polizas` conserva las pólizas 3 y 5, que no tienen siniestros pero sí cobraron prima.\n3. `COALESCE` convierte sus `NULL` en 0.\n4. Se agrupa por tipo y se divide siniestros ÷ primas × 100.",
+          "conceptLinks": "- **Granularidad** → detectas que prima y pago viven en granos distintos.\n- **Fan-out** → sabes que un JOIN directo duplica primas.\n- **CTE** → pre-agregas para que la relación sea 1 a 1.\n- **LEFT JOIN + COALESCE** → no pierdes las pólizas sin siniestros del denominador.",
+          "businessInterpretation": "Hogar es la única línea con pérdida técnica (136,36 %: pagó \\$1,36 por cada \\$1 cobrado). Auto (60 %) y salud (43,33 %) dejan margen para gastos y utilidad.\n\n**Limitación fuerte:** hogar tiene solo 2 pólizas y el resultado lo explica un único siniestro de \\$1 500; con tan poca exposición es una señal para investigar, no evidencia suficiente para retarifar.",
+          "commonError": "Dos versiones del mismo error de grano, y **ninguna da error**: el bug es silencioso.\n\n- `JOIN` directo sin CTE: auto da 42,86 % (primas infladas a 4 200) y salud 32,5 % (8 000). Creerías que auto y salud son más rentables de lo que son.\n- CTE con `JOIN` (inner) en lugar de `LEFT JOIN`: auto da 81,82 % y hogar 250 %, porque se pierden las pólizas 3 y 5 del denominador.\n\nPor eso hay que verificar los totales: `SUM(primas)` del reporte debe ser 10 100, igual al total de `polizas`.",
+          "dsFlow": "Etapa de exploración y construcción de variables: casi todo dataset de modelado (por ejemplo, predecir siniestralidad por póliza) se arma uniendo tablas de distinto grano. Pre-agregar con CTEs antes del JOIN es el patrón estándar para no meter fugas ni duplicados en las variables.",
+          "skill": "Razonar sobre el grano antes de unir tablas y usar CTEs para agregar por etapas de forma legible y correcta."
+        }
+      }
+    },
+    {
+      "id": "c010-s2",
+      "challengeId": "c010",
+      "number": 2,
+      "title": "Recomendación al comité de suscripción",
+      "domain": "business",
+      "difficulty": 1,
+      "bloom": 5,
+      "estimatedMinutes": 15,
+      "mechanism": "rubric_claude",
+      "apoyo": "guiado",
+      "conceptIds": [
+        "business:kpis",
+        "business:risk",
+        "business:recommendations"
+      ],
+      "description": "Con la tabla del ratio de siniestralidad, escribe una **recomendación de 3 a 5 líneas** para el comité: qué línea requiere atención, qué harías y qué limitación tiene tu conclusión.",
+      "content": {
+        "theory": [
+          {
+            "title": "Una recomendación abre con la decisión",
+            "body": "Primero **qué harías**, después el porqué con una cifra. El comité lee la primera línea; el resto es respaldo."
+          },
+          {
+            "title": "Señal frente a evidencia",
+            "body": "Un ratio alto con pocas pólizas es una **señal para investigar**, no evidencia suficiente para actuar. Nombra siempre el tamaño de la muestra que sostiene la cifra."
+          }
+        ],
+        "steps": [
+          "Abre con la decisión que propones (investigar, retarifar, mantener).",
+          "Respáldala con **una** cifra del resultado (por ejemplo, el ratio de hogar).",
+          "Nombra una limitación concreta: tamaño de muestra, siniestros aún no pagados o período.",
+          "Cierra con el siguiente paso medible."
+        ],
+        "hints": [
+          "¿Qué línea sale peor? ¿Con cuántas pólizas?",
+          "¿Qué dato falta para confiar en la cifra?",
+          "¿Qué harías primero: actuar o investigar?"
+        ],
+        "research": [
+          {
+            "conceptId": "business:recommendations",
+            "why": "Estructura una recomendación accionable para no técnicos.",
+            "searchEs": "recomendación accionable análisis de datos",
+            "searchEn": "actionable recommendation data analysis stakeholders"
+          },
+          {
+            "conceptId": "business:risk",
+            "why": "Te ayuda a nombrar la limitación de tu conclusión.",
+            "searchEs": "supuestos y riesgos de un análisis",
+            "searchEn": "analysis assumptions and limitations"
+          }
+        ],
+        "deliverables": [
+          "Una recomendación de 3 a 5 líneas que abra con la decisión.",
+          "Usa al menos una cifra del resultado de la etapa 1.",
+          "Nombra una limitación concreta de la conclusión.",
+          "Terminado cuando: un gerente no técnico podría actuar con tu texto."
+        ],
+        "solution": {
+          "code": "Recomiendo **investigar la línea de hogar antes de tocar su tarifa**. Su ratio es de 136 % (pagó \\$1,36 por cada \\$1 cobrado), pero se apoya en solo 2 pólizas y un único siniestro de \\$1 500, así que todavía es una señal y no evidencia. Auto (60 %) y salud (43 %) no requieren acción. Antes del próximo comité pediría los siniestros reportados aún no pagados y tres años de historial de hogar.",
+          "reasoning": "La respuesta abre con la decisión, la respalda con una cifra, nombra la limitación (muestra pequeña) y cierra con el siguiente paso.",
+          "commonError": "Recomendar subir la tarifa de hogar solo porque supera 100 %, sin mencionar el tamaño de la muestra.",
+          "skill": "Comunicar una conclusión con su incertidumbre a una audiencia no técnica."
+        }
+      }
+    }
+  ]
+}

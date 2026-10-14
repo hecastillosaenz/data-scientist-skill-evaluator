@@ -1,4 +1,10 @@
-import type { Bloom, Challenge, Difficulty, DomainId, EvalMechanism, Stage, TableSchema } from '../../../../shared/types';
+import type { Bloom, Challenge, Difficulty, DomainId, EvalMechanism, Stage, TableDef } from '../../../../shared/types';
+import { enrichChallenges } from './rich';
+
+interface SchemaSpec {
+  table: string;
+  columns: { name: string; type: string }[];
+}
 
 interface StageSpec {
   title: string;
@@ -22,12 +28,12 @@ interface ChallengeSpec {
   d: Difficulty;
   recommended?: boolean;
   statement: string;
-  schema: TableSchema[];
+  schema: SchemaSpec[];
   questions: string[];
   stages: StageSpec[];
 }
 
-const t = (table: string, cols: string): TableSchema => ({
+const t = (table: string, cols: string): SchemaSpec => ({
   table,
   columns: cols.split(',').map((c) => {
     const [name = '', type = 'text'] = c.trim().split(' ');
@@ -165,8 +171,29 @@ const SPECS: ChallengeSpec[] = [
   },
 ];
 
+/** Deduce PK/FK por convención de nombres (`x_id` → tabla `x`/`xs`) para los challenges de ejemplo compactos. */
+function toTables(schema: SchemaSpec[]): TableDef[] {
+  const names = new Set(schema.map((t) => t.table));
+  const target = (prefix: string) => [prefix, `${prefix}s`, `${prefix}es`].find((n) => names.has(n));
+  return schema.map((spec) => ({
+    name: spec.table,
+    columns: spec.columns.map((col, i) => {
+      const isId = col.name === 'id' || col.name.endsWith('_id');
+      const ref = isId ? target(col.name.replace(/_id$/, '')) : undefined;
+      const own = ref === spec.table;
+      return {
+        ...col,
+        ...(i === 0 && isId ? { pk: true } : {}),
+        ...(!(i === 0 && isId) && ref && !own ? { fk: { table: ref, column: col.name } } : {}),
+      };
+    }),
+    rowCount: 0,
+    sampleRows: [],
+  }));
+}
+
 export function buildChallenges(): Challenge[] {
-  return SPECS.map((spec, ci) => {
+  const base = SPECS.map((spec, ci) => {
     const number = ci + 1;
     const id = `c${String(number).padStart(3, '0')}`;
     const stages: Stage[] = spec.stages.map((s, si) => ({
@@ -180,13 +207,14 @@ export function buildChallenges(): Challenge[] {
       estimatedMinutes: s.min,
       mechanism: s.mech,
       description: s.desc,
-      deliverables: s.deliverables,
       conceptIds: s.concepts,
       apoyo: s.d === 1 ? 'guiado' : s.d === 2 ? 'pistas' : 'autonomo',
-      suggestedStep: s.step,
-      hint: s.hint,
-      verification: s.ver,
-      solution: s.sol,
+      content: {
+        steps: [s.step],
+        hints: [s.hint],
+        deliverables: s.deliverables,
+        solution: { code: s.sol, reasoning: s.ver },
+      },
     }));
     return {
       id,
@@ -195,10 +223,12 @@ export function buildChallenges(): Challenge[] {
       dataset: spec.dataset,
       difficulty: spec.d,
       recommended: spec.recommended ?? false,
-      statement: spec.statement,
-      schema: spec.schema,
-      businessQuestions: spec.questions,
+      scenario: spec.statement,
+      task: '',
+      data: { engine: 'duckdb' as const, tables: toTables(spec.schema) },
+      businessQuestions: spec.questions.map((text, qi) => ({ id: `${id}-bq${qi + 1}`, text })),
       stages,
-    };
+    } satisfies Challenge;
   });
+  return enrichChallenges(base);
 }

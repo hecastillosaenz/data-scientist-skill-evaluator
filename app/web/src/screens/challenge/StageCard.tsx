@@ -1,12 +1,14 @@
 import { useNavigate } from 'react-router';
-import { ChevronDown, Eye, EyeOff, Lightbulb } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, ExternalLink, Lightbulb, Network } from 'lucide-react';
 import { APOYO_LABEL, DOMAIN_BY_ID } from '../../../../shared/domains';
 import type { Apoyo, AttemptResult, Concept, ConceptState, Stage, StageStatus } from '../../../../shared/types';
 import { BloomChip, DifficultyChip, StatusChip, TimeChip } from '../../components/chips';
 import { DomainTile } from '../../components/DomainTile';
+import { Markdown } from '../../components/Markdown';
+import { ResultTable } from '../../components/ResultTable';
 import { Segmented } from '../../components/Segmented';
 import type { StageResult } from '../../domain/simulate';
-import { toggleHint, toggleSolution, initialHelp } from '../../domain/stageHelp';
+import { initialHelp, toggleHint, toggleSolution } from '../../domain/stageHelp';
 import styles from './StageCard.module.css';
 
 export interface StageUI {
@@ -17,9 +19,11 @@ export interface StageUI {
   solutionVisible: boolean;
   answer: string;
   result: StageResult | null;
+  /** Entregables marcados en la checklist. */
+  checks: boolean[];
 }
 
-export const initialStageUI: StageUI = { open: false, ...initialHelp, answer: '', result: null };
+export const initialStageUI: StageUI = { open: false, ...initialHelp, answer: '', result: null, checks: [] };
 
 const APOYO_OPTIONS: { value: Apoyo; label: string }[] = [
   { value: 'guiado', label: APOYO_LABEL.guiado },
@@ -28,6 +32,7 @@ const APOYO_OPTIONS: { value: Apoyo; label: string }[] = [
 ];
 
 const RESULT_LABEL: Record<AttemptResult, string> = { aprobada: 'Aprobada', parcial: 'Parcial', fallida: 'No pasó' };
+const search = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
 interface Props {
   stage: Stage;
@@ -42,10 +47,31 @@ interface Props {
   onVerify: () => void;
 }
 
+const SOLUTION_SECTIONS = [
+  ['expectedResult', 'Resultado esperado'],
+  ['reasoning', 'Razonamiento paso a paso'],
+  ['conceptLinks', 'Cómo se conectan los conceptos con la solución'],
+  ['businessInterpretation', 'Interpretación de negocio'],
+  ['commonError', 'Error común'],
+  ['dsFlow', 'Conexión con el flujo de DS'],
+  ['skill', 'Habilidad que entrena'],
+] as const;
+
 export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo, onUI, onActivate, onVerify }: Props) {
   const navigate = useNavigate();
+  const c = stage.content;
   const isCode = stage.mechanism === 'codigo_assert';
   const panelId = `stage-${stage.id}`;
+  const lang = c.skeleton?.language ?? (stage.domain === 'sql' ? 'sql' : 'python');
+  const fence = (code: string) => `\`\`\`${lang}\n${code}\n\`\`\``;
+  const toggleCheck = (i: number) => {
+    const next = [...ui.checks];
+    next[i] = !next[i];
+    onUI({ checks: next });
+  };
+
+  const showGuided = apoyo === 'guiado' && (c.theory?.length || c.workedExample || c.steps?.length || c.skeleton);
+  const hints = c.hints ?? [];
 
   return (
     <article className={`${styles.card} ${active ? styles.active : ''}`} aria-label={`Etapa ${stage.number}: ${stage.title}`}>
@@ -79,76 +105,154 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
 
       {ui.open && (
         <div id={panelId} className={styles.body}>
-          <p className={styles.desc}>{stage.description}</p>
+          <Markdown>{stage.description}</Markdown>
 
-          {apoyo === 'guiado' && (
-            <div className={styles.support}>
-              <Lightbulb size={16} aria-hidden="true" />
-              <p><strong>Paso sugerido.</strong> {stage.suggestedStep}</p>
-            </div>
-          )}
-          {apoyo === 'pistas' && (
-            <div className={styles.helpRow}>
-              <button type="button" className="btn btn-sm" aria-expanded={ui.hintVisible} onClick={() => onUI(toggleHint(ui))}>
-                <Lightbulb size={14} aria-hidden="true" /> {ui.hintVisible ? 'Ocultar pista' : 'Ver pista'}
-              </button>
-              {ui.hintVisible && (
-                <div className={styles.support}>
-                  <Lightbulb size={16} aria-hidden="true" />
-                  <p><strong>Pista.</strong> {stage.hint}</p>
-                </div>
+          {showGuided && (
+            <>
+              {c.theory && c.theory.length > 0 && (
+                <section className={styles.section}>
+                  <h3>Teoría aplicada</h3>
+                  <ol className={styles.theory}>
+                    {c.theory.map((t) => (
+                      <li key={t.title}>
+                        <strong><Markdown inline>{t.title}</Markdown></strong>
+                        <Markdown>{t.body}</Markdown>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               )}
-            </div>
-          )}
-          {apoyo === 'autonomo' && <p className={styles.note}>Modo autónomo: sin pasos sugeridos ni pistas.</p>}
-          {apoyo !== 'autonomo' && (
-            <p className={styles.note}>Con Apoyo {APOYO_LABEL[apoyo]} el Nivel de esta etapa no sube.</p>
+              {c.workedExample && (
+                <section className={styles.section}>
+                  <h3>Ejemplo resuelto <span className={styles.tag}>otro dominio: {c.workedExample.domain}</span></h3>
+                  <Markdown>{c.workedExample.body}</Markdown>
+                </section>
+              )}
+              {c.steps && c.steps.length > 0 && (
+                <section className={styles.section}>
+                  <h3>Paso a paso</h3>
+                  <ol className={styles.steps}>
+                    {c.steps.map((s) => <li key={s}><Markdown inline>{s}</Markdown></li>)}
+                  </ol>
+                </section>
+              )}
+              {c.skeleton && (
+                <section className={styles.section}>
+                  <h3>Esqueleto para completar</h3>
+                  <Markdown>{fence(c.skeleton.code)}</Markdown>
+                </section>
+              )}
+            </>
           )}
 
-          <section>
-            <h3>Conceptos para investigar</h3>
-            <ul className={styles.concepts}>
-              {stage.conceptIds.map((id) => {
-                const entry = concepts.get(id);
-                if (!entry) return null;
-                return (
-                  <li key={id}>
-                    <button type="button" className={styles.conceptChip} onClick={() => navigate(`/grafo?concepto=${encodeURIComponent(id)}`)} title="Abrir en el grafo">
-                      <StatusChip state={entry.state} kind="concept" />
-                      <span>{entry.concept.name}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+          {apoyo === 'pistas' && hints.length > 0 && (
+            <section className={styles.section}>
+              <div className={styles.helpRow}>
+                <button type="button" className="btn btn-sm" aria-expanded={ui.hintVisible} onClick={() => onUI(toggleHint(ui))}>
+                  <Lightbulb size={14} aria-hidden="true" /> {ui.hintVisible ? 'Ocultar pistas' : 'Ver pistas'}
+                </button>
+                {ui.hintVisible && (
+                  <ol className={styles.hints}>
+                    {hints.map((h) => <li key={h}><Markdown inline>{h}</Markdown></li>)}
+                  </ol>
+                )}
+              </div>
+            </section>
+          )}
+          {apoyo === 'autonomo' && <p className={styles.note}>Modo autónomo: sin teoría, pasos ni pistas. Solo conceptos y entregable.</p>}
+          {apoyo !== 'autonomo' && <p className={styles.note}>Con Apoyo {APOYO_LABEL[apoyo]} el Nivel de esta etapa no sube.</p>}
+
+          <section className={styles.section}>
+            <h3>{apoyo === 'guiado' ? 'Para profundizar (opcional)' : 'Conceptos para investigar'}</h3>
+            {c.research && c.research.length > 0 ? (
+              <ul className={styles.research}>
+                {c.research.map((r) => {
+                  const entry = concepts.get(r.conceptId);
+                  return (
+                    <li key={r.conceptId}>
+                      <div className={styles.researchHead}>
+                        <strong>{entry?.concept.name ?? r.conceptId}</strong>
+                        {entry && <StatusChip state={entry.state} kind="concept" />}
+                      </div>
+                      <p>{r.why}</p>
+                      <div className={styles.searches}>
+                        <a href={search(r.searchEs)} target="_blank" rel="noreferrer noopener"><ExternalLink size={12} aria-hidden="true" /> ES · {r.searchEs}</a>
+                        <a href={search(r.searchEn)} target="_blank" rel="noreferrer noopener"><ExternalLink size={12} aria-hidden="true" /> EN · {r.searchEn}</a>
+                        <button type="button" onClick={() => navigate(`/grafo?concepto=${encodeURIComponent(r.conceptId)}`)}>
+                          <Network size={12} aria-hidden="true" /> Ver en el grafo
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <ul className={styles.concepts}>
+                {stage.conceptIds.map((id) => {
+                  const entry = concepts.get(id);
+                  if (!entry) return null;
+                  return (
+                    <li key={id}>
+                      <button type="button" className={styles.conceptChip} onClick={() => navigate(`/grafo?concepto=${encodeURIComponent(id)}`)} title="Abrir en el grafo">
+                        <StatusChip state={entry.state} kind="concept" />
+                        <span>{entry.concept.name}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className={styles.note}>Si no puedes explicar un concepto en una frase, investígalo antes de empezar. Ese tiempo no cuenta en el Tiempo real.</p>
           </section>
 
-          <section>
-            <h3>Entregables</h3>
-            <ol className={styles.deliverables}>
-              {stage.deliverables.map((d) => <li key={d}>{d}</li>)}
-            </ol>
+          <section className={styles.section}>
+            <h3>Entregable</h3>
+            {c.deliverables && c.deliverables.length > 0 && (
+              <ul className={styles.checklist}>
+                {c.deliverables.map((d, i) => (
+                  <li key={d}>
+                    <label>
+                      <input type="checkbox" checked={!!ui.checks[i]} onChange={() => toggleCheck(i)} />
+                      <Markdown inline>{d}</Markdown>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {c.expected && (
+              <div className={styles.expected}>
+                <p className="field-label">Resultado esperado</p>
+                <ResultTable table={c.expected} />
+              </div>
+            )}
+            {c.asserts && (
+              <div className={styles.expected}>
+                <p className="field-label">Asserts que se ejecutarán</p>
+                <Markdown>{fence(c.asserts)}</Markdown>
+              </div>
+            )}
+            <p className={styles.note}>
+              <strong>Cómo se marca el resultado.</strong> Acierto: cumples todos los criterios sin abrir la solución. Con ayuda: abriste la solución antes de cumplirlos. Fallo: al terminar el tiempo no los cumples. Leer la teoría, el ejemplo o el paso a paso no cuenta como ayuda.
+            </p>
           </section>
 
           {isCode ? (
             <section className={styles.verify}>
               <h3>Verificación</h3>
-              <p>{stage.verification}</p>
-              <p className={styles.note}>
+              <p>
                 Se ejecuta solo la celda de tu notebook cuya primera línea sea{' '}
-                <code className="mono">{`# Entregable - Etapa ${stage.number}:`}</code>
+                <code className="mono">{`# Entregable - Etapa ${stage.number}:`}</code> contra el resultado esperado.
               </p>
               <button type="button" className="btn btn-primary btn-sm" onClick={onVerify}>Verificar etapa</button>
             </section>
           ) : (
             <section className={styles.verify}>
               <h3>Tu respuesta</h3>
-              <p>{stage.verification}</p>
               <label className="visually-hidden" htmlFor={`${panelId}-answer`}>Respuesta de la Etapa {stage.number}</label>
               <textarea
                 id={`${panelId}-answer`}
                 className={styles.textarea}
-                rows={5}
+                rows={6}
                 placeholder="Escribe tu respuesta…"
                 value={ui.answer}
                 onChange={(e) => onUI({ answer: e.target.value, result: null })}
@@ -163,21 +267,40 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
             <div className={`${styles.result} ${styles[ui.result.status]}`} role="status">
               <strong>{isCode ? RESULT_LABEL[ui.result.status] : ui.result.status === 'aprobada' ? 'Correcta' : ui.result.status === 'parcial' ? 'Parcial' : 'Incorrecta'}</strong>
               <p>{ui.result.detail}</p>
-              <p className={styles.note}>Resultado listo: regístralo con el botón "Registrar etapa" de la columna lateral.</p>
+              <p className={styles.note}>Resultado listo: regístralo con el botón «Registrar etapa» de la columna lateral.</p>
             </div>
           )}
 
-          <section className={styles.solution}>
-            <div className={styles.solutionBar}>
-              <button type="button" className="btn btn-sm" aria-expanded={ui.solutionVisible} onClick={() => onUI(toggleSolution(ui))}>
-                {ui.solutionVisible ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-                {ui.solutionVisible ? 'Ocultar solución' : ui.solutionOpened ? 'Mostrar solución' : 'Ver solución'}
-              </button>
-              {ui.solutionOpened && <span className={styles.helpBadge}>Con ayuda</span>}
-            </div>
-            {!ui.solutionOpened && <p className={styles.note}>Revélala después de verificar tu intento: abrirla marca el intento «Con ayuda».</p>}
-            {ui.solutionVisible && <pre className={`${styles.code} mono`}>{stage.solution}</pre>}
-          </section>
+          {c.solution && (
+            <section className={styles.solution}>
+              <div className={styles.solutionBar}>
+                <button type="button" className="btn btn-sm" aria-expanded={ui.solutionVisible} onClick={() => onUI(toggleSolution(ui))}>
+                  {ui.solutionVisible ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                  {ui.solutionVisible ? 'Ocultar solución' : ui.solutionOpened ? 'Mostrar solución' : 'Ver solución'}
+                </button>
+                {ui.solutionOpened && <span className={styles.helpBadge}>Con ayuda</span>}
+              </div>
+              {!ui.solutionOpened && <p className={styles.note}>Revélala después de verificar tu intento: abrirla marca el intento «Con ayuda».</p>}
+              {ui.solutionVisible && (
+                <div className={styles.solutionBody}>
+                  {c.solution.code && (
+                    <div>
+                      <h3>{isCode ? 'Solución' : 'Respuesta de referencia'}</h3>
+                      <Markdown>{isCode ? fence(c.solution.code) : c.solution.code}</Markdown>
+                    </div>
+                  )}
+                  {SOLUTION_SECTIONS.map(([key, label]) =>
+                    c.solution?.[key] ? (
+                      <div key={key}>
+                        <h3>{label}</h3>
+                        <Markdown>{c.solution[key]!}</Markdown>
+                      </div>
+                    ) : null,
+                  )}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       )}
     </article>
