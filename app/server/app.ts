@@ -8,6 +8,11 @@ import { streamNdjson } from './ndjson';
 import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
 import { registerStateRoutes } from './persistence/routes';
+import { loadCalibration } from './generator/calibration';
+import { generateChallenge, type GenerateDeps } from './generator/generator-service';
+import { pendingGeneration } from './generator/workspace';
+import { DOMAINS } from '../shared/domains';
+import type { DomainId } from '../shared/types';
 import { REPO_ROOT, WEB_DIST } from './paths';
 
 export type BuildAppOptions = {
@@ -20,6 +25,8 @@ export type BuildAppOptions = {
   strictChallenges?: boolean;
   /** Reloj para las fechas que pone el servidor; se sustituye en los tests. */
   now?: () => Date;
+  /** Dependencias de la generación (agente, intérprete): se sustituyen en los tests. */
+  generateDeps?: Partial<GenerateDeps>;
 };
 
 export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string };
@@ -80,6 +87,42 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
       );
     },
   );
+
+
+  /** Trabajo de generación conservado que «Reintentar» puede retomar (R39); `null` si no hay. */
+  app.get('/api/generate/pending', async () => {
+    const config = await loadCalibration(repoRoot).catch(() => null);
+    return { pending: config ? await pendingGeneration(repoRoot, config.horasConservacion, (options.now ?? (() => new Date()))()) : null };
+  });
+
+  /**
+   * Genera un challenge (R38, R39): NDJSON `plan | step | tool | result | error | done`. Una sola operación a la vez
+   * (409 si hay otra); cancelar la petición borra el área de trabajo y no deja nada a medias.
+   */
+  app.post<{ Body: { dominio?: string; resume?: boolean; budgetFactor?: number } | undefined }>('/api/generate', async (request, reply) => {
+    const dominio = request.body?.dominio;
+    if (dominio !== undefined && !DOMAINS.some((d) => d.id === dominio)) {
+      return reply.code(400).send({ error: 'bad_request', message: `«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.` });
+    }
+    const factor = request.body?.budgetFactor === 2 ? 2 : 1;
+    const release = mutex.acquire('generar');
+    const abort = new AbortController();
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) abort.abort();
+    });
+    return streamNdjson(
+      reply,
+      generateChallenge({
+        repoRoot,
+        ...(dominio ? { domain: dominio as DomainId } : {}),
+        resume: request.body?.resume === true,
+        budgetFactor: factor,
+        signal: abort.signal,
+        ...(options.generateDeps || options.now ? { deps: { ...options.generateDeps, ...(options.now ? { now: options.now } : {}) } } : {}),
+      }),
+      { onClose: release },
+    );
+  });
 
   if (hasWeb) await app.register(fastifyStatic, { root: webDist });
 

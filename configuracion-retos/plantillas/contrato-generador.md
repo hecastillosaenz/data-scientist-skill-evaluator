@@ -46,26 +46,36 @@ momento del trabajo real aparece) y `skill`.
 - **Mecanismo:** `codigo_assert` si se verifica ejecutando una celda; `rubric_claude` si es una respuesta que se evalúa
   con rúbrica (matemática de desarrollo, explicar un algoritmo, casos de negocio).
 
-## 4. Verificación obligatoria antes de entregar (R19)
+## 4. Verificación obligatoria (R19, R24) — la hace el orquestador
 
-1. Ejecuta el `seed` en DuckDB y comprueba que corre sin error y que `rowCount` y `sampleRows` coinciden.
-2. Ejecuta la **solución de referencia** sobre esos datos y guarda su salida literal como `expected`. Si no coincide con
-   lo que el enunciado promete, **rechaza el challenge**.
-3. Ejecuta también las versiones erróneas que citas en `commonError` y comprueba los números que afirmas.
-4. Comprueba cada respuesta numérica del test final calculándola, no de memoria.
-5. Valida el JSON contra `challenge.schema.json`. **[verifica]**
+El Generador es de solo lectura y **no ejecuta código** (R9). El orquestador ejecuta, en cada fase, lo que antes se pedía
+«ejecutar», y rechaza lo que no coincide:
+
+1. **Seed:** construye `datos/challenge.duckdb` desde `data.seedSql`; si no corre, devuelve el error de DuckDB. Comprueba
+   que `rowCount`, las columnas, `sampleRows` y las llaves foráneas coinciden con lo que declaras.
+2. **Solución de referencia:** ejecuta `solution.code` sobre esos datos. Debe correr sin error y reproducir `expected`
+   (mismas columnas y filas, en el mismo orden) o pasar los `asserts`. Si no, la fase se repara con la salida real.
+3. **Plan:** el orquestador fija id, número, dificultad y, por etapa, dominio, Bloom, dificultad, Apoyo y mecanismo (R38);
+   tú aportas el contenido y, si quieres, hasta 3 conceptos de apoyo por etapa (ids exactos del grafo).
+4. **Esquema y contenido estricto** (R29): todas las capas de ayuda, test final y preguntas de negocio.
+
+Por eso **calcula con cuidado** `expected`, las respuestas numéricas del test y los números que cites en `commonError`:
+el orquestador compara la ejecución con `expected`, pero no puede comprobar un número escrito en prosa.
+
+La generación va por fases (esqueleto → una etapa por llamada → test final) y cada fase admite hasta 2 reparaciones
+(R39). Responde en cada fase con un único bloque ```json con la forma que se te pide en el mensaje.
 
 ## 5. Datos sintéticos (R18, R24)
 
 - Tablas **pequeñas y diseñadas a mano** (8–20 filas) para que la tabla esperada sea verificable y las trampas (fan-out,
   NULL, duplicados) estén presentes a propósito. Desde Nivel Intermedio, con imperfecciones.
-- `data.seedSql` es el contenido de `datos/seed.sql` (DuckDB/PostgreSQL). Solo usa `seedPython` (semilla fija) si de
-  verdad hace falta volumen.
+- `data.seedSql` es el contenido de `datos/seed.sql` (DuckDB/PostgreSQL). **El Generador solo produce datasets DuckDB con
+  `seedSql`** (también para las etapas de Python, que leen con `con.sql(...).df()`); `seedPython` queda reservado para más adelante.
 - El orquestador reconstruye `datos/challenge.duckdb` desde el seed y el notebook la abre con `read_only=True`.
 
 ## 6. Qué NO hacer
 
 - No incluyas estilos, HTML ni emojis: la UI se ocupa de la presentación.
 - No inventes campos fuera del esquema: se rechazan.
-- No ejecutes código fuera del paso de verificación del orquestador: los agentes son de solo lectura (R9).
+- No ejecutes código: los agentes son de solo lectura (R9).
 - No reveles la solución en `hints`, `steps` ni en el enunciado.
