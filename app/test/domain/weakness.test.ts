@@ -216,6 +216,18 @@ describe('analyzeWeakness · observaciones del Analista (R41)', () => {
     expect(analyzeWeakness(concept, d, now)!.analystNotes).toEqual([]);
   });
 
+  it('muestra una observación sobre un concepto que ninguna etapa practica (la nota lo evidenció)', () => {
+    const d = withObservations();
+    const untouched = d.concepts.find((c) => analyzeWeakness(c.id, d, now) === null)!; // ni intentos ni cola de Repaso
+    expect(untouched).toBeDefined();
+    d.observations!.push({ evidenceId: d.evidence[0]!.id, at: now.toISOString(), status: 'ok', conceptIds: [untouched.id], diagnosis: 'Aplica DESC una sola vez.' });
+    const a = analyzeWeakness(untouched.id, d, now)!;
+    expect(a).not.toBeNull();
+    expect(a.stats.attempts).toBe(0);
+    expect(a.analystNotes.map((n) => n.diagnosis)).toEqual(['Aplica DESC una sola vez.']);
+    expect(a.diagnosis.join(' ')).toContain('El Analista observó dificultades');
+  });
+
   it('cuenta los registros con notas o bloqueo que aún no se analizaron; sin observaciones (ejemplo) no muestra nada', () => {
     const d = withObservations();
     d.observations = [];

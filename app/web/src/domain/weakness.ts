@@ -153,7 +153,23 @@ export function analyzeWeakness(conceptId: string, data: AppData, now: Date): We
   for (const ok of latestTest.values()) if (!ok) testFailures++;
   evidence.sort((a, b) => b.at.localeCompare(a.at));
 
-  if (evidence.length === 0 && !item) return null;
+  // Lo que el Analista observó sobre este concepto (R41). Puede venir de una etapa que no lo practica (la nota lo
+  // evidenció), así que se busca por observación y no por las etapas del concepto.
+  const observed = new Map((data.observations ?? []).map((o) => [o.evidenceId, o]));
+  const allStages = new Map(data.challenges.flatMap((c) => c.stages).map((st) => [st.id, st] as const));
+  const analystNotes: AnalystNote[] = data.evidence
+    .flatMap((e) => {
+      const o = observed.get(e.id);
+      if (!o || o.status !== 'ok' || !o.diagnosis || !o.conceptIds.includes(conceptId)) return [];
+      const st = allStages.get(e.stageId);
+      return [{ evidenceId: e.id, at: e.at, label: st ? `Etapa ${st.number} · ${st.title}` : 'Etapa', diagnosis: o.diagnosis }];
+    })
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const pendingAnalysis = data.observations
+    ? data.evidence.filter((e) => stageIds.has(e.stageId) && !observed.has(e.id) && ((e.notes?.trim() ?? '') !== '' || e.blocker !== undefined)).length
+    : 0;
+
+  if (evidence.length === 0 && !item && analystNotes.length === 0) return null;
 
   const stageAttempts = evidence.filter((e) => e.source === 'etapa');
   const failures = stageAttempts.filter((e) => e.result === 'fallida').length;
@@ -227,6 +243,7 @@ export function analyzeWeakness(conceptId: string, data: AppData, now: Date): We
   if (testFailures > 0) diagnosis.push(`En el test final fallaste ${testFailures} de ${questions.length} ${questions.length === 1 ? 'pregunta' : 'preguntas'} de este concepto: reconocerlo en un caso nuevo todavía no es automático.`);
   if (reason === 'olvido' && daysSincePractice !== null) diagnosis.push(`Lo resolviste bien, pero hace ${daysSincePractice} días que no lo practicas y conviene repasarlo antes de que se olvide.`);
   if (rootCauses.length > 0) diagnosis.push(`Puede que la causa esté antes: ${rootCauses.length === 1 ? 'un prerrequisito no está firme' : `${rootCauses.length} prerrequisitos no están firmes`} (${rootCauses.map((r) => r.concept.name).join(', ')}).`);
+  if (stageAttempts.length === 0 && testFailures === 0 && analystNotes.length > 0) diagnosis.push('El Analista observó dificultades con este concepto en tus notas, aunque aún no lo has practicado en una etapa propia. Su diagnóstico está más abajo.');
   if (diagnosis.length === 0) diagnosis.push(item ? 'Este concepto está en tu cola de Repaso, pero aún no hay suficiente evidencia para precisar la causa.' : 'No hay señales de debilidad en este concepto por ahora.');
   if (dependents > 0 && (failures > 0 || testFailures > 0)) diagnosis.push(`Importa más de lo que parece: ${plural(dependents, 'concepto depende', 'conceptos dependen')} de este.`);
 
@@ -300,21 +317,6 @@ export function analyzeWeakness(conceptId: string, data: AppData, now: Date): We
     steps.push({ id: 'test', kind: 'test', title: 'Repite el test final', detail: 'Cuando hayas repasado, vuelve a las preguntas que fallaste: cuenta el último resultado de cada una.', ...(practice ? { to: `/challenge-actual/${practice.challenge.id}` } : {}) });
   }
 
-  const observed = new Map((data.observations ?? []).map((o) => [o.evidenceId, o]));
-  const stageLabel = (e: { stageId: string }) => {
-    const ref = refByStage.get(e.stageId);
-    return ref ? `Etapa ${ref.stage.number} · ${ref.stage.title}` : 'Etapa';
-  };
-  const analystNotes: AnalystNote[] = data.evidence
-    .filter((e) => stageIds.has(e.stageId))
-    .flatMap((e) => {
-      const o = observed.get(e.id);
-      return o && o.status === 'ok' && o.diagnosis && o.conceptIds.includes(conceptId) ? [{ evidenceId: e.id, at: e.at, label: stageLabel(e), diagnosis: o.diagnosis }] : [];
-    })
-    .sort((a, b) => b.at.localeCompare(a.at));
-  const pendingAnalysis = data.observations
-    ? data.evidence.filter((e) => stageIds.has(e.stageId) && !observed.has(e.id) && ((e.notes?.trim() ?? '') !== '' || e.blocker !== undefined)).length
-    : 0;
   return { concept, insight, item, headline, diagnosis, stats: { attempts: stageAttempts.length, failures, withHelp, daysSincePractice, testFailures, testTotal: questions.length }, evidence, blockers, rootCauses, analystNotes, pendingAnalysis, dependents, commonError, research, steps, recommendedApoyo, practice };
 }
 

@@ -26,6 +26,7 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
   - `verify/` — `notebook-parser` (celda `# Entregable - Etapa X:`, R16, celdas `# Datos`), `notebook-runner` (Python con timeout; traduce tracebacks), `compare`, `evaluator-prompts`, `verify-service` (eventos NDJSON, R26).
   - `challenges/challenge-fs.ts` — lee `challenge/challenge-NNN/challenge.json` y reconstruye `datos/challenge.duckdb` desde el seed (R24).
   - `generator/` — **P3, el Generador**: `calibration` (lee `configuracion-retos/calibracion.json`), `plan` (`planChallenge`, función pura que decide qué practicar según grafo y evidencia, R38; `checkAgainstPlan`), `prompts`, `assemble` (arma `challenge.json`, notebook y bitácora; los campos que fija el plan los escribe el orquestador), `reference` (compuertas ejecutadas por el orquestador: seed DuckDB, `rowCount`/`sampleRows`/llaves y solución de referencia contra `expected`, R19/R24), `workspace` (`challenge/.generando/` + `estado.json`, publicar con `rename`) y `generator-service` (`generateChallenge`: fases `esqueleto` → `etapa-N` → `test` → `publicar`, hasta 2 reparaciones por fase y presupuesto por fase, R39). Endpoints: `GET /api/plan`, `POST /api/generate` (NDJSON), `GET /api/generate/pending`.
+  - `analyst/` — **P5, el Analista**: `apply` (núcleo puro de R41: observar, enlazar sin ciclos, crear con recurrencia ≥ 2), `prompts` y `analyst-service` (`analyzeEvidence` + cola serial `AnalystQueue` en segundo plano, presupuesto `presupuestoUsdAnalisis`, reparación y copia `.prev`). Solo analiza Evidence con notas o bloqueo (las demás quedan «omitidas» sin costo). Endpoints: `GET /api/analysis`, `POST /api/analysis/pending`.
   - `persistence/` — `graph-store` (lee/valida/escribe `configuracion-retos/knowledge-graph.json`, R35), `progress-store` (cola por archivo, escritura atómica de `challenge/challenge-NNN/progreso.json` + bitácora `logs-avance.md`, R33–R34), `records` (validación de lo que llega del navegador) y `routes` (`GET /api/state`, `POST …/start|evidence|business-answers|test-results`, `PUT …/stages/:stageId/apoyo`).
 - `challenge/challenge-001/` — reto **real** (los challenges viven en `challenge/challenge-NNN/`): `challenge.json`, `datos/seed.sql`, `notebook.ipynb`, `progreso.json` (se crea al empezar; versionado), `logs-avance.md`. Los ids reales son el nombre de la carpeta; los de ejemplo son `c001`…
 - `shared/` — contrato de datos (`types.ts`) y metadatos de dominios/etiquetas (`domains.ts`).
@@ -58,7 +59,7 @@ Contenido de los challenges: Markdown con KaTeX; **escapa los signos de moneda c
 ## Cómo trabajamos
 - Una sesión = un paquete de entrega (P0–P7, ver SDD §7.2). Plan Mode primero, luego implementar.
 - Los AC del SDD son la definición de terminado: se escriben como tests.
-- **P3 (Generador) está desbloqueado** (R38–R40, SDD §7.4; parámetros en `configuracion-retos/calibracion.json`). **P5 (Analista) sigue bloqueado** por la condición de disparo (R12, SDD §7.3): resolverla en el SDD antes de implementar.
+- **P3 (Generador) y P5 (Analista) están implementados** (R38–R40 y R12, R41, R42; SDD §7.4, §7.5, §8.4, §8.5). Parámetros y presupuestos en `configuracion-retos/calibracion.json`. No quedan deudas de diseño abiertas en el SDD.
 - Un commit por paquete (o por subpaso si es grande).
 
 ## Git

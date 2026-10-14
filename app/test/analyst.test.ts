@@ -54,7 +54,9 @@ beforeEach(() => {
   mkdirSync(file('challenge', 'challenge-001'), { recursive: true });
   cpSync(path.join(realRoot, 'challenge', 'challenge-001', 'challenge.json'), file('challenge', 'challenge-001', 'challenge.json'));
   mkdirSync(file('configuracion-retos'));
-  cpSync(path.join(realRoot, 'configuracion-retos', 'knowledge-graph.json'), graphFile());
+  // Catálogo del repo sin observaciones ni candidatos: los tests parten siempre de un grafo limpio.
+  const catalog = JSON.parse(readFileSync(path.join(realRoot, 'configuracion-retos', 'knowledge-graph.json'), 'utf8'));
+  writeFileSync(graphFile(), `${JSON.stringify({ version: 1, concepts: catalog.concepts }, null, 2)}\n`);
   calls = [];
   answers = [];
 });
