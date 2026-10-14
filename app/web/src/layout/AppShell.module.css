@@ -34,7 +34,7 @@
   border-radius: 50%; background: var(--sunk); color: var(--ink); font-size: 12px; font-weight: 600;
 }
 .main { flex: 1; min-width: 0; }
-.content { max-width: var(--content-max); margin: 0 auto; padding: 32px 32px 48px; }
+.content { max-width: var(--content-max); margin: 0 auto; padding: 68px 32px 48px; }
 .footer { margin-top: 32px; display: flex; justify-content: flex-start; }
 
 @media (max-width: 859px) {
@@ -50,5 +50,5 @@
   .link { flex-direction: column; justify-content: center; gap: 2px; height: 100%; padding: 0 2px; font-size: 11px; text-align: center; }
   .full { display: none; }
   .short { display: inline; }
-  .content { padding: 20px 16px calc(var(--tabbar-h) + 28px); }
+  .content { padding: 64px 16px calc(var(--tabbar-h) + 28px); }
 }

@@ -20,7 +20,7 @@
 .section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .section h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .tag { font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 8px; border-radius: 7px; background: var(--sunk); }
-.note { font-size: var(--fs-small); color: var(--muted); line-height: 1.55; max-width: 72ch; }
+.note { font-size: var(--fs-small); color: var(--muted); line-height: 1.55; text-align: justify; hyphens: auto; }
 .note strong { color: var(--ink2); }
 
 .theory { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 14px; }
@@ -49,7 +49,7 @@
 .expected { display: flex; flex-direction: column; gap: 8px; }
 
 .verify { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; padding: 18px 20px; border-radius: 14px; background: var(--sunk); }
-.verify p { margin: 0; font-size: 14px; max-width: 72ch; }
+.verify p { margin: 0; font-size: 14px; }
 .verify code { padding: 1px 6px; border-radius: 6px; background: var(--card); font-size: 12px; }
 .textarea { width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--btn-bg); box-shadow: var(--shadow-btn); color: var(--ink); font: inherit; font-size: 15px; line-height: 1.6; resize: vertical; }
 .result { padding: 14px 18px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }

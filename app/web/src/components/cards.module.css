@@ -44,7 +44,7 @@
   color: var(--ink2);
   margin-bottom: 4px;
 }
-.sticky { position: sticky; top: 24px; align-self: start; min-width: 0; }
+.sticky { position: sticky; top: 76px; align-self: start; min-width: 0; }
 .sample {
   display: inline-flex;
   align-items: center;
