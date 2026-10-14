@@ -56,9 +56,9 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 
 **Generación**
 - **R1.** El sistema DEBE permitir iniciar un challenge únicamente mediante acción manual del usuario; NO DEBE ejecutar generación automática por temporizador o tarea programada en la nube.
-- **R2.** ⚠️ *Deuda de diseño.* Al generar un challenge, el agente Generador DEBE consultar el estado actual de `knowledge-graph.json` antes de seleccionar Tipo y Concept para cada etapa, según una heurística de calibración aún no definida.
+- **R2.** *(Resuelta, ver R38.)* Al generar un challenge, el estado actual de `knowledge-graph.json` y de la evidencia DEBE determinar el Tipo y los Concepts de cada etapa. El orquestador calcula un plan de calibración (R38) y se lo entrega al Generador; el Generador no elige los conceptos.
 - **R3.** Cada etapa generada DEBE especificar: Tipo, Tema, nivel cognitivo (Bloom 1–6), Apoyo inicial, y mecanismo de evaluación (`código_assert` | `rubric_claude`).
-- **R4.** ⚠️ *Deuda de diseño.* Si el volumen de Evidence acumulada es insuficiente (umbral exacto sin definir), el Generador DEBE priorizar dificultad básica sobre calibración fina.
+- **R4.** *(Resuelta, ver R38.)* Si hay menos Evidence que el umbral de `calibracion.json` (8 por defecto), el plan DEBE ser de arranque: dificultad básica, todo en Apoyo Guiado.
 
 **Resolución**
 - **R5.** El usuario DEBE poder fijar el Apoyo (Guiado/Pistas/Autónomo) de forma independiente por etapa.
@@ -102,6 +102,9 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R35.** `configuracion-retos/knowledge-graph.json` DEBE contener el catálogo de Concepts con sus prerrequisitos. El orquestador DEBE validarlo al leerlo (ids únicos, dominio válido, prerrequisitos existentes) y, si está corrupto, reportar el error sin modificarlo. Los conceptos que practican las etapas de un challenge DEBEN existir en el catálogo.
 - **R36.** La UI DEBE alimentarse del orquestador (`GET /api/state`). Con un repositorio sin historial muestra los estados vacíos de UI-UX §5. Los datos de ejemplo solo aparecen con `?datos=ejemplo`, se marcan como tales y NUNCA se persisten.
 - **R37.** Si un guardado falla (el orquestador no responde o rechaza el registro), la UI DEBE revertir el cambio local, conservar lo que el usuario escribió y mostrar el error en un aviso visible; NO DEBE encolar ni reintentar en silencio.
+- **R38.** Antes de invocar al Generador, el orquestador DEBE calcular un **plan de calibración** determinista (misma evidencia → mismo plan) y entregárselo con el catálogo de conceptos. El plan fija, por etapa: papel (*refuerzo*, *avance* o *integración*), dominio, `conceptIds`, Bloom, dificultad, Apoyo inicial y mecanismo. Con menos Evidence que el umbral, el plan es de *arranque* (dificultad 1, todo Guiado, solo conceptos sin prerrequisitos pendientes). El orquestador DEBE rechazar un challenge generado cuyas etapas no sigan el plan, además de R19 y R29. Los parámetros viven en `configuracion-retos/calibracion.json`.
+- **R39.** La generación DEBE ser transaccional: el Generador trabaja en `challenge/.generando/challenge-NNN/` y solo se publica en `challenge/challenge-NNN/` (con un `rename`) si pasan todas las compuertas (esquema estricto R29, plan R38, dataset R24, solución de referencia R19 y conceptos existentes R35). Se divide en fases con presupuesto máximo propio (`--max-budget-usd`, configurable); si se agota, NO DEBE reintentarse sola: se informa la fase y se ofrece «Reintentar» (retoma desde la última fase válida) o «Reintentar con el doble». La salida inválida admite como máximo 2 reparaciones automáticas por fase. «Detener» borra el área de trabajo. Si el Analista falla, la Evidence ya guardada NO DEBE verse afectada y «Registrar etapa» NO DEBE bloquearse.
+- **R40.** El **Nivel del usuario** DEBE calcularse por dominio, derivarse de la evidencia y no almacenarse. Escala: Trainee, Básico, Intermedio, Avanzado. Cuenta una etapa si su último intento (R11) fue aprobado, sin ayuda y con Apoyo Autónomo, una vez por etapa. Umbrales en el dominio: Básico con 2 etapas de dificultad ≥ 1; Intermedio con 3 de dificultad ≥ 2; Avanzado con 3 de dificultad 3. El Nivel no baja. El test final y las respuestas de negocio no cuentan. El nivel global que muestra Inicio es la mediana de los seis niveles de dominio (un dominio sin práctica es Trainee), redondeada hacia abajo. El Nivel no bloquea ningún challenge ni etapa.
 
 ---
 
@@ -110,9 +113,9 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | ID | Criterio (Given/When/Then) |
 |---|---|
 | AC-R1 | Dado que no hay challenge activo, cuando el usuario presiona "Iniciar nuevo challenge", entonces el Generador se invoca una sola vez. |
-| AC-R2 | ⚠️ No verificable — bloqueado por la heurística de calibración sin definir. |
+| AC-R2 | Dado un concepto con 2 fallos en el grafo, cuando se calcula el plan, entonces incluye su refuerzo (ver AC-R38). |
 | AC-R3 | Dado un challenge recién generado, cuando se inspecciona cada etapa, entonces tiene no-vacíos: Tipo, Tema, nivel Bloom, Apoyo inicial, mecanismo de evaluación. |
-| AC-R4 | ⚠️ No verificable — mismo bloqueo que AC-R2, más el umbral N sin definir. |
+| AC-R4 | Dadas menos Evidence que el umbral, cuando se calcula el plan, entonces es de arranque: dificultad 1 y todo en Guiado (ver AC-R38). |
 | AC-R5 | Dado un challenge con ≥2 etapas, cuando se cambia el Apoyo de una, entonces el Apoyo de las demás no cambia. |
 | AC-R6 | Dado una etapa en Guiado/Pistas, cuando se registra un acierto, entonces su Nivel no incrementa. |
 | AC-R7 | Dado cualquier etapa, cuando se abre el toggle de Solución, entonces el intento se marca "Con ayuda". |
@@ -146,12 +149,14 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R35 | Dado un `knowledge-graph.json` con un prerrequisito inexistente o JSON inválido, cuando el orquestador lo lee, entonces informa el error y el archivo no cambia; y los conceptos de las etapas de `challenge-001` existen en el catálogo. |
 | AC-R36 | Dado un repositorio sin progreso, cuando se abre la app, entonces Inicio muestra el estado de usuario nuevo y no aparece la etiqueta «Datos de ejemplo»; con `?datos=ejemplo` aparece y recargar descarta lo hecho. |
 | AC-R37 | Dado un guardado que falla, cuando el usuario registra una etapa, entonces el registro no aparece en el historial, lo que escribió sigue en pantalla y se muestra el error. |
+| AC-R38 | (a) Dado un concepto con 2 fallos, el plan incluye su refuerzo con Apoyo Guiado y Bloom sin subir. (b) Dadas menos Evidence que el umbral, el plan es de dificultad 1 y todo Guiado. (c) El mismo estado produce siempre el mismo plan. (d) Un challenge cuyas etapas no siguen el plan se rechaza nombrando el campo incumplido. |
+| AC-R39 | (a) Dado un Generador que agota el presupuesto en la fase 2, no existe ninguna carpeta nueva en `challenge/`, el error nombra la fase y «Reintentar» retoma desde ella. (b) Dada una salida con un campo inválido, se reintenta como máximo 2 veces y luego se muestra el campo. (c) Dado «Detener», el área de trabajo desaparece. (d) Dado un challenge cuya solución no reproduce `expected`, no se publica. |
+| AC-R40 | (a) Dadas 2 etapas de SQL de dificultad 1 aprobadas sin ayuda en Autónomo, SQL es Básico y los demás dominios siguen en Trainee. (b) Una aprobada con Pistas o con ayuda no suma. (c) Un fallo posterior no baja el Nivel. (d) El global es la mediana de los seis dominios. |
 
-**Deuda de diseño que bloquea implementación real (marcada, no resuelta por decisión explícita del autor):**
-- Heurística de calibración del Generador (R2/R4).
+**Deuda de diseño pendiente (solo bloquea P5):**
 - Condición de disparo del Analista para crear/reforzar nodos (R12).
-- Manejo de errores no cubierto por ningún requisito: agotamiento de `--max-budget-usd` a mitad de generación. *(Celda `# Entregable` no encontrada y timeout quedan cubiertos por R26/R27; la corrupción de `knowledge-graph.json` y de `progreso.json` por R33/R35.)*
-- Alcance de "Nivel del usuario" (Trainee→Básico→Intermedio→Avanzado, ver §9.7 Delivery Contract) sin decidir.
+
+*Resueltas el 2026-10-14: la calibración del Generador (R2/R4 → R38), el manejo de errores y del presupuesto (R39; celda no encontrada y timeout, R26/R27; corrupción de JSON, R33/R35) y el alcance del Nivel del usuario (R40).*
 
 ---
 
@@ -274,24 +279,20 @@ data-scientist-skill-evaluator/
 1. **P0** — Esqueleto de archivos y orquestador (servidor local, mutex). *(S1, S6, S7)*
 2. **P1** — `agent-runner` + roles con aislamiento de contexto. *(S2–S4, R14)*
 3. **P2** — `notebook-parser`. *(R8, R16)*
-4. **P3** — Generador (bloqueado por R2/R4 sin resolver). *(R1–R4)*
+4. **P3** — Generador (desbloqueado: R38–R40). *(R1–R4, R38, R39)*
 5. **P4** — Evaluador código + conceptual. *(R8–R10, R16)*
 6. **P5** — Analista + `graph-store` (bloqueado por R12 sin resolver). *(R11–R13, S5–S6)*
 7. **P6** — Frontend: Inicio, Challenges, Challenge actual, Repaso, Analítica. *(`UI-UX.md` §§1–4, 6)*
 8. **P7** — Frontend: Grafo de conocimiento con cross-domain-by-default. *(R15, `UI-UX.md` §5)*
 
-> **Nota de orden.** P6 y P7 se construyeron antes que los agentes, sobre datos de ejemplo. Tras revisar la UI, P1 (`agent-runner`), P2 (`notebook-parser`) y una porción de P4 (verificación en vivo, R25–R27) se adelantan con un `challenge-001/` real para probar de punta a punta; P3 y P5 siguen bloqueados por su deuda de diseño.
+> **Nota de orden.** P6 y P7 se construyeron antes que los agentes, sobre datos de ejemplo. Tras revisar la UI, P1 (`agent-runner`), P2 (`notebook-parser`) y una porción de P4 (verificación en vivo, R25–R27) se adelantan con un `challenge-001/` real para probar de punta a punta; P3 quedó desbloqueado el 2026-10-14 (R38–R40) y P5 sigue bloqueado por R12.
 
-### 7.3 Deuda total que debe resolverse antes de P3 y P5
+### 7.3 Deuda de diseño pendiente
 
-> Las propuestas para cerrar la de P3 están en §7.4, pendientes de aprobación.
+- **P3 (Generador): desbloqueado el 2026-10-14.** La calibración, los errores y el Nivel del usuario se resolvieron en R38–R40 (§7.4).
+- **P5 (Analista): sigue bloqueado** por la condición de disparo del Analista (R12): cuándo crea o refuerza nodos a partir de `notas_libres`. Se resolverá con evidencia real acumulada.
 
-- Heurística de calibración del Generador.
-- Condición de disparo del Analista.
-- Manejo de errores: queda solo el agotamiento de `--max-budget-usd` a mitad de generación (el resto lo cubren R26, R27, R33 y R35).
-- Alcance de "Nivel del usuario".
-
-### 7.4 Propuestas para cerrar la deuda de P3 *(PROPUESTA, no normativa hasta que el autor la apruebe)*
+### 7.4 Resolución de la deuda de P3 *(aprobada por el autor el 2026-10-14; normativa en R38–R40)*
 
 Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, qué requisitos y criterios de aceptación nacerían de ella y qué valores concretos elegí yo y tú puedes cambiar. Al aprobarlas, pasan a la Fase 3/4 (R38–R40) y se quitan de §7.3. La condición de disparo del Analista (R12) **sigue abierta**: solo bloquea a P5 y se resolverá después, con evidencia real acumulada.
 
@@ -313,9 +314,9 @@ Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, q
 8. **El plan es un contrato.** El orquestador rechaza el challenge generado si no cumple el plan (los `conceptIds`, dominio, Bloom, Apoyo y mecanismo de cada etapa). Esto se suma a R29 y R19.
 9. **Elección manual opcional.** «Iniciar nuevo challenge» puede recibir un dominio; por defecto es «Recomendado por mi grafo». No cambia el resto del plan.
 
-*Requisitos candidatos:* **R38** (plan de calibración calculado por el orquestador y cumplido por el challenge) y la revisión de **R4** (umbral N = 8, modo arranque).
-*Criterios candidatos:* AC-R38a «dado un concepto con 2 fallos, el plan incluye su refuerzo con Apoyo Guiado y Bloom sin subir»; AC-R38b «dadas menos de 8 Evidence, el plan es de dificultad 1 y todo en Guiado»; AC-R38c «el mismo estado produce siempre el mismo plan»; AC-R38d «un challenge cuyas etapas no siguen el plan se rechaza con el campo incumplido».
-*Valores que elegí y puedes cambiar:* N = 8, 3 etapas, 21 días de olvido, ventana de 3 challenges para no repetir tema, regla «Nivel + 1».
+*Requisito:* **R38** (plan de calibración calculado por el orquestador y cumplido por el challenge) y la revisión de **R4** (umbral N = 8, modo arranque).
+*Criterios:* AC-R38a «dado un concepto con 2 fallos, el plan incluye su refuerzo con Apoyo Guiado y Bloom sin subir»; AC-R38b «dadas menos de 8 Evidence, el plan es de dificultad 1 y todo en Guiado»; AC-R38c «el mismo estado produce siempre el mismo plan»; AC-R38d «un challenge cuyas etapas no siguen el plan se rechaza con el campo incumplido».
+*Valores configurables:* N = 8, 3 etapas, 21 días de olvido, ventana de 3 challenges para no repetir tema.
 
 #### Propuesta B — Fallos y presupuesto de la generación (§7.3 «manejo de errores»)
 
@@ -323,15 +324,15 @@ Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, q
 
 1. **Área de trabajo.** El Generador trabaja en `challenge/.generando/challenge-NNN/` (ignorada por git). Solo cuando pasan todas las compuertas el orquestador la mueve de un `rename` a `challenge/challenge-NNN/`. Las compuertas son: esquema estricto (R29), el plan (Propuesta A), el dataset se construye (R24), la solución de referencia reproduce `expected` (R19) y los conceptos existen en el catálogo (R35). Si algo falla, no queda nada a medias en `challenge/`.
 2. **Fases con puntos de retorno.** Fase 1: esqueleto (objetivos, escenario, diseño de datos, esquema de las etapas). Fase 2: el contenido de cada etapa, una por una. Cada fase se valida y se guarda en `estado.json` dentro del área de trabajo.
-3. **Presupuesto agotado (`--max-budget-usd`).** Tope propuesto: **US$ 1,50 por fase**. Si se agota, el agente se detiene, **no se reintenta solo** (R1: todo es acción tuya) y la UI muestra: «Se agotó el presupuesto en la fase X. No se creó ningún challenge.» con dos botones: **Reintentar** (retoma desde la última fase válida, sin repetir lo ya pagado) y **Reintentar con el doble de presupuesto**. Lo ya validado se conserva hasta 24 h.
+3. **Presupuesto agotado (`--max-budget-usd`).** Tope inicial: **US$ 1,50 por fase** (`calibracion.json`). Si se agota, el agente se detiene, **no se reintenta solo** (R1: todo es acción tuya) y la UI muestra: «Se agotó el presupuesto en la fase X. No se creó ningún challenge.» con dos botones: **Reintentar** (retoma desde la última fase válida, sin repetir lo ya pagado) y **Reintentar con el doble de presupuesto**. Lo ya validado se conserva hasta 24 h.
 4. **Salida inválida (JSON roto o esquema incumplido).** Hasta **2 reparaciones automáticas por fase**: se devuelven al Generador los errores del validador (con el campo) dentro de la misma operación que tú iniciaste. Al tercer fallo se detiene y se muestran los errores. Las reparaciones cuentan para el presupuesto.
 5. **Cancelar.** «Detener» aborta el proceso (como en R26) y borra el área de trabajo.
 6. **Antes de empezar.** Si `claude` no está instalado o no tiene sesión, falla de inmediato con el mensaje de P1; no se crea nada.
 7. **`knowledge-graph.json` corrupto (ya cubierto por R35).** Para el Analista (P5) se añade: antes de cada escritura se copia el archivo actual a `knowledge-graph.json.prev` (ya ignorado por `.gitignore`) y se valida el nuevo contenido antes de reemplazar. Si el Analista falla o se queda sin presupuesto, **la Evidence ya está guardada** (R33) y el grafo no cambia: la UI muestra un aviso y la evidencia queda pendiente de análisis, nunca bloquea «Registrar etapa».
 
-*Requisitos candidatos:* **R39** (generación transaccional, presupuesto por fase, reparaciones acotadas, sin reintento automático de presupuesto).
-*Criterios candidatos:* AC-R39a «dado un Generador que agota el presupuesto en la fase 2, entonces no existe ninguna carpeta nueva en `challenge/`, el error nombra la fase y "Reintentar" retoma desde la fase 2»; AC-R39b «dada una salida con un campo inválido, entonces se reintenta como máximo 2 veces y luego se muestra el campo»; AC-R39c «dado "Detener", entonces el área de trabajo desaparece»; AC-R39d «dado un challenge cuya solución no reproduce `expected`, entonces no se publica» (refuerza AC-R19).
-*Valores que elegí y puedes cambiar:* US$ 1,50 por fase, 2 reparaciones, 24 h de conservación.
+*Requisito:* **R39** (generación transaccional, presupuesto por fase, reparaciones acotadas, sin reintento automático de presupuesto).
+*Criterios:* AC-R39a «dado un Generador que agota el presupuesto en la fase 2, entonces no existe ninguna carpeta nueva en `challenge/`, el error nombra la fase y "Reintentar" retoma desde la fase 2»; AC-R39b «dada una salida con un campo inválido, entonces se reintenta como máximo 2 veces y luego se muestra el campo»; AC-R39c «dado "Detener", entonces el área de trabajo desaparece»; AC-R39d «dado un challenge cuya solución no reproduce `expected`, entonces no se publica» (refuerza AC-R19).
+*Valores configurables:* US$ 1,50 por fase (provisional: se fijará en ≈ el doble del costo medido en una generación real), 2 reparaciones, 24 h de conservación.
 
 #### Propuesta C — Alcance del «Nivel del usuario» (§9.7 del PRD)
 
@@ -346,22 +347,22 @@ Las tres piezas que bloquean al Generador (P3). Cada una dice qué se propone, q
 7. **Para qué sirve.** (a) Calibra la dificultad del Generador (Propuesta A, «Nivel + 1»); (b) se muestra en Inicio y Analítica. **No bloquea nada**: ningún challenge ni etapa se cierra por tu nivel.
 8. **Cambio de código.** `stats.ts` pasa de un único cálculo global a `levelByDomain(...)` + `globalLevel(...)`; Inicio muestra el global y Analítica los seis. Nada se guarda en `progreso.json`: se deriva, como el estado de las etapas.
 
-*Requisitos candidatos:* **R40** (Nivel por dominio derivado de la evidencia con las reglas anteriores).
-*Criterios candidatos:* AC-R40a «dadas 2 etapas de SQL de dificultad 1 aprobadas sin ayuda en Autónomo, entonces SQL es Básico y los demás dominios siguen en Trainee»; AC-R40b «una aprobada con Pistas o con ayuda no suma»; AC-R40c «un fallo posterior no baja el Nivel»; AC-R40d «el global es la mediana de los seis».
-*Valores que elegí y puedes cambiar:* los umbrales 2/3/3, la mediana como global, que el test no cuente.
+*Requisito:* **R40** (Nivel por dominio derivado de la evidencia con las reglas anteriores).
+*Criterios:* AC-R40a «dadas 2 etapas de SQL de dificultad 1 aprobadas sin ayuda en Autónomo, entonces SQL es Básico y los demás dominios siguen en Trainee»; AC-R40b «una aprobada con Pistas o con ayuda no suma»; AC-R40c «un fallo posterior no baja el Nivel»; AC-R40d «el global es la mediana de los seis».
+*Decisiones fijadas en R40:* umbrales 2/3/3, mediana como global, el test no cuenta.
 
-#### Orden si apruebas
+#### Orden de implementación
 C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planChallenge`, con sus tests, antes de invocar a ningún agente), luego B y el Generador (P3) completo sobre `agent-runner`. Cada paso va con sus AC como tests y un commit.
 
 ---
 
 ## Fase 8 — Decisiones y supuestos de la UI con datos de ejemplo
 
-La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sintéticos, detrás de `app/web/src/data/repository.ts`. El PRD de referencia (§11 fórmulas, §25–26 datos) no está en el repo. Las fórmulas siguientes fueron **ratificadas por el autor el 2026-10-14** (salvo «Nivel del usuario», que sigue abierto) y se pueden ajustar más adelante:
+La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sintéticos, detrás de `app/web/src/data/repository.ts`. El PRD de referencia (§11 fórmulas, §25–26 datos) no está en el repo. Las fórmulas siguientes fueron **ratificadas por el autor el 2026-10-14** (el «Nivel del usuario» se decidió después, R40) y se pueden ajustar más adelante:
 
 - **Estado de Concept** (`domain/conceptState.ts`): sin intentos → No visto; algún último intento fallido → Con fallos; todos aprobados sin ayuda → Dominado; cualquier otro caso (parcial o con ayuda) → Visto. Sigue R11 (solo el último intento de cada etapa).
 - **Prioridad de la cola de repaso** (`domain/reviewQueue.ts`): base por motivo (fallos 100, parcial 70, ayuda 60, olvido 40) + 5 × fallos históricos de la etapa + 2 × conceptos dependientes + 0.3 × días desde la práctica. «Olvido» = dominado hace más de 21 días.
-- **Nivel del usuario** (`domain/stats.ts`): Trainee / Básico / Intermedio (≥3 etapas de dificultad 2 aprobadas sin ayuda) / Avanzado (≥3 de dificultad 3). Sigue siendo la decisión abierta de §7.3.
+- **Nivel del usuario** (`domain/level.ts`): por dominio, según R40 (sustituye al cálculo global provisional).
 - **Meta semanal** de 5 etapas para el subtítulo de Inicio.
 - **Estado de Etapa y de Challenge se derivan** de la evidencia; no se almacenan.
 - **R10 resuelta (2026-10-14).** La Evidence se crea al **registrar** la etapa; verificar es un borrador. R10 se reescribió en ese sentido.
