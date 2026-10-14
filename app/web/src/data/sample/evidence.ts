@@ -27,7 +27,6 @@ const ROWS: Row[] = [
   [4, 2, 22, A, 40, { apoyo: 'pistas', help: true }],
   [4, 3, 21, F, 44, { apoyo: 'autonomo', blocker: 'tiempo' }],
   [4, 3, 19, F, 38, { apoyo: 'autonomo', blocker: 'concepto', notes: 'Sigo mezclando precisión y recall.' }],
-  [4, 3, 18, A, 36, { apoyo: 'pistas', help: true }],
   [4, 4, 18, P, 27, { apoyo: 'pistas' }],
   [4, 4, 17, A, 24, { apoyo: 'pistas' }],
   [5, 1, 17, A, 36, { apoyo: 'pistas' }],

@@ -52,9 +52,9 @@ describe('datos de ejemplo de challenges y evidencia', () => {
     }
   });
 
-  it('hay un único challenge en curso, 5 completados y 3 pendientes', () => {
+  it('hay challenges en curso, completados y pendientes', () => {
     const statuses = data.challenges.map((c) => challengeStatus(c, data.evidence));
-    expect(statuses.filter((s) => s === 'en_curso')).toHaveLength(1);
+    expect(statuses.filter((s) => s === 'en_curso').length).toBeGreaterThanOrEqual(1);
     expect(statuses.filter((s) => s === 'completada').length).toBeGreaterThanOrEqual(4);
     expect(statuses.filter((s) => s === 'pendiente').length).toBeGreaterThanOrEqual(2);
   });

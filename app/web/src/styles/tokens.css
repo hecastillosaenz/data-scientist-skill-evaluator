@@ -27,6 +27,13 @@
   --d2-bg: #fdf0d5;
   --d3-fg: #b0245f;
   --d3-bg: #fce3ee;
+  /* Series de gráficos (una por dominio): azules y grafitos, distinguibles junto a la leyenda con texto. */
+  --s1: #2f5bea;
+  --s2: #7d97f1;
+  --s3: #b9c7f7;
+  --s4: #3a3f4b;
+  --s5: #8a90a0;
+  --s6: #c4c8d2;
   --shadow-card: 0 0 0 1px #e7e9ef, 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 14px -6px rgba(16, 24, 40, 0.08);
   --tooltip-bg: #15171c;
   --tooltip-fg: #ffffff;
@@ -74,6 +81,12 @@
     --d2-bg: #382b13;
     --d3-fg: #f08ab8;
     --d3-bg: #3b1a2b;
+    --s1: #7e9bf5;
+    --s2: #4f6fd8;
+    --s3: #2e3f78;
+    --s4: #c9cdd6;
+    --s5: #7b8190;
+    --s6: #454b58;
     --shadow-card: 0 0 0 1px #2a2f38;
     --tooltip-bg: #eef0f4;
     --tooltip-fg: #15171c;

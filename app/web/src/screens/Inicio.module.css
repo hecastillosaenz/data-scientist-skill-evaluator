@@ -1,0 +1,66 @@
+.top { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.middle { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+.bottom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+
+.hero {
+  display: flex; flex-direction: column; gap: 14px; padding: 28px 32px;
+  border-radius: var(--r-card); background: var(--hero); color: var(--hero-fg); min-width: 0;
+}
+.heroLabel { font-size: 12px; font-weight: 500; color: var(--hero-muted); text-transform: uppercase; letter-spacing: .04em; }
+.heroTitle { font-size: clamp(22px, 2.4vw, 30px); font-weight: 600; line-height: 1.2; letter-spacing: -.01em; }
+.heroDots { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--hero-muted); }
+.heroDots > span:first-child { letter-spacing: 4px; color: var(--hero-fg); font-size: 16px; }
+.heroStages { display: flex; gap: 6px; list-style: none; margin: 4px 0 0; padding: 0; }
+.heroStages li { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.heroStageTitle { font-size: 12px; color: var(--hero-muted); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.heroFoot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
+.heroFoot p { font-size: 14px; color: var(--hero-muted); }
+.heroFoot strong { color: var(--hero-fg); font-weight: 500; }
+.heroBtn { background: #fff; color: #15171c; border-color: transparent; }
+.heroBtn:hover { background: #e9ebf0; }
+.recommended { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 12px; background: rgba(255, 255, 255, .07); }
+.recommended strong { font-size: 17px; font-weight: 500; }
+.recoMeta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--hero-muted); }
+.recoDomain { display: inline-flex; align-items: center; gap: 6px; }
+
+.cardHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cardSub { font-size: 13px; color: var(--muted); margin: 2px 0 16px; }
+.link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; }
+
+.weak { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.weak li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.weakText { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.weakText strong { font-size: 14px; font-weight: 500; }
+.weakText span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weakText em { font-style: normal; color: var(--d2-fg); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; list-style: none; margin: 12px 0 0; padding: 0; font-size: 12px; color: var(--muted); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+.recent { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.recent li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; font-size: 13px; }
+.recent li > div { display: flex; flex-direction: column; min-width: 0; }
+.recent strong { font-weight: 500; font-size: 14px; }
+.recent span { color: var(--muted); }
+.resIcon { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 50%; }
+.aprobada { background: var(--accent-soft); color: var(--accent); }
+.fallida { background: var(--d2-bg); color: var(--d2-fg); }
+.parcial { background: var(--sunk); color: var(--ink2); }
+
+@media (max-width: 1279px) {
+  .bottom { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 1099px) {
+  .top, .middle { grid-template-columns: 1fr; }
+}
+@media (max-width: 859px) {
+  .bottom { grid-template-columns: 1fr; }
+  .hero { padding: 22px 20px; }
+}
+@media (max-width: 419px) {
+  .kpis { grid-template-columns: 1fr; }
+  .heroStages { flex-wrap: wrap; }
+  .heroStages li { flex: 1 1 45%; }
+}

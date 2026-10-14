@@ -67,7 +67,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppState>(() => {
     const evidence = data?.evidence ?? [];
     const challengeStatusOf = (c: Challenge) => challengeStatus(c, evidence, started.has(c.id));
-    const current = data?.challenges.find((c) => challengeStatusOf(c) === 'en_curso') ?? null;
+    // Challenge actual: entre los que están en curso, el de actividad más reciente (los recién iniciados, sin intentos, van primero).
+    const lastActivity = (c: Challenge) =>
+      started.has(c.id) && !evidence.some((e) => e.challengeId === c.id)
+        ? Infinity
+        : Math.max(0, ...evidence.filter((e) => e.challengeId === c.id).map((e) => Date.parse(e.at)));
+    const current =
+      (data?.challenges ?? [])
+        .filter((c) => challengeStatusOf(c) === 'en_curso')
+        .sort((a, b) => lastActivity(b) - lastActivity(a))[0] ?? null;
     return {
       loading: !data && !error,
       error,
