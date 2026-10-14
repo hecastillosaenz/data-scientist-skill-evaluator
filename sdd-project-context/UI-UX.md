@@ -69,8 +69,10 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 
 ### 1.5 Forma, espacio y sombra
 - Radio: tarjetas 16px, botones/campos 10–12px, chips 7–8px, tiles de icono 9px.
+- **Sin anillos en ninguna cuadrícula**: ni tarjetas, ni chips, ni campos, ni diagramas llevan contorno de 1px; se distinguen por fondo y sombra. Los divisores *dentro* de listas y tablas sí se mantienen, y el anillo de foco (accesibilidad) se conserva.
 - **Tarjetas sin anillo** (un borde gris uniforme se ve genérico): se elevan por sombra y por contraste con el fondo. Claro: `0 1px 2px rgba(16,24,40,.04), 0 10px 28px -12px rgba(16,24,40,.14)`. Oscuro: la tarjeta es un tono más clara que el fondo, con `inset 0 1px 0 rgba(255,255,255,.04)` y una sombra profunda. Los divisores *dentro* de una tarjeta sí usan `--line`.
-- La etapa activa se marca con una barra de acento lateral y más elevación, no con un anillo de 2px.
+- **La etapa desplegada** se enfatiza cambiando el sombreado de forma gradual (transición de ~300 ms): un velo suave de acento en la parte superior y algo más de elevación; no hay barra lateral ni anillo.
+- **Texto y bloques.** El texto largo va **justificado** (con guionado automático en español). El contenido de enunciados, etapas y guías se compone en una **columna de lectura centrada** (≈ 800 px): párrafos, código, tablas y diagramas ocupan el mismo ancho y las tablas se centran. Nada queda pegado a la izquierda con espacio vacío a la derecha.
 - Espaciado: grid de 4px; separación entre tarjetas 20px; padding interno 20–32px.
 - Ancho máximo del contenido: 1320px. Barra lateral: 240px.
 - Objetivo táctil mínimo: 44×44px.
@@ -94,7 +96,9 @@ Regla: el color siempre va con texto. Nunca se comunica un estado solo con color
 | Estado vacío | Icono, título, texto, CTA opcional | Borde discontinuo |
 | Panel lateral fijo (sticky) | Detalle del ítem seleccionado | Preview de challenge, refuerzo, nodo del grafo |
 | Etiqueta "Datos de ejemplo" | Chip discontinuo en el pie | Solo mientras se usen datos sintéticos |
-| Cronómetro | `mm:ss` mono, Iniciar/Pausar/Reiniciar y barra contra el objetivo de tiempo | Por etapa; un chip global cuando hay uno en marcha |
+| Cronómetro global | Píldora fija arriba a la derecha con `mm:ss` mono y Iniciar/Pausar; detalle (vuelta actual, reiniciar) en su menú | Uno solo para toda la app; al volver de una ausencia muestra el diálogo de intervalo (R30) |
+| Objetivo del reto | Bloque con «Qué busca este reto», «Al terminar tendrás» y «Habilidades» | En el enunciado, antes de los datos |
+| Ventana de debilidad | Página con diagnóstico, evidencia, causas raíz, error común y plan de mejora | Se abre desde Inicio y Repaso |
 | Diagrama relacional | Tarjetas de tabla con columnas, tipos, PK/FK y conectores con cardinalidad 1–N | Con lista de relaciones en texto accesible |
 | Vista previa de datos | Pestañas por tabla con filas de muestra y `NULL` en gris cursivo | "8 de 8 filas", copiar SQL |
 | Panel de verificación | Línea de tiempo en vivo, salida colapsable, feedback en Markdown y resultado | Estados: en curso, correcto, con fallos, error; botón Detener |
@@ -142,8 +146,9 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 
 ### 4.3 Challenge actual
 - Encabezado: título, tiles de dominios, dificultad, tiempo total, progreso por etapas.
+- **Objetivo del reto** (R28): qué busca el challenge, qué obtendrás al terminar y qué habilidades entrena.
 - **Enunciado** (Markdown con fórmulas): escenario de negocio (rol, organización, decisión) y tarea concreta. Bloque **Datos** con pestañas *Diagrama* (relacional), *Tablas* (filas de muestra) y *SQL* (seed).
-- Una tarjeta por etapa: cabecera (número, título, tile+dominio, dificultad, chip Bloom, tiempo, estado, chevron), **cronómetro** y el control **Apoyo** (Guiado/Pistas/Autónomo) propio de esa etapa. La etapa activa lleva barra de acento lateral.
+- Una tarjeta por etapa: cabecera (número, título, tile+dominio, dificultad, chip Bloom, tiempo objetivo, estado, chevron) y el control **Apoyo** (Guiado/Pistas/Autónomo) propio de esa etapa. **No hay cronómetro por etapa**: el cronómetro es global (R20). Al desplegarse, la tarjeta cambia su sombreado gradualmente.
 - Cuerpo al expandir, según el Apoyo (R17):
   - *Guiado*: teoría aplicada (con fórmulas), ejemplo resuelto en otro dominio, paso a paso y esqueleto de código.
   - *Pistas*: pistas ordenadas (qué, no cómo; se pueden mostrar y ocultar) y conceptos para investigar.
@@ -154,14 +159,15 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
   - Solución colapsada por secciones; revelarla marca «Con ayuda» de forma permanente aunque luego se oculte.
 - **Preguntas de negocio** (3–5): un campo por pregunta, «Guardar respuestas» y, solo después, la guía de reflexión (R22).
 - **Test final de retención** (R21): tarjeta bloqueada hasta completar las etapas; al calificar muestra aciertos, explicaciones y conceptos a reforzar.
-- Columna lateral fija **Registro de la etapa** (sustituye a «Entrega»; ya no hay Pegar/Subir/Enlace porque la resolución ocurre en el notebook de VS Code): cronómetro con el tiempo real (de solo lectura; «Editar» lo marca manual), «¿Dónde te trabaste?» (5 chips), notas y «Registrar etapa».
-- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); solo un cronómetro corre a la vez.
+- Columna lateral fija **Registro de la etapa** (sustituye a «Entrega»; ya no hay Pegar/Subir/Enlace porque la resolución ocurre en el notebook de VS Code): el **tiempo de esta vuelta** (desde el último registro; de solo lectura, «Editar» lo marca manual) frente al objetivo de la etapa, «¿Dónde te trabaste?» (5 chips), notas y «Registrar etapa».
+- Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); hay un único cronómetro global y cada registro toma el tiempo desde el anterior.
 
 ### 4.4 Repaso
 - Encabezado + control "Por prioridad / Por motivo".
 - Chips de filtro por motivo con conteo.
 - Leyenda de estado del grafo.
 - Cola: tile de dominio, tema, "Etapa N · {etapa} — {challenge}", motivo, chip de estado, última práctica, prioridad, botón "Practicar".
+- Cada fila abre la **ventana de debilidad** (R31): diagnóstico («en qué estás fallando»), evidencia cronológica, causas raíz (prerrequisitos débiles), error común del caso, plan de mejora con pasos y búsquedas, y el reto de refuerzo.
 - Panel lateral: reto de refuerzo (botón "Generar reto de refuerzo" → título, dificultad -1, tiempo -5min, apoyo sugerido Pistas); conceptos por investigar con checklist de progreso.
 - Vacío: "Todavía no hay conceptos para repasar" + enlace a Challenges.
 
@@ -174,6 +180,13 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - Canvas (540px alto, fondo `--sunk`): nodos con radio/color según estado, aristas de prerrequisito, disposición por capas de izquierda a derecha, zoom 0.5×–2.5×, pan, leyenda fija.
 - Panel lateral fijo: sin nodo → "Selecciona un concepto" + conteo por estado; con nodo → tile+dominio, nombre, nivel actual, Bloom máximo con evidencia, prerrequisitos (navegables, incluso de otro dominio), challenges/etapas relacionadas, evidencias, conceptos relacionados (máx. 8).
 - Accesibilidad: cada nodo `role="button"`, enfocable con Tab, activable con Enter/Espacio, `aria-label` con el estado.
+
+### 4.5b Grafo unificado (second brain)
+- Segunda vista de la pantalla de Grafo, con selector **Conceptos | Second brain**.
+- Muestra juntos cinco tipos de nodo: **conceptos** (punto, color según estado), **challenges** (cuadrado), **etapas** (rombo), **tests** (triángulo) y **mejoras** (debilidades abiertas, círculo marcado). Aristas: prerrequisito, challenge→etapa, etapa→concepto que practica, test→concepto y mejora→concepto.
+- Disposición por fuerzas (determinista): los conceptos de un tema se agrupan y los challenges quedan entre los conceptos que practican, así se ve cómo interactúa todo.
+- Chips por tipo y por dominio **atenúan, no ocultan** (R32). Buscador, zoom y pan como en la vista de conceptos.
+- Panel lateral con el detalle del nodo y enlaces a la pantalla correspondiente (challenge, debilidad, test).
 
 ### 4.6 Analítica
 - Encabezado + rango + selector 7/30/90 días.

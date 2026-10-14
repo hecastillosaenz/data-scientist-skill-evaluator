@@ -39,12 +39,16 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 **Contenido y estudio** *(añadidas tras la revisión de la UI con datos de ejemplo)*
 - **HU13.** Como usuario, quiero que cada etapa traiga el material para estudiar antes de resolver (escenario de negocio, teoría aplicada con fórmulas, un ejemplo resuelto en otro dominio, paso a paso y esqueleto de código), según mi nivel de Apoyo, para no depender de buscar la teoría por fuera.
 - **HU14.** Como usuario, quiero ver el esquema de datos del challenge como un diagrama relacional con sus llaves y unas filas de muestra, para entender las tablas antes de escribir una consulta.
-- **HU15.** Como usuario, quiero un cronómetro real por etapa (inicio/pausa), para registrar mi tiempo real sin estimarlo a mano.
+- **HU15.** *(Revisada.)* Como usuario, quiero **un único cronómetro global** (inicio/pausa) que reparta el tiempo entre etapas al registrarlas, y que me pregunte qué hacer con el tiempo si me ausento, para registrar mi tiempo real sin estimarlo ni contar pausas largas por error.
 - **HU16.** Como usuario, quiero ver en vivo, debajo del botón de verificar, qué está haciendo el sistema y recibir feedback ahí mismo si algo falla, para entender el resultado sin salir de la pantalla.
 - **HU17.** Como usuario, quiero responder las preguntas de negocio dentro de la app y ver una guía de reflexión después, para practicar la comunicación con negocio.
 - **HU18.** Como usuario, quiero un test final de preguntas aplicadas al terminar el challenge, para comprobar si recuerdo bien los conceptos.
 - **HU19.** Como usuario, quiero elegir entre modo claro, oscuro o el del sistema, para trabajar cómodo a cualquier hora.
 - **HU20.** Como usuario, quiero que los challenges con base de datos traigan datos sintéticos reproducibles, para poder ejecutar mis consultas sin preparar nada.
+- **HU21.** Como usuario, quiero ver al inicio de cada challenge sus **objetivos** (qué busca y qué obtendré al terminar), para saber para qué practico.
+- **HU22.** Como usuario, quiero una **ventana de análisis de cada debilidad** que explique en qué estoy fallando, por qué y cómo mejorar, para actuar sin tener que inferirlo.
+- **HU23.** Como usuario, quiero, además del grafo de conceptos, un **grafo unificado (second brain)** donde se vean juntos conceptos, challenges, etapas, tests y mejoras, para entender cómo interactúa todo.
+- **HU24.** Como autor, quiero que el formato de presentación de un caso quede guardado como contrato para los agentes (esquema y plantillas), para que cada challenge generado se vea y se estudie igual.
 
 ---
 
@@ -80,13 +84,18 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R17.** Cada etapa DEBE poder llevar contenido rico con campos opcionales: teoría aplicada (con fórmulas), ejemplo resuelto en otro dominio, paso a paso, pistas, esqueleto de código, conceptos para investigar (con búsquedas en español e inglés), entregable como checklist, resultado esperado y solución por secciones. La UI DEBE revelarlo según el Apoyo vigente: *Guiado* = teoría, ejemplo, paso a paso y esqueleto; *Pistas* = pistas ordenadas y conceptos; *Autónomo* = conceptos y entregable. Leer la teoría, el ejemplo o el paso a paso NO DEBE marcar el intento como "Con ayuda" (solo R7).
 - **R18.** El Generador DEBE emitir, para todo challenge con datos, un dataset reproducible: `datos/seed.sql` (DuckDB) o `datos/seed.py` (semilla fija), con imperfecciones (nulos, duplicados) desde Nivel 2. La estructura (tablas, llaves PK/FK, filas de muestra) DEBE quedar en `challenge.json` para dibujar el diagrama sin ejecutar el seed.
 - **R19.** El Generador DEBE ejecutar la solución de referencia contra el dataset y guardar el resultado como `expected`; si la ejecución falla o no coincide con lo que declara el challenge, DEBE rechazar el challenge.
-- **R20.** El Tiempo real de una etapa DEBE provenir del cronómetro; si el usuario lo edita a mano, el registro DEBE quedar marcado `manual`. Investigar los conceptos y leer la teoría NO cuentan en el Tiempo real (el usuario inicia el cronómetro al empezar a resolver).
+- **R20.** *(Revisado.)* Existe **un único cronómetro global**, no uno por etapa. El Tiempo real de una etapa es el tiempo transcurrido desde el último registro (o desde que se inició el cronómetro), descontando las pausas; si el usuario lo edita a mano, el registro DEBE quedar marcado `manual`. Investigar los conceptos y leer la teoría NO cuentan en el Tiempo real (el usuario inicia el cronómetro al empezar a resolver).
 - **R21.** Al terminar todas las etapas, el sistema DEBE ofrecer un test final de 5 a 8 preguntas aplicadas (opción múltiple, numérica o de texto), cada una atada a un Concept y a un nivel de Bloom 1–3. El test NO es requisito para marcar el challenge como completado.
 - **R22.** Las respuestas a las preguntas de negocio DEBEN guardarse como registros append-only, NO DEBEN determinar Acierto/Fallo, y la guía de reflexión DEBE mostrarse solo después de guardarlas. El número de preguntas es 3 en Nivel 1–2, 4 en Nivel 3 y 5 en Nivel 4–5.
 - **R23.** El último resultado de cada pregunta del test final DEBE contar como un intento del Concept al que está atada (con su Bloom), aplicando el mismo principio que R11.
 - **R24.** Para los challenges con SQL, la base `challenge-N/datos/challenge.duckdb` DEBE construirse desde el seed de forma idempotente, estar ignorada por git y abrirse en el notebook con `read_only=True`.
 - **R25.** Los endpoints del orquestador que lanzan procesos (agente o runner) DEBEN rechazar peticiones cuyo `Host` u `Origin` no sea `127.0.0.1:<puerto>`.
 - **R26.** La verificación DEBE emitir eventos NDJSON (`step`, `output`, `tool`, `feedback`, `result`, `done`, `error`) que la UI muestra en vivo debajo del botón, con opción de cancelar. Los errores (celda no encontrada, R16, `claude` ausente, timeout) DEBEN mostrarse con mensaje explícito en ese mismo panel.
+- **R28.** Todo `challenge.json` DEBE incluir los **objetivos del reto**: qué busca el challenge, qué obtendrá el usuario al terminar (resultados concretos) y las habilidades que entrena.
+- **R29.** El formato de un challenge es un contrato: `configuracion-retos/plantillas/challenge.schema.json` define su estructura y las plantillas por Tipo definen su contenido. El orquestador DEBE validar el `challenge.json` contra ese esquema antes de aceptarlo y rechazarlo con un error explícito si no cumple.
+- **R30.** Si el cronómetro está corriendo y la app deja de dar señal por más de 3 minutos (pestaña cerrada, equipo suspendido), al volver la app DEBE preguntar qué hacer con ese intervalo: no contarlo (por defecto), contarlo o pausar. NUNCA DEBE sumarlo en silencio.
+- **R31.** Cada debilidad de la cola de Repaso DEBE poder abrirse en una ventana de análisis que muestre: el diagnóstico (qué falla y desde cuándo), la evidencia (intentos, bloqueos y notas), las posibles causas raíz (prerrequisitos débiles), el error común del caso y un plan de mejora con pasos concretos.
+- **R32.** El grafo unificado DEBE mostrar nodos de cinco tipos (concepto, challenge, etapa, test y mejora) con sus relaciones, permitir atenuar por tipo y por dominio sin ocultar nada (como R15) y abrir el detalle de cualquier nodo.
 - **R27.** Las celdas del notebook cuya primera línea sea `# Datos` (no editables por el usuario) DEBEN ejecutarse antes de la celda `# Entregable - Etapa X:`; la celda entregable se ejecuta aislada del resto de celdas del usuario (R8). El proceso tiene timeout y tope de salida.
 
 ---
@@ -114,13 +123,18 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R17 | Dado una etapa en Apoyo Guiado, cuando se abre, entonces se ven teoría, ejemplo, paso a paso y esqueleto; en Autónomo solo conceptos y entregable; y leer la teoría no marca "Con ayuda". |
 | AC-R18 | Dado un challenge con datos, cuando se inspecciona `challenge.json`, entonces lista cada tabla con columnas, PK/FK y filas de muestra, y existe un `seed` ejecutable. |
 | AC-R19 | Dado un challenge cuya solución de referencia no reproduce `expected`, cuando el Generador termina, entonces el challenge se rechaza. |
-| AC-R20 | Dado un cronómetro iniciado, cuando se recarga la página, entonces el tiempo transcurrido se conserva; y dos cronómetros nunca corren a la vez. |
+| AC-R20 | Dado el cronómetro global iniciado, cuando se recarga la página, entonces el tiempo transcurrido se conserva; y al registrar dos etapas seguidas, cada una recibe solo el tiempo desde el registro anterior. |
 | AC-R21 | Dado un challenge con etapas sin completar, entonces el test final está bloqueado; con todas completas, se desbloquea. |
 | AC-R22 | Dado un challenge, cuando no se han guardado las respuestas de negocio, entonces la guía de reflexión no se muestra; al guardar, se muestra y existe un registro nuevo (no sobrescrito). |
 | AC-R23 | Dado un Concept con un intento de etapa aprobado y un fallo reciente en el test final, entonces su estado es "Con fallos" y aparece en la cola de Repaso. |
 | AC-R24 | Dado un seed, cuando se construye la base dos veces, entonces el resultado es idéntico y el archivo `.duckdb` no aparece en `git status`. |
 | AC-R25 | Dado una petición al endpoint de verificación con `Host` distinto de `127.0.0.1:<puerto>`, entonces se rechaza sin lanzar ningún proceso. |
 | AC-R26 | Dado una verificación en curso, cuando el usuario pulsa "Detener", entonces el proceso se cancela y el panel lo indica; y los eventos llegan en el orden `step … feedback … result … done`. |
+| AC-R28 | Dado un `challenge.json` sin objetivos, cuando se valida, entonces se rechaza con un error que nombra el campo faltante. |
+| AC-R29 | Dado un `challenge.json` que no cumple el esquema, cuando el orquestador lo carga, entonces lo rechaza con un mensaje explícito; y `challenge-001` y todos los ejemplos lo cumplen. |
+| AC-R30 | Dado un cronómetro corriendo y 10 minutos sin señal, cuando la app vuelve, entonces pregunta qué hacer con el intervalo y, por defecto, no lo suma. |
+| AC-R31 | Dada una debilidad por fallos, cuando se abre su análisis, entonces se ven la evidencia, las causas raíz, el error común y los pasos de mejora. |
+| AC-R32 | Dado el grafo unificado recién abierto, entonces se ven nodos de los cinco tipos y los 6 dominios, y filtrar por un tipo atenúa los demás sin ocultarlos. |
 | AC-R27 | Dado un notebook con celdas `# Datos` y `# Entregable - Etapa X:`, cuando se verifica, entonces se ejecutan las de datos y luego la entregable, y un exceso de tiempo termina el proceso con un error explícito. |
 
 **Deuda de diseño que bloquea implementación real (marcada, no resuelta por decisión explícita del autor):**
@@ -288,4 +302,12 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Respuestas conceptuales en el notebook.** En los challenges reales la respuesta de una etapa conceptual se escribe en la celda markdown `# Entregable - Etapa N:` (como define §6.4.3); la UI ya no ofrece un cuadro de texto para esos casos.
 - **Contenido Markdown.** Los signos de moneda se escapan como `\$` para que KaTeX no los lea como fórmula.
 - **Tensión R10 sin resolver.** La Evidence se sigue creando al pulsar «Registrar etapa» (que añade tiempo, bloqueo y notas), no al verificar. Falta decidir si cada verificación debe crear la suya.
+
+### 8.2 Cambios tras la segunda revisión de la UI
+
+- **Cronómetro global con vueltas (R20, R30).** Un solo reloj para todo el trabajo; «Registrar etapa» toma una *vuelta*: el tiempo desde el último registro. Así Analítica conserva el tiempo por etapa. Como el usuario resuelve en VS Code, la app NO se pausa cuando la pestaña pierde el foco; el reloj corre por marcas de tiempo. Si la app desaparece (pestaña cerrada, equipo suspendido) y vuelve tras más de 3 minutos, pregunta qué hacer con ese intervalo; lo no contado por defecto es el intervalo ausente.
+- **Objetivos del reto (R28).** Cada challenge dice qué busca, qué obtendrás y qué habilidades entrena. Es parte del contrato del Generador.
+- **Formato como contrato para los agentes (R29).** `challenge.schema.json` (JSON Schema) y las plantillas por Tipo en `configuracion-retos/plantillas/` fijan cómo se presenta un caso: escenario → objetivos → datos → etapas (teoría, ejemplo, paso a paso, esqueleto, entregable, solución) → preguntas de negocio → test final. El Generador los lee y el orquestador valida su salida.
+- **Ventana de debilidad (R31)** y **grafo unificado (R32)** salen de la UI; el análisis de debilidad es determinista (deriva de la evidencia) y puede enriquecerse más adelante con el Analista.
+- **Presentación.** Texto justificado, columna de lectura centrada, tablas centradas y sin anillos alrededor de cuadrículas; la etapa desplegada se enfatiza con un sombreado gradual, no con un borde.
 
