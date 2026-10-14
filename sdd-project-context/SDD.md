@@ -258,7 +258,7 @@ data-scientist-skill-evaluator/
 | §10 Estados globales | Se adopta salvo "Sesión caducada" |
 | §11 Lógica de negocio | Se adopta como fórmulas canónicas; §11.3 (estado de concepto) se construye sobre R11, no lo reemplaza |
 | §11.6 Reto de refuerzo | Se adopta; fuente = generación por agente (no banco curado) |
-| §11.7 Nivel del usuario | **[DECISIÓN ABIERTA PARA EL AUTOR]** — sin resolver en este SDD |
+| §11.7 Nivel del usuario | Resuelto el 2026-10-14: por dominio y derivado de la evidencia (R40) |
 | §12 Modelo de datos (PostgreSQL) | Se excluye — sustituido por S1 |
 | §13 API REST | Se excluye — sustituido por las operaciones del orquestador local |
 | §14 Arquitectura de backend (Postgres/Redis/S3/Auth0) | Se excluye por completo |
@@ -400,4 +400,4 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Lo que sigue en el navegador.** El cronómetro en marcha (`dsc-timer`) y los borradores de respuestas sin guardar; su resultado, el tiempo de la etapa, queda en la Evidence al registrar. No se guarda un historial de pausas.
 - **Modo ejemplo.** `?datos=ejemplo` carga los datos sintéticos de siempre (más los challenges reales), todo en memoria; no escribe nada. Sin ese parámetro la app arranca vacía salvo lo que haya en los archivos.
 - **Fallos (R37).** Se hace el cambio al instante y, si el guardado falla, se revierte, se conserva lo escrito y se muestra el aviso.
-- **Sigue abierto.** El alcance de «Nivel del usuario» (§7.3) y, para P3/P5, la calibración del Generador y el disparo del Analista; no bloquean la persistencia.
+- **Sigue abierto.** Solo la condición de disparo del Analista (R12), que bloquea a P5. La calibración del Generador, el manejo de errores y el Nivel del usuario se resolvieron el 2026-10-14 (R38–R40).
