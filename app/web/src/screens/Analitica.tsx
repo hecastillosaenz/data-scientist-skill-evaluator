@@ -1,5 +1,182 @@
-import { PageHeader } from '../components/cards';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus } from 'lucide-react';
+import { APOYO_LABEL, BLOCKER_LABEL, DIFFICULTY_LABEL, DOMAINS, DOMAIN_BY_ID } from '../../../shared/domains';
+import type { Apoyo, DomainId } from '../../../shared/types';
+import { Card, EmptyState, PageHeader, ReadingLine, Skeleton } from '../components/cards';
+import { DifficultyChip } from '../components/chips';
+import { DomainTile } from '../components/DomainTile';
+import { Heatmap } from '../components/Heatmap';
+import { Segmented } from '../components/Segmented';
+import { LineChart } from '../charts/LineChart';
+import { StackedBars } from '../charts/StackedBars';
+import { formatShortDate } from '../charts/format';
+import { activityHeatmap, blockerTrend, domainGaps, performanceByDifficulty, periodActivity, stagesByDomainApoyo } from '../domain/analytics';
+import { activityReadingLine, difficultyReadingLine, domainsReadingLine, gapsReadingLine, timeReadingLine, weaknessReadingLine } from '../domain/readingLines';
+import { addDays, timePoints } from '../domain/stats';
+import { useApp } from '../data/DataContext';
+import styles from './Analitica.module.css';
+
+type Period = '7' | '30' | '90';
+const APOYO_COLOR: Record<Apoyo, string> = { guiado: '--s3', pistas: '--s2', autonomo: '--s1' };
+const APOYOS: Apoyo[] = ['guiado', 'pistas', 'autonomo'];
 
 export function Analitica() {
-  return <PageHeader title="Analítica" subtitle="Pantalla en construcción." />;
+  const { loading, data, now } = useApp();
+  const [period, setPeriod] = useState<Period>('30');
+  const days = Number(period);
+
+  const view = useMemo(() => {
+    if (!data) return null;
+    return {
+      points: timePoints(data.evidence, data.challenges, now, days),
+      blockers: blockerTrend(data.evidence, now, days),
+      gaps: domainGaps(data.concepts, data.challenges, data.evidence, now, 30),
+      byApoyo: stagesByDomainApoyo(data.evidence, data.challenges, now, days),
+      difficulty: performanceByDifficulty(data.evidence, data.challenges),
+      heat: activityHeatmap(data.evidence, now, days),
+      activity: periodActivity(data.evidence, now, days),
+    };
+  }, [data, now, days]);
+
+  if (loading || !data || !view) {
+    return <div aria-busy="true"><Skeleton w={220} h={32} /><div style={{ height: 24 }} /><Skeleton h={320} r={16} /></div>;
+  }
+
+  const from = addDays(now, -days);
+  const gapsMax = Math.max(1, ...view.gaps.map((g) => g.total));
+
+  return (
+    <>
+      <PageHeader
+        title="Analítica"
+        subtitle={`${formatShortDate(from)} – ${formatShortDate(now)} · últimos ${days} días`}
+        actions={
+          <Segmented
+            label="Periodo"
+            options={[{ value: '7', label: '7 días' }, { value: '30', label: '30 días' }, { value: '90', label: '90 días' }]}
+            value={period}
+            onChange={setPeriod}
+          />
+        }
+      />
+
+      <div className={styles.grid}>
+        <Card className={styles.wide}>
+          <h2>Tiempo real vs. estimado</h2>
+          <p className={styles.sub}>Por etapa aprobada</p>
+          {view.points.length === 0 ? (
+            <EmptyState title="Sin etapas aprobadas en este periodo" text="Amplía el periodo o practica una etapa para ver la comparación." />
+          ) : (
+            <LineChart
+              points={view.points.map((p) => ({ at: p.at, label: p.stageTitle, real: p.real, estimated: p.estimated }))}
+              from={from}
+              to={now}
+              ariaLabel={`Tiempo real frente al estimado por etapa aprobada en los últimos ${days} días`}
+            />
+          )}
+          <ReadingLine>{timeReadingLine(view.points, days)}</ReadingLine>
+        </Card>
+
+        <Card>
+          <h2>Tendencia de debilidades</h2>
+          <p className={styles.sub}>Dónde te trabaste, frente al periodo anterior</p>
+          {view.blockers.items.length === 0 ? (
+            <p className={styles.muted}>No marcaste bloqueos en este periodo.</p>
+          ) : (
+            <ol className={styles.blockers}>
+              {view.blockers.items.map((b) => (
+                <li key={b.blocker}>
+                  <span className={styles.blockerName}>{BLOCKER_LABEL[b.blocker]}</span>
+                  <span className={`${styles.count} mono`}>{b.count}</span>
+                  <span className={`${styles.delta} ${b.delta > 0 ? styles.up : b.delta < 0 ? styles.down : ''}`}>
+                    {b.delta > 0 ? <ArrowUpRight size={14} aria-hidden="true" /> : b.delta < 0 ? <ArrowDownRight size={14} aria-hidden="true" /> : <Minus size={14} aria-hidden="true" />}
+                    <span className="mono">{b.delta > 0 ? `+${b.delta}` : b.delta}</span>
+                    <span className="visually-hidden"> frente al periodo anterior</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <ReadingLine>{weaknessReadingLine(view.blockers.items, view.blockers.total, days)}</ReadingLine>
+        </Card>
+
+        <Card>
+          <div className={styles.head}>
+            <h2>Brechas por dominio</h2>
+            <Link to="/grafo" className={styles.link}>Ver en el grafo <ArrowRight size={14} aria-hidden="true" /></Link>
+          </div>
+          <p className={styles.sub}>Conceptos con evidencia en los últimos 30 días</p>
+          <ul className={styles.gaps}>
+            {view.gaps.map((g) => (
+              <li key={g.domain}>
+                <span className={styles.gapLabel}><DomainTile domain={g.domain as DomainId} size={22} />{DOMAIN_BY_ID[g.domain].short}</span>
+                <span className={styles.gapBar} role="img" aria-label={`${g.withEvidence} de ${g.total} conceptos con evidencia reciente`} style={{ width: `${(g.total / gapsMax) * 100}%` }}>
+                  <span className={styles.gapDone} style={{ width: `${(g.withEvidence / g.total) * 100}%` }} />
+                </span>
+                <span className={`${styles.gapCount} mono`}>{g.withEvidence}/{g.total}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.legendRow}><span><i className={styles.swDone} /> Evidencia reciente</span><span><i className={styles.swNone} /> Sin evidencia</span></p>
+          <ReadingLine>{gapsReadingLine(view.gaps)}</ReadingLine>
+        </Card>
+
+        <Card>
+          <h2>Etapas por dominio</h2>
+          <p className={styles.sub}>Intentos del periodo, por Apoyo usado</p>
+          <StackedBars
+            ariaLabel={`Intentos por dominio y Apoyo en los últimos ${days} días`}
+            colorVar={(key) => APOYO_COLOR[key as Apoyo]}
+            bars={view.byApoyo.map((r) => ({
+              label: DOMAIN_BY_ID[r.domain].short,
+              tooltipTitle: DOMAIN_BY_ID[r.domain].name,
+              segments: APOYOS.map((a) => ({ key: a, label: APOYO_LABEL[a], value: r.byApoyo[a] })),
+            }))}
+          />
+          <ul className={styles.legendList}>
+            {APOYOS.map((a) => <li key={a}><i style={{ background: `var(${APOYO_COLOR[a]})` }} />{APOYO_LABEL[a]}</li>)}
+          </ul>
+          <ReadingLine>{domainsReadingLine(view.byApoyo)}</ReadingLine>
+        </Card>
+
+        <Card>
+          <h2>Rendimiento por dificultad</h2>
+          <p className={styles.sub}>Acumulado desde el inicio</p>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Dificultad</th>
+                <th scope="col">Intentos</th>
+                <th scope="col">Aprobados</th>
+                <th scope="col">Real</th>
+                <th scope="col">Estimado</th>
+                <th scope="col">Desvío</th>
+              </tr>
+            </thead>
+            <tbody>
+              {view.difficulty.map((r) => (
+                <tr key={r.difficulty}>
+                  <th scope="row"><DifficultyChip difficulty={r.difficulty} /><span className="visually-hidden">{DIFFICULTY_LABEL[r.difficulty]}</span></th>
+                  <td className="mono">{r.attempts}</td>
+                  <td className="mono">{r.attempts ? `${Math.round((r.passed / r.attempts) * 100)} %` : '—'}</td>
+                  <td className="mono">{r.avgReal === null ? '—' : `${Math.round(r.avgReal)} min`}</td>
+                  <td className="mono">{r.avgEstimated === null ? '—' : `${Math.round(r.avgEstimated)} min`}</td>
+                  <td className="mono">{r.deviation === null ? '—' : `${r.deviation >= 0 ? '+' : '−'}${Math.round(Math.abs(r.deviation))} min`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ReadingLine>{difficultyReadingLine(view.difficulty)}</ReadingLine>
+        </Card>
+
+        <Card className={styles.wide}>
+          <h2>Actividad por día</h2>
+          <p className={styles.sub}>Intentos registrados cada día</p>
+          <Heatmap cells={view.heat} />
+          <ReadingLine>{activityReadingLine(view.activity.practicedDays, days, view.activity.longest)}</ReadingLine>
+        </Card>
+      </div>
+    </>
+  );
 }

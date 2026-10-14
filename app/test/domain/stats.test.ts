@@ -62,3 +62,56 @@ describe('timePoints', () => {
     expect(points[0]).toMatchObject({ stageTitle: 'T', real: 20, estimated: 20 });
   });
 });
+
+import { activityHeatmap, blockerTrend, domainGaps, performanceByDifficulty, periodActivity, stagesByDomainApoyo } from '../../web/src/domain/analytics';
+import { activityReadingLine, difficultyReadingLine, domainsReadingLine, gapsReadingLine, weaknessReadingLine } from '../../web/src/domain/readingLines';
+import { buildSampleData } from '../../web/src/data/sample';
+
+describe('analítica sobre los datos de ejemplo', () => {
+  const now = new Date('2026-10-13T20:00:00Z');
+  const data = buildSampleData('normal', now);
+
+  it('blockerTrend devuelve a lo sumo 3 bloqueos ordenados y la variación frente al periodo anterior', () => {
+    const { items, total } = blockerTrend(data.evidence, now, 30);
+    expect(items.length).toBeLessThanOrEqual(3);
+    for (let i = 1; i < items.length; i++) expect(items[i - 1]!.count).toBeGreaterThanOrEqual(items[i]!.count);
+    expect(total).toBeGreaterThan(0);
+    for (const i of items) expect(i.delta).toBe(i.count - i.previous);
+  });
+
+  it('domainGaps: con + sin evidencia suma el total de cada dominio', () => {
+    for (const g of domainGaps(data.concepts, data.challenges, data.evidence, now, 30)) expect(g.withEvidence + g.missing).toBe(g.total);
+  });
+
+  it('stagesByDomainApoyo suma lo mismo que los intentos del periodo', () => {
+    const rows = stagesByDomainApoyo(data.evidence, data.challenges, now, 90);
+    expect(rows.reduce((s, r) => s + r.total, 0)).toBe(data.evidence.length);
+  });
+
+  it('performanceByDifficulty cuenta todos los intentos', () => {
+    const rows = performanceByDifficulty(data.evidence, data.challenges);
+    expect(rows.reduce((s, r) => s + r.attempts, 0)).toBe(data.evidence.length);
+  });
+
+  it('activityHeatmap devuelve un día por posición, con niveles 0–4', () => {
+    const cells = activityHeatmap(data.evidence, now, 30);
+    expect(cells).toHaveLength(30);
+    expect(cells.every((c) => c.level >= 0 && c.level <= 4)).toBe(true);
+  });
+
+  it('periodActivity cuenta días y racha dentro del periodo', () => {
+    const { practicedDays, longest } = periodActivity(data.evidence, now, 7);
+    expect(practicedDays).toBeLessThanOrEqual(7);
+    expect(longest).toBeLessThanOrEqual(practicedDays);
+  });
+
+  it('líneas de lectura siguen las plantillas de UI-UX §6', () => {
+    const { items, total } = blockerTrend(data.evidence, now, 30);
+    expect(weaknessReadingLine(items, total, 30)).toMatch(/es el bloqueo más frecuente: \d+ de \d+ en 30 días\.$/);
+    expect(weaknessReadingLine([], 0, 30)).toContain('Sin bloqueos');
+    expect(gapsReadingLine(domainGaps(data.concepts, data.challenges, data.evidence, now, 30))).toMatch(/tiene la mayor brecha: \d+ de \d+ conceptos sin evidencia en 30 días\.$/);
+    expect(domainsReadingLine(stagesByDomainApoyo(data.evidence, data.challenges, now, 90))).toMatch(/es el dominio que más practicaste \(\d+ de \d+\)\.$/);
+    expect(difficultyReadingLine(performanceByDifficulty(data.evidence, data.challenges))).toMatch(/es donde más te desvías: /);
+    expect(activityReadingLine(5, 30, 1)).toBe('Practicaste 5 de 30 días. Racha más larga del periodo: 1 día.');
+  });
+});
