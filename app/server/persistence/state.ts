@@ -38,6 +38,7 @@ export async function readState(opts: ReadStateOptions): Promise<StatePayload> {
     started: {},
     invalid: scan.invalid,
     problems: [],
+    analysis: { pending: [], running: false, failed: {} },
   };
   for (const { dir, challenge } of scan.loaded) {
     payload.data.challenges.push(challenge);
@@ -53,5 +54,9 @@ export async function readState(opts: ReadStateOptions): Promise<StatePayload> {
       payload.problems.push(err.message);
     }
   }
+  payload.data.observations = graph.observations ?? [];
+  payload.data.candidates = graph.candidates ?? [];
+  const analyzed = new Set(payload.data.observations.map((o) => o.evidenceId));
+  payload.analysis.pending = payload.data.evidence.filter((e) => !analyzed.has(e.id)).map((e) => e.id);
   return payload;
 }

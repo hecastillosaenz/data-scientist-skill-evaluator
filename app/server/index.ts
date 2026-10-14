@@ -12,7 +12,7 @@ function openBrowser(url: string): void {
   spawn(cmd, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
 }
 
-const app = await buildApp();
+const app = await buildApp({ autoAnalyze: true });
 const url = await startServer(app, Number(process.env.PORT ?? DEFAULT_PORT));
 console.log(`Orquestador local en ${url}`);
 if (process.argv.includes('--open')) openBrowser(url);

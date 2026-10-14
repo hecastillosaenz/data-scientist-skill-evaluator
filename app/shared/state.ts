@@ -16,4 +16,13 @@ export interface StatePayload {
   invalid: InvalidChallengeInfo[];
   /** Archivos de progreso ilegibles (R33): se muestran en un aviso, no se tocan. */
   problems: string[];
+  /** Estado del Analista (R12, R42). */
+  analysis: {
+    /** Evidence sin observación: aún no procesadas por el Analista. */
+    pending: string[];
+    /** Hay un análisis en curso o en cola. */
+    running: boolean;
+    /** Análisis que fallaron en esta sesión, con su motivo. */
+    failed: Record<string, string>;
+  };
 }

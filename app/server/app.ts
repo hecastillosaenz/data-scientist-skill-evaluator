@@ -8,6 +8,8 @@ import { streamNdjson } from './ndjson';
 import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
 import { registerStateRoutes } from './persistence/routes';
+import { analyzeEvidence, AnalystQueue, type AnalystDeps } from './analyst/analyst-service';
+import { readState } from './persistence/state';
 import { loadCalibration } from './generator/calibration';
 import { generateChallenge, type GenerateDeps } from './generator/generator-service';
 import { pendingGeneration } from './generator/workspace';
@@ -27,9 +29,13 @@ export type BuildAppOptions = {
   now?: () => Date;
   /** Dependencias de la generación (agente, intérprete): se sustituyen en los tests. */
   generateDeps?: Partial<GenerateDeps>;
+  /** Analiza en segundo plano cada Evidence nueva (R12). Apagado por defecto; `index.ts` lo enciende. */
+  autoAnalyze?: boolean;
+  /** Dependencias del Analista (agente): se sustituyen en los tests. */
+  analystDeps?: Partial<AnalystDeps>;
 };
 
-export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string };
+export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string; analyst: AnalystQueue };
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
   const mutex = options.mutex ?? new OperationMutex();
@@ -40,6 +46,17 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
   const app = Fastify() as unknown as App;
   app.decorate('mutex', mutex);
   app.decorate('repoRoot', repoRoot);
+
+  // Analista (R12): cola serial en segundo plano con su propio candado; no usa el mutex de verificación ni de generación.
+  const shutdown = new AbortController();
+  const analyst = new AnalystQueue((evidenceId) =>
+    analyzeEvidence({ repoRoot, evidenceId, signal: shutdown.signal, ...(options.analystDeps ? { deps: { ...options.analystDeps, ...(options.now ? { now: options.now } : {}) } } : options.now ? { deps: { now: options.now } } : {}) }),
+  );
+  app.decorate('analyst', analyst);
+  app.addHook('onClose', async () => {
+    shutdown.abort();
+    await analyst.idle();
+  });
 
   app.setErrorHandler((err: Error, _req, reply) => {
     if (err instanceof OperationBusyError) {
@@ -63,7 +80,30 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
     return { challenges: loaded.map((c) => c.challenge), invalid };
   });
 
-  registerStateRoutes(app, { repoRoot, strict: options.strictChallenges ?? true, ...(options.now ? { now: options.now } : {}) });
+  registerStateRoutes(app, {
+    repoRoot,
+    strict: options.strictChallenges ?? true,
+    ...(options.now ? { now: options.now } : {}),
+    onEvidenceSaved: (id) => options.autoAnalyze && analyst.enqueue(id),
+    analystStatus: () => {
+      const s = analyst.status();
+      return { running: s.running !== null || s.queued.length > 0, failed: s.failed };
+    },
+  });
+
+  /** Estado del Analista: lo pendiente (Evidence sin observación), lo que corre y lo que falló. */
+  app.get('/api/analysis', async () => {
+    const state = await readState({ repoRoot, strict: options.strictChallenges ?? true });
+    const s = analyst.status();
+    return { running: s.running, queued: s.queued.length, pending: state.analysis.pending, failed: s.failed };
+  });
+
+  /** «Analizar ahora» (R12): encola lo pendiente. No arranca solo al iniciar el servidor, para evitar gasto sorpresa. */
+  app.post('/api/analysis/pending', async () => {
+    const state = await readState({ repoRoot, strict: options.strictChallenges ?? true });
+    for (const id of state.analysis.pending) analyst.enqueue(id);
+    return { queued: state.analysis.pending.length };
+  });
 
   /**
    * Verificación en vivo (R26): NDJSON `step | output | tool | feedback | result | done | error`.

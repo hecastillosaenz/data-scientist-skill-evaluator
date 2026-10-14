@@ -25,6 +25,10 @@ export interface StateRoutesOptions {
   strict: boolean;
   /** Reloj inyectable para las fechas que pone el servidor (inicio, cambios de Apoyo). */
   now?: () => Date;
+  /** Se llama al guardar una Evidence nueva (R12: dispara el análisis en segundo plano). */
+  onEvidenceSaved?: (evidenceId: string) => void;
+  /** Estado en vivo del Analista para `GET /api/state`. */
+  analystStatus?: () => { running: boolean; failed: Record<string, string> };
 }
 
 /**
@@ -52,7 +56,10 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
 
   app.get('/api/state', async (_req, reply) => {
     try {
-      return await gatherState();
+      const state = await gatherState();
+      const live = opts.analystStatus?.();
+      if (live) state.analysis = { ...state.analysis, running: live.running, failed: live.failed };
+      return state;
     } catch (err) {
       return sendError(reply, err);
     }
@@ -135,6 +142,7 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
         const stage = stages.get(evidence.stageId)!;
         return { entries: [evidenceEntry(evidence, stage.number, stage.title)], result: false };
       });
+      if (!duplicate) opts.onEvidenceSaved?.(evidence.id);
       return { evidence, duplicate };
     } catch (err) {
       return sendError(reply, err);
