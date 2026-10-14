@@ -135,7 +135,7 @@ const run: Harness['run'] = async (opts = {}) =>
           calls.push({ phase, maxUsd: o.maxUsd, message: o.message });
           const answer = await script(o, phase, calls.filter((c) => c.phase === phase).length);
           if (answer instanceof Error) throw answer;
-          return { text: answer, cost: 0.4, sessionId: null };
+          return { text: answer, cost: 0.2, sessionId: null };
         },
         ...opts.deps,
       },
@@ -169,7 +169,7 @@ describe.skipIf(!hasDuckdb)('Generador (R38, R39)', () => {
     const events = await run();
     expect(errorOf(events)).toBeUndefined();
     expect(types(events).at(-2)).toBe('result');
-    expect(last(events)).toMatchObject({ type: 'done', cost: 2 }); // 5 llamadas × 0,4
+    expect(last(events)).toMatchObject({ type: 'done', cost: 1 }); // 5 llamadas × 0,2
     const steps = events.filter((e) => e.type === 'step' && e.status === 'ok').map((e) => (e as { id: string }).id);
     expect(steps).toEqual(['plan', 'esqueleto', 'etapa-1', 'etapa-2', 'etapa-3', 'test', 'publicar']);
 

@@ -17,7 +17,7 @@ export type GenerateErrorCode =
  */
 export type GenerateEvent =
   | { type: 'plan'; plan: ChallengePlan }
-  | { type: 'step'; id: string; label: string; status: 'running' | 'ok' | 'error'; detail?: string }
+  | { type: 'step'; id: string; label: string; status: 'running' | 'ok' | 'error'; detail?: string; /** Costo de la fase en US$ (llamadas al Generador, reparaciones incluidas). */ cost?: number }
   | { type: 'tool'; text: string }
   | { type: 'result'; challengeId: string; title: string }
   | {

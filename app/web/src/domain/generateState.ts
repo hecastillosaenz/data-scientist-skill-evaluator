@@ -6,6 +6,7 @@ export interface GenerateStep {
   label: string;
   status: 'running' | 'ok' | 'error';
   detail?: string;
+  cost?: number;
 }
 
 export interface GenerateState {
@@ -28,7 +29,7 @@ export function reduceGenerate(state: GenerateState, event: GenerateEvent): Gene
     case 'plan':
       return { ...state, plan: event.plan };
     case 'step': {
-      const next: GenerateStep = { id: event.id, label: event.label, status: event.status, ...(event.detail ? { detail: event.detail } : {}) };
+      const next: GenerateStep = { id: event.id, label: event.label, status: event.status, ...(event.detail ? { detail: event.detail } : {}), ...(event.cost !== undefined ? { cost: event.cost } : {}) };
       const index = state.steps.findIndex((s) => s.id === event.id);
       return { ...state, steps: index === -1 ? [...state.steps, next] : state.steps.map((s, i) => (i === index ? next : s)) };
     }

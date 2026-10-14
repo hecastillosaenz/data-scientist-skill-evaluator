@@ -50,7 +50,7 @@ const defaults: GenerateDeps = { runAgent: defaultRunAgent, hasClaude: () => def
 const MIN_CALL_USD = 0.05;
 const MAX_EXTRA_CONCEPTS = 3;
 
-const step = (id: string, label: string, status: 'running' | 'ok' | 'error', detail?: string): GenerateEvent => ({ type: 'step', id, label, status, ...(detail ? { detail } : {}) });
+const step = (id: string, label: string, status: 'running' | 'ok' | 'error', detail?: string, cost?: number): GenerateEvent => ({ type: 'step', id, label, status, ...(detail ? { detail } : {}), ...(cost !== undefined ? { cost: Math.round(cost * 10_000) / 10_000 } : {}) });
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isString = (v: unknown): v is string => typeof v === 'string';
 
@@ -292,18 +292,22 @@ async function* runPhase<T>(
     }
     if (aborted()) throw new AgentError('Generación cancelada.', 'aborted');
     previous = text;
+    if (process.env.DSC_DEBUG_DIR) {
+      await mkdir(process.env.DSC_DEBUG_DIR, { recursive: true });
+      await writeFile(path.join(process.env.DSC_DEBUG_DIR, `${ctx.state.plan.id}-${id}-intento${attempt}.txt`), text);
+    }
 
     const json = extractJson(text);
     const checked = json.ok ? await validate(json.value, params.signal) : { errors: [json.error] };
     if (checked.errors.length === 0 && checked.value !== undefined) {
-      yield step(id, label, 'ok', attempt > 0 ? `Listo tras ${attempt} ${attempt === 1 ? 'reparación' : 'reparaciones'}` : undefined);
+      yield step(id, label, 'ok', attempt > 0 ? `Listo tras ${attempt} ${attempt === 1 ? 'reparación' : 'reparaciones'}` : undefined, spent);
       return checked.value;
     }
     errors = checked.errors;
     if (attempt < config.reparacionesPorFase) yield step(id, label, 'running', `Reparando (${attempt + 1} de ${config.reparacionesPorFase}): ${errors[0]}`);
   }
 
-  yield step(id, label, 'error', errors[0]);
+  yield step(id, label, 'error', errors[0], spent);
   yield {
     type: 'error',
     code: 'invalid_output',

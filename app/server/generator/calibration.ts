@@ -11,7 +11,7 @@ export interface CalibrationConfig {
   diasOlvido: number;
   /** Cuántos challenges recientes no pueden repetir dataset ni sector. */
   ventanaTemas: number;
-  /** Tope de `--max-budget-usd` por fase de generación (provisional hasta medir el costo real). */
+  /** Tope de `--max-budget-usd` por fase de generación: medido en una generación real (ver SDD §8.4). */
   presupuestoUsdPorFase: number;
   reparacionesPorFase: number;
   horasConservacion: number;
@@ -22,7 +22,7 @@ export const DEFAULT_CALIBRATION: CalibrationConfig = {
   etapasPorChallenge: 3,
   diasOlvido: 21,
   ventanaTemas: 3,
-  presupuestoUsdPorFase: 1.5,
+  presupuestoUsdPorFase: 0.75,
   reparacionesPorFase: 2,
   horasConservacion: 24,
 };

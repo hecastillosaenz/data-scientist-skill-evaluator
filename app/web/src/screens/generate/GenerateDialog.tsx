@@ -128,6 +128,7 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
                   <span className={styles.stepText}>
                     <span>{s.label}</span>
                     {s.detail && <span className={styles.muted}>{s.detail}</span>}
+                    {s.cost !== undefined && s.status === 'ok' && s.id !== 'plan' && <span className={styles.muted}>US$ {s.cost.toFixed(2).replace('.', ',')}</span>}
                   </span>
                 </li>
               ))}
