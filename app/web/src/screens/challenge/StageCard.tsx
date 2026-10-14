@@ -7,7 +7,6 @@ import { DomainTile } from '../../components/DomainTile';
 import { Markdown } from '../../components/Markdown';
 import { ResultTable } from '../../components/ResultTable';
 import { Segmented } from '../../components/Segmented';
-import { TimerControl } from '../../components/TimerControl';
 import type { StageResult } from '../../domain/simulate';
 import type { VerifyState } from '../../domain/verifyState';
 import { VerificationPanel } from './VerificationPanel';
@@ -112,11 +111,6 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
       {ui.open && (
         <div id={panelId} className={styles.body}>
           <Markdown>{stage.description}</Markdown>
-
-          <section className={styles.section} aria-label="Cronómetro">
-            <TimerControl stageId={stage.id} targetMinutes={stage.estimatedMinutes} />
-            <p className={styles.note}>Investigar los conceptos y leer la teoría no cuentan en el Tiempo real: inicia el cronómetro cuando empieces a resolver.</p>
-          </section>
 
           {showGuided && (
             <>

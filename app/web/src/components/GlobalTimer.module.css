@@ -1,0 +1,15 @@
+.wrap { position: fixed; top: 14px; right: 24px; z-index: 30; }
+.pill { display: inline-flex; align-items: center; height: 42px; padding: 3px; border-radius: 999px; background: var(--btn-bg); box-shadow: var(--shadow-pop); }
+.on .pill { background: var(--primary); color: var(--primary-fg); }
+.clockBtn { display: inline-flex; align-items: center; gap: 8px; height: 100%; padding: 0 12px 0 14px; border: 0; border-radius: 999px; background: none; color: inherit; font-size: 14px; font-weight: 500; }
+.clock { font-size: 14px; min-width: 46px; text-align: left; }
+.toggle { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); }
+.on .toggle { background: color-mix(in srgb, var(--primary-fg) 20%, transparent); color: var(--primary-fg); }
+.menu { position: absolute; top: calc(100% + 8px); right: 0; width: 300px; display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow-pop); }
+.menu dl { display: grid; gap: 6px; margin: 0; }
+.menu dl div { display: flex; justify-content: space-between; font-size: 14px; }
+.menu dt { color: var(--muted); }
+.menu dd { margin: 0; color: var(--ink); font-weight: 500; }
+.menu p { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted); text-align: justify; hyphens: auto; }
+.confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--ink); }
+@media (max-width: 859px) { .wrap { top: 12px; left: 12px; right: auto; } .menu { right: auto; left: 0; width: min(300px, calc(100vw - 24px)); } }

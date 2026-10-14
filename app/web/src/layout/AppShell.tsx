@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router';
 import { ChartLine, House, ListChecks, Network, PlayCircle, RefreshCw } from 'lucide-react';
 import { SampleDataTag } from '../components/cards';
-import { RunningTimerChip } from '../components/RunningTimerChip';
+import { GapDialog } from '../components/GapDialog';
+import { GlobalTimer } from '../components/GlobalTimer';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { USING_SAMPLE_DATA } from '../data/repository';
 import { useApp } from '../data/DataContext';
@@ -45,7 +46,8 @@ export function AppShell() {
           <span>{name}</span>
         </div>
       </nav>
-      <RunningTimerChip />
+      <GlobalTimer />
+      <GapDialog />
       <main className={styles.main}>
         <div className={styles.content}>
           <Outlet />

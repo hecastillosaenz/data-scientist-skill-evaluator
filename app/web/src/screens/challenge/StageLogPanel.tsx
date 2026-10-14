@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pause, Pencil, Play } from 'lucide-react';
 import { BLOCKER_LABEL } from '../../../../shared/domains';
 import type { Blocker, Stage } from '../../../../shared/types';
 import { Card, StickyPanel } from '../../components/cards';
 import { FilterChip } from '../../components/FilterChip';
-import { TimerControl } from '../../components/TimerControl';
 import { useTimekeeper } from '../../data/TimekeeperContext';
 import type { StageResult } from '../../domain/simulate';
-import { toMinutes } from '../../domain/timekeeper';
+import { formatClock, toMinutes } from '../../domain/timekeeper';
 import styles from './StageLogPanel.module.css';
 
 export interface RegisterPayload {
@@ -28,17 +27,17 @@ const BLOCKERS = Object.keys(BLOCKER_LABEL) as Blocker[];
 
 /**
  * «Registro de la etapa» (sustituye a «Entrega»): la resolución ocurre en el notebook de VS Code (HU5),
- * así que aquí solo se registra cómo fue: tiempo real (cronómetro, R20), dónde te trabaste y notas (HU9).
+ * así que aquí solo se registra cómo fue: tiempo real (la vuelta del cronómetro global, R20), dónde te trabaste y notas (HU9).
  */
 export function StageLogPanel({ stage, result, onRegister }: Props) {
   // Se remonta al cambiar de etapa (key en el padre), así los campos arrancan limpios por etapa.
-  const { elapsed, reset } = useTimekeeper();
+  const { running, lap, takeLap, start, pause } = useTimekeeper();
   const [manual, setManual] = useState<number | null>(null);
   const [blocker, setBlocker] = useState<Blocker | null>(null);
   const [notes, setNotes] = useState('');
   const [saved, setSaved] = useState(false);
 
-  const measured = toMinutes(elapsed(stage.id));
+  const measured = toMinutes(lap);
   const minutes = manual ?? measured;
   const canRegister = !!result && minutes > 0;
 
@@ -50,11 +49,26 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
           <p className={styles.sub}>{stage.title}</p>
         </div>
 
-        <TimerControl stageId={stage.id} targetMinutes={stage.estimatedMinutes} variant="large" />
+        <div className={styles.lap}>
+          <div className={styles.lapHead}>
+            <p className="field-label">Tiempo de esta etapa</p>
+            <button type="button" className={`btn btn-sm ${running ? '' : 'btn-primary'}`} onClick={running ? pause : start}>
+              {running ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+              {running ? 'Pausar' : lap > 0 ? 'Reanudar' : 'Iniciar'}
+            </button>
+          </div>
+          <p className={`${styles.lapClock} mono`} role="timer" aria-live="off">{formatClock(lap)}</p>
+          <div className={styles.track} aria-hidden="true"><span style={{ width: `${Math.round(Math.min(1, lap / (stage.estimatedMinutes * 60_000)) * 100)}%` }} /></div>
+          <p className={styles.hint}>
+            Objetivo <span className="mono">{stage.estimatedMinutes} min</span>
+            {lap > stage.estimatedMinutes * 60_000 && <> · <span className="mono">+{Math.max(1, Math.round((lap - stage.estimatedMinutes * 60_000) / 60_000))} min</span> sobre el objetivo</>}
+            {' · '}es el tiempo desde tu último registro, del cronómetro global.
+          </p>
+        </div>
 
         <div className={styles.timeRow}>
           <div>
-            <p className="field-label">Tiempo real</p>
+            <p className="field-label">Tiempo que se registrará</p>
             {manual === null ? (
               <p className={`${styles.minutes} mono`}>{minutes > 0 ? `${minutes} min` : 'Sin medir'}</p>
             ) : (
@@ -105,7 +119,8 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
               ...(blocker ? { blocker } : {}),
               ...(notes.trim() ? { notes: notes.trim() } : {}),
             });
-            reset(stage.id);
+            // Toma la vuelta: la siguiente etapa empieza a contar desde aquí (el reloj global no se reinicia).
+            takeLap();
             setSaved(true);
           }}
         >
@@ -113,7 +128,7 @@ export function StageLogPanel({ stage, result, onRegister }: Props) {
         </button>
         {!canRegister && (
           <p className={styles.hint}>
-            {!result ? 'Verifica o evalúa la etapa antes de registrarla.' : 'Inicia el cronómetro o edita el tiempo para registrarla.'}
+            {!result ? 'Verifica o evalúa la etapa antes de registrarla.' : 'Inicia el cronómetro global o edita el tiempo para registrarla.'}
           </p>
         )}
         {saved && (

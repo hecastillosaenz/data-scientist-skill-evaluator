@@ -1,5 +1,10 @@
 .card { display: flex; flex-direction: column; gap: 18px; }
 .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.lap { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--sunk); }
+.lapHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lapClock { margin: 0; font-size: 34px; font-weight: 500; line-height: 1; color: var(--ink); }
+.track { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.track span { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
 .timeRow { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .minutes { margin: 2px 0 0; font-size: 20px; font-weight: 500; color: var(--ink); }
 .field { width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; min-height: 44px; }

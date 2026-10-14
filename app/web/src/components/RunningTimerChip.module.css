@@ -1,4 +1,0 @@
-.chip { position: fixed; top: 14px; right: 24px; z-index: 30; display: inline-flex; align-items: center; gap: 8px; max-width: min(420px, calc(100vw - 48px)); height: 40px; padding: 0 14px; border-radius: 999px; background: var(--primary); color: var(--primary-fg); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-pop); text-decoration: none; }
-.chip:hover { text-decoration: none; opacity: 0.92; }
-.label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85; }
-@media (max-width: 859px) { .chip { top: 12px; left: 12px; right: auto; max-width: calc(100vw - 150px); } }
