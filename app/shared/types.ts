@@ -146,6 +146,16 @@ export interface TestQuestion {
   explanation: string;
 }
 
+/** Objetivos del reto (R28): qué busca, qué obtendrás al terminar y qué habilidades entrena. */
+export interface ChallengeObjectives {
+  /** Qué busca el challenge (1–2 frases). */
+  lookingFor: string;
+  /** Resultados concretos que tendrás al terminar. */
+  outcomes: string[];
+  /** Habilidades que entrena. */
+  skills: string[];
+}
+
 export interface Challenge {
   id: string;
   number: number;
@@ -154,6 +164,7 @@ export interface Challenge {
   difficulty: Difficulty;
   /** Sugerido por la cola de repaso. El estado del challenge se deriva de la evidencia. */
   recommended: boolean;
+  objectives: ChallengeObjectives;
   /** Escenario de negocio: rol, organización y decisión (Markdown). */
   scenario: string;
   /** Tarea concreta del challenge (Markdown). */

@@ -131,7 +131,7 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R25 | Dado una petición al endpoint de verificación con `Host` distinto de `127.0.0.1:<puerto>`, entonces se rechaza sin lanzar ningún proceso. |
 | AC-R26 | Dado una verificación en curso, cuando el usuario pulsa "Detener", entonces el proceso se cancela y el panel lo indica; y los eventos llegan en el orden `step … feedback … result … done`. |
 | AC-R28 | Dado un `challenge.json` sin objetivos, cuando se valida, entonces se rechaza con un error que nombra el campo faltante. |
-| AC-R29 | Dado un `challenge.json` que no cumple el esquema, cuando el orquestador lo carga, entonces lo rechaza con un mensaje explícito; y `challenge-001` y todos los ejemplos lo cumplen. |
+| AC-R29 | Dado un `challenge.json` que no cumple el esquema, cuando el orquestador lo carga o verifica, entonces lo rechaza con un mensaje que nombra el campo; `challenge-001` cumple el modo estricto y los ejemplos compactos cumplen la estructura. |
 | AC-R30 | Dado un cronómetro corriendo y 10 minutos sin señal, cuando la app vuelve, entonces pregunta qué hacer con el intervalo y, por defecto, no lo suma. |
 | AC-R31 | Dada una debilidad por fallos, cuando se abre su análisis, entonces se ven la evidencia, las causas raíz, el error común y los pasos de mejora. |
 | AC-R32 | Dado el grafo unificado recién abierto, entonces se ven nodos de los cinco tipos y los 6 dominios, y filtrar por un tipo atenúa los demás sin ocultarlos. |
@@ -310,4 +310,6 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Formato como contrato para los agentes (R29).** `challenge.schema.json` (JSON Schema) y las plantillas por Tipo en `configuracion-retos/plantillas/` fijan cómo se presenta un caso: escenario → objetivos → datos → etapas (teoría, ejemplo, paso a paso, esqueleto, entregable, solución) → preguntas de negocio → test final. El Generador los lee y el orquestador valida su salida.
 - **Ventana de debilidad (R31)** y **grafo unificado (R32)** salen de la UI; el análisis de debilidad es determinista (deriva de la evidencia) y puede enriquecerse más adelante con el Analista.
 - **Presentación.** Texto justificado, columna de lectura centrada, tablas centradas y sin anillos alrededor de cuadrículas; la etapa desplegada se enfatiza con un sombreado gradual, no con un borde.
+- **Dos modos de validación (R29).** El orquestador valida los challenges reales en **modo estricto**: además de la estructura exige el contenido completo del Generador (todas las capas de ayuda, test final, ≥ 3 preguntas de negocio, `expected` o `asserts` en las etapas de código). Los ejemplos compactos solo cumplen la **estructura**. Un challenge rechazado no se carga y su causa se muestra al verificar y en `GET /api/challenges` (`invalid`).
+- **Contrato para los agentes.** `configuracion-retos/plantillas/` contiene `challenge.schema.json`, `contrato-generador.md` y una plantilla por tipo de reto (SQL, Python/Limpieza, Matemática, ML, Business). Es lo que el Generador (P3) lee antes de producir.
 

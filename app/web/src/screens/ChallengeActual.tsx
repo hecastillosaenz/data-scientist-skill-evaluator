@@ -7,6 +7,7 @@ import { DifficultyChip, TimeChip } from '../components/chips';
 import { DataBlock } from '../components/DataBlock';
 import { DomainTile } from '../components/DomainTile';
 import { Markdown } from '../components/Markdown';
+import { ObjectivesBlock } from '../components/ObjectivesBlock';
 import { StageBar } from '../components/StageBar';
 import { isTestUnlocked } from '../domain/finalTest';
 import { challengeMinutes } from '../domain/progress';
@@ -98,6 +99,7 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
       <div className={styles.layout}>
         <div className={styles.main}>
           <Card className={styles.statementCard}>
+            <ObjectivesBlock objectives={challenge.objectives} />
             <section className={styles.block}>
               <h2>Enunciado</h2>
               <Markdown>{challenge.scenario}</Markdown>

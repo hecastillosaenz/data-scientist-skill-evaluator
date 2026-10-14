@@ -15,7 +15,7 @@ const stage = (over: Partial<Stage>): Stage => ({
 
 const challenge = (stages: Stage[]): Challenge => ({
   id: 'c1', number: 1, title: 'c', dataset: 'd', difficulty: 2, recommended: false,
-  scenario: '', task: '', businessQuestions: [], stages,
+  objectives: { lookingFor: '', outcomes: [], skills: [] }, scenario: '', task: '', businessQuestions: [], stages,
 });
 
 const concept: Concept = { id: 'k', name: 'K', domain: 'sql', prerequisites: [] };

@@ -337,5 +337,19 @@
       "tolerance": 0,
       "explanation": "Del 19 de julio al 1 de octubre hay 12 + 31 + 30 + 1 = **74 días**."
     }
-  ]
+  ],
+  "objectives": {
+    "lookingFor": "Que construyas la tabla RFM por cliente que alimentará la segmentación, cuidando a los clientes sin pedidos y la reproducibilidad de la fecha de corte.",
+    "outcomes": [
+      "Una tabla con recencia, frecuencia y monto por cliente, incluido el que aún no compra.",
+      "La habilidad de fijar una fecha de corte explícita para que el análisis sea reproducible.",
+      "Los insumos listos para agrupar con K-means en la etapa siguiente."
+    ],
+    "skills": [
+      "Agregación por entidad",
+      "Aritmética de fechas",
+      "LEFT JOIN",
+      "Variables RFM"
+    ]
+  }
 }

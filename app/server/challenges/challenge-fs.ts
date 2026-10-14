@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Challenge } from '../../shared/types';
 import { runPython } from '../verify/notebook-runner';
+import { validateChallenge } from './validate';
 
 export interface LoadedChallenge {
   /** Ruta absoluta de `challenge-N/`. */
@@ -10,32 +11,49 @@ export interface LoadedChallenge {
   challenge: Challenge;
 }
 
-const isChallenge = (value: unknown): value is Challenge =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as Challenge).id === 'string' &&
-  Array.isArray((value as Challenge).stages) &&
-  (value as Challenge).stages.every((s) => typeof s?.number === 'number' && typeof s?.id === 'string');
+export interface InvalidChallenge {
+  /** Nombre de la carpeta, p. ej. `challenge-002`. */
+  folder: string;
+  /** Errores en español (R29): faltan campos, no cumple el esquema, JSON ilegible… */
+  errors: string[];
+}
 
-/** Lee el `challenge.json` de cada carpeta `challenge-N` (fuente de verdad, SDD §6.2). Las carpetas inválidas se omiten. */
-export async function listChallenges(repoRoot: string): Promise<LoadedChallenge[]> {
+export interface ChallengeScan {
+  loaded: LoadedChallenge[];
+  invalid: InvalidChallenge[];
+}
+
+/**
+ * Lee el `challenge.json` de cada carpeta `challenge-N` (fuente de verdad, SDD §6.2) y lo valida contra el contrato
+ * (R29, modo estricto). Los inválidos no se cargan, pero se devuelven con sus errores para poder explicarlos.
+ */
+export async function scanChallenges(repoRoot: string, options: { strict?: boolean } = {}): Promise<ChallengeScan> {
   let entries: string[];
   try {
     entries = await readdir(repoRoot);
   } catch {
-    return [];
+    return { loaded: [], invalid: [] };
   }
-  const loaded: LoadedChallenge[] = [];
+  const scan: ChallengeScan = { loaded: [], invalid: [] };
   for (const name of entries.filter((n) => /^challenge-\d+$/.test(n)).sort()) {
     const dir = path.join(repoRoot, name);
+    let json: unknown;
     try {
-      const json: unknown = JSON.parse(await readFile(path.join(dir, 'challenge.json'), 'utf8'));
-      if (isChallenge(json)) loaded.push({ dir, challenge: json });
-    } catch {
-      /* carpeta sin challenge.json válido: se omite */
+      json = JSON.parse(await readFile(path.join(dir, 'challenge.json'), 'utf8'));
+    } catch (err) {
+      const missing = (err as NodeJS.ErrnoException).code === 'ENOENT';
+      scan.invalid.push({ folder: name, errors: [missing ? `La carpeta ${name}/ no tiene challenge.json.` : `${name}/challenge.json no es un JSON válido.`] });
+      continue;
     }
+    const result = validateChallenge(json, { strict: options.strict ?? true });
+    if (result.ok && (json as Challenge).id === name) scan.loaded.push({ dir, challenge: json as Challenge });
+    else scan.invalid.push({ folder: name, errors: result.ok ? [`El id del challenge («${(json as Challenge).id}») debe coincidir con el nombre de la carpeta («${name}»).`] : result.errors });
   }
-  return loaded;
+  return scan;
+}
+
+export async function listChallenges(repoRoot: string): Promise<LoadedChallenge[]> {
+  return (await scanChallenges(repoRoot)).loaded;
 }
 
 /** Busca por id entre las carpetas escaneadas; nunca une un id del usuario a una ruta (sin path traversal). */

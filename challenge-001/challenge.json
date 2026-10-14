@@ -330,6 +330,10 @@
             "body": "Un ratio alto con pocas pólizas es una **señal para investigar**, no evidencia suficiente para actuar. Nombra siempre el tamaño de la muestra que sostiene la cifra."
           }
         ],
+        "workedExample": {
+          "domain": "gimnasio",
+          "body": "Un gimnasio descubre que el plan «Premium» tiene una **tasa de cancelación del 14 %** frente al 6 % del plan básico, pero solo tiene 25 socios Premium.\n\n> **Recomiendo investigar el plan Premium antes de rediseñarlo.** Su cancelación es de 14 % (3,5 de 25 socios) frente a 6 % en el básico, pero con solo 25 socios un par de bajas mueven la cifra varios puntos, así que es una señal y no una prueba. Antes de decidir pediría el motivo de cada baja y el historial de seis meses.\n\nObserva el patrón: **decisión → una cifra → la limitación → el siguiente paso**."
+        },
         "steps": [
           "Abre con la decisión que propones (investigar, retarifar, mantener).",
           "Respáldala con **una** cifra del resultado (por ejemplo, el ratio de hogar).",
@@ -450,5 +454,19 @@
       "rubric": "Menciona que la muestra es pequeña o que un solo siniestro grande explica el resultado, y que es una señal para investigar, no evidencia suficiente.",
       "explanation": "Con 2 pólizas y un único siniestro de \\$1 500 la variabilidad domina: es una **señal para investigar**, no evidencia para retarifar. Haría falta más exposición y más años."
     }
-  ]
+  ],
+  "objectives": {
+    "lookingFor": "Que calcules una métrica financiera correcta uniendo tablas de distinto grano, sin inflar las primas por el fan-out, y que sepas comunicar con honestidad cuánta confianza merece el resultado.",
+    "outcomes": [
+      "Una consulta con CTE y LEFT JOIN que devuelve el ratio de siniestralidad por tipo de póliza y coincide con la tabla esperada.",
+      "La capacidad de explicar por qué un JOIN directo da 42,86 % en auto en lugar de 60 %.",
+      "Una recomendación de 3 a 5 líneas para un comité que distingue una señal de una evidencia."
+    ],
+    "skills": [
+      "Granularidad y fan-out",
+      "CTE y LEFT JOIN",
+      "Manejo de NULL",
+      "Comunicación con negocio"
+    ]
+  }
 }

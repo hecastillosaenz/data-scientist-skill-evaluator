@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data-scientist-challenges.local/challenge.schema.json",
+  "title": "Challenge",
+  "description": "Contrato de `challenge-N/challenge.json` (SDD R29). Lo lee el Generador para saber qué producir y lo valida el orquestador antes de aceptar un challenge. Todo el texto va en español. Los campos de tipo «Markdown» admiten fórmulas LaTeX ($…$ y $$…$$), tablas y bloques de código; escapa los signos de moneda como \\$.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "number", "title", "dataset", "difficulty", "recommended", "objectives", "scenario", "task", "businessQuestions", "stages"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^(challenge-\\d{3,}|c\\d{3,})$", "description": "Para challenges reales es el nombre de la carpeta, p. ej. `challenge-001`." },
+    "number": { "type": "integer", "minimum": 1 },
+    "title": { "type": "string", "minLength": 3, "description": "Título corto y concreto, con el dominio del negocio, p. ej. «Seguros: siniestralidad por tipo de póliza»." },
+    "dataset": { "type": "string", "minLength": 1, "description": "Nombre corto del conjunto de datos, p. ej. «Insurance Claims»." },
+    "difficulty": { "type": "integer", "enum": [1, 2, 3], "description": "1 = Básico, 2 = Intermedio, 3 = Avanzado." },
+    "recommended": { "type": "boolean", "description": "Sugerido por la cola de Repaso. El estado del challenge se deriva de la evidencia, no se escribe aquí." },
+    "objectives": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lookingFor", "outcomes", "skills"],
+      "description": "Objetivos del reto (R28): lo primero que ve el usuario.",
+      "properties": {
+        "lookingFor": { "type": "string", "minLength": 20, "description": "Qué busca el challenge, en 1–2 frases que empiezan con «Que …»." },
+        "outcomes": { "type": "array", "minItems": 2, "maxItems": 5, "items": { "type": "string", "minLength": 10 }, "description": "Qué tendrá el usuario al terminar: resultados concretos y verificables." },
+        "skills": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "type": "string", "minLength": 2 }, "description": "Habilidades que entrena, en pocas palabras." }
+      }
+    },
+    "scenario": { "type": "string", "minLength": 40, "description": "Markdown. Escenario de negocio en 2–4 líneas: rol, organización, pregunta de negocio y decisión que informa el resultado." },
+    "task": { "type": "string", "description": "Markdown. La pregunta analítica o tarea concreta del challenge (puede estar vacío en challenges de ejemplo compactos)." },
+    "data": { "$ref": "#/$defs/dataset" },
+    "businessQuestions": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/businessQuestion" },
+      "description": "Preguntas de negocio (R22): específicas al caso, no genéricas. Básico 3, Intermedio 4, Avanzado 5."
+    },
+    "finalTest": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/testQuestion" },
+      "description": "Test final de retención (R21): 5–8 preguntas aplicadas atadas a un concepto."
+    },
+    "stages": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/stage" } }
+  },
+  "$defs": {
+    "cell": { "type": ["string", "number", "boolean", "null"] },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "tables"],
+      "properties": {
+        "engine": { "enum": ["duckdb", "pandas"] },
+        "tables": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/table" } },
+        "seedSql": { "type": "string", "description": "CREATE TABLE + INSERT en dialecto DuckDB/PostgreSQL. Tablas pequeñas (8–20 filas) para que la tabla esperada sea verificable. Desde Nivel 2, con imperfecciones (nulos, duplicados). Es el contenido de `datos/seed.sql` (R18)." },
+        "seedPython": { "type": "string", "description": "Alternativa para datos con volumen: código con semilla fija (`datos/seed.py`)." }
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "columns", "rowCount", "sampleRows"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "description": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "pk": { "type": "boolean" },
+              "fk": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["table", "column"],
+                "properties": { "table": { "type": "string" }, "column": { "type": "string" } }
+              },
+              "nullable": { "type": "boolean" }
+            }
+          }
+        },
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "sampleRows": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/cell" } }, "description": "Primeras filas, en el orden de `columns`." }
+      }
+    },
+    "businessQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string", "minLength": 20, "description": "Conecta ESTE resultado con una decisión: qué harías, qué le dirías a alguien no técnico, qué dato pedirías, qué riesgo tiene la conclusión." },
+        "reflectionGuide": { "type": "string", "description": "Guía de reflexión que se muestra solo después de que el usuario guarde su respuesta. No hay una única respuesta correcta." }
+      }
+    },
+    "testQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "conceptId", "bloom", "kind", "prompt", "explanation"],
+      "properties": {
+        "id": { "type": "string" },
+        "conceptId": { "type": "string", "description": "Concepto del grafo, p. ej. `sql:cte`. Debe ser un concepto que practican las etapas." },
+        "bloom": { "type": "integer", "enum": [1, 2, 3] },
+        "kind": { "enum": ["opcion_multiple", "numerica", "texto"] },
+        "prompt": { "type": "string", "minLength": 10, "description": "Markdown. Pregunta APLICADA (un caso breve), no una definición." },
+        "options": { "type": "array", "minItems": 3, "maxItems": 5, "items": { "type": "string" } },
+        "correctIndex": { "type": "integer", "minimum": 0 },
+        "answer": { "type": "number" },
+        "tolerance": { "type": "number", "minimum": 0 },
+        "rubric": { "type": "string", "description": "Criterio para preguntas de `texto`." },
+        "explanation": { "type": "string", "minLength": 10, "description": "Markdown. Por qué es correcta y qué error evita." }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "opcion_multiple" } } }, "then": { "required": ["options", "correctIndex"] } },
+        { "if": { "properties": { "kind": { "const": "numerica" } } }, "then": { "required": ["answer"] } },
+        { "if": { "properties": { "kind": { "const": "texto" } } }, "then": { "required": ["rubric"] } }
+      ]
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "challengeId", "number", "title", "domain", "difficulty", "bloom", "estimatedMinutes", "mechanism", "description", "conceptIds", "apoyo", "content"],
+      "properties": {
+        "id": { "type": "string", "description": "`<challenge.id>-s<number>`." },
+        "challengeId": { "type": "string" },
+        "number": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 3 },
+        "domain": { "enum": ["sql", "python", "math", "ml", "cleaning", "business"] },
+        "difficulty": { "type": "integer", "enum": [1, 2, 3] },
+        "bloom": { "type": "integer", "enum": [1, 2, 3, 4, 5, 6] },
+        "estimatedMinutes": { "type": "integer", "minimum": 5, "maximum": 90, "description": "Tiempo objetivo: 20–30 min es lo habitual." },
+        "mechanism": { "enum": ["codigo_assert", "rubric_claude"], "description": "`codigo_assert`: el orquestador ejecuta la celda y compara. `rubric_claude`: el Evaluador aplica la rúbrica." },
+        "description": { "type": "string", "minLength": 10, "description": "Markdown. La tarea de la etapa." },
+        "conceptIds": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "apoyo": { "enum": ["guiado", "pistas", "autonomo"], "description": "Apoyo inicial. El Generador produce TODAS las capas de ayuda y la UI muestra las que corresponden al Apoyo vigente." },
+        "content": { "$ref": "#/$defs/stageContent" }
+      }
+    },
+    "stageContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "body"],
+            "properties": { "title": { "type": "string" }, "body": { "type": "string", "description": "Markdown. Teoría aplicada: por qué importa PARA ESTE reto." } }
+          },
+          "description": "Apoyo Guiado: 3–5 ideas numeradas, con fórmulas cuando apliquen."
+        },
+        "workedExample": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["domain", "body"],
+          "properties": { "domain": { "type": "string", "description": "Dominio del negocio del ejemplo; DISTINTO al del reto." }, "body": { "type": "string", "description": "Markdown con datos y resultado verificado." } },
+          "description": "Apoyo Guiado: un ejemplo resuelto con otros datos."
+        },
+        "steps": { "type": "array", "items": { "type": "string" }, "description": "Apoyo Guiado: paso a paso (qué hacer y cómo), de 4 a 7 pasos." },
+        "hints": { "type": "array", "items": { "type": "string" }, "description": "Apoyo Pistas: qué mirar y en qué orden, SIN dar la fórmula final ni el enfoque correcto." },
+        "skeleton": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["language", "code"],
+          "properties": { "language": { "enum": ["sql", "python"] }, "code": { "type": "string", "description": "Esqueleto con `TODO` por completar. Apoyo Guiado." } }
+        },
+        "research": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["conceptId", "why", "searchEs", "searchEn"],
+            "properties": {
+              "conceptId": { "type": "string" },
+              "why": { "type": "string", "description": "Por qué importa para este reto." },
+              "searchEs": { "type": "string" },
+              "searchEn": { "type": "string" }
+            }
+          },
+          "description": "Conceptos para investigar (3–4), del más básico al más cercano al problema."
+        },
+        "deliverables": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Checklist: qué se entrega, criterio verificable, restricciones, interpretación de negocio y «Terminado cuando…»." },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["columns", "rows"],
+          "properties": { "columns": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/cell" } } } },
+          "description": "Resultado esperado de una etapa SQL o de código con tabla de salida. El Generador lo obtiene EJECUTANDO la solución de referencia (R19)."
+        },
+        "asserts": { "type": "string", "description": "Asserts de Python que ejecuta el orquestador tras la celda del usuario." },
+        "solution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": { "type": "string" },
+            "expectedResult": { "type": "string" },
+            "reasoning": { "type": "string" },
+            "conceptLinks": { "type": "string" },
+            "businessInterpretation": { "type": "string" },
+            "commonError": { "type": "string" },
+            "dsFlow": { "type": "string" },
+            "skill": { "type": "string" }
+          },
+          "description": "Solución por secciones. Se muestra solo tras abrir la solución (marca «Con ayuda»)."
+        }
+      }
+    }
+  }
+}

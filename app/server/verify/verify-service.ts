@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { Apoyo, AttemptResult, Challenge, Stage } from '../../shared/types';
 import type { VerifyEvent } from '../../shared/verify';
 import { AgentError, hasClaude as defaultHasClaude, runAgent as defaultRunAgent, type AgentRunOptions } from '../agents/agent-runner';
-import { DatasetError, findChallenge, prepareDataset } from '../challenges/challenge-fs';
+import { DatasetError, prepareDataset, scanChallenges } from '../challenges/challenge-fs';
 import { compareTables, type Comparison } from './compare';
 import { codeMessage, conceptualMessage, evaluatorSystem, parseVerdict } from './evaluator-prompts';
 import { NotebookError, dataCells, findDeliverable, markdownAnswer, parseNotebook } from './notebook-parser';
@@ -14,6 +14,8 @@ export interface VerifyDeps {
   hasClaude: () => boolean;
   /** Intérprete Python con el que se ejecutan las celdas (por defecto `.venv/bin/python` del repo). */
   python?: string;
+  /** Modo estricto del contrato (R29). En producción siempre es true; los tests con fixtures mínimos lo desactivan. */
+  strict?: boolean;
 }
 
 export interface VerifyParams {
@@ -64,7 +66,14 @@ export async function* verifyStage(params: VerifyParams): AsyncGenerator<VerifyE
   const cancelled = (): VerifyEvent => ({ type: 'error', message: 'Verificación cancelada.', code: 'aborted' });
 
   yield step('load', 'Cargando el challenge', 'running');
-  const found = await findChallenge(repoRoot, challengeId);
+  const scan = await scanChallenges(repoRoot, { strict: params.deps?.strict ?? true });
+  const found = scan.loaded.find((c) => c.challenge.id === challengeId) ?? null;
+  const rejected = scan.invalid.find((i) => i.folder === challengeId);
+  if (!found && rejected) {
+    yield step('load', 'Cargando el challenge', 'error', 'No cumple el contrato (R29)');
+    yield { type: 'error', code: 'challenge_invalido', message: `El challenge «${challengeId}» no cumple el formato y no se puede verificar:\n${rejected.errors.slice(0, 5).map((e) => `• ${e}`).join('\n')}` };
+    return;
+  }
   const stage = found?.challenge.stages.find((s) => s.number === stageNumber);
   if (!found || !stage) {
     yield step('load', 'Cargando el challenge', 'error', 'No existe');

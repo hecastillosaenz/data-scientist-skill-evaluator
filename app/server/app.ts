@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
-import { listChallenges } from './challenges/challenge-fs';
+import { scanChallenges } from './challenges/challenge-fs';
 import { hostGuard } from './guard';
 import { OperationBusyError, OperationMutex } from './mutex';
 import { streamNdjson } from './ndjson';
@@ -15,6 +15,8 @@ export type BuildAppOptions = {
   webDist?: string;
   /** Dependencias de la verificación (agente, intérprete): se sustituyen en los tests. */
   verifyDeps?: Partial<VerifyDeps>;
+  /** Modo estricto del contrato de challenges (R29); por defecto true. */
+  strictChallenges?: boolean;
 };
 
 export type App = FastifyInstance & { mutex: OperationMutex; repoRoot: string };
@@ -46,7 +48,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
   app.get('/api/status', async () => mutex.status());
 
   /** Challenges reales: `challenge-N/challenge.json`. La UI los combina con los de ejemplo. */
-  app.get('/api/challenges', async () => ({ challenges: (await listChallenges(repoRoot)).map((c) => c.challenge) }));
+  app.get('/api/challenges', async () => {
+    const { loaded, invalid } = await scanChallenges(repoRoot, { strict: options.strictChallenges ?? true });
+    return { challenges: loaded.map((c) => c.challenge), invalid };
+  });
 
   /**
    * Verificación en vivo (R26): NDJSON `step | output | tool | feedback | result | done | error`.

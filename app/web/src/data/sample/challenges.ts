@@ -1,5 +1,6 @@
 import type { Bloom, Challenge, Difficulty, DomainId, EvalMechanism, Stage, TableDef } from '../../../../shared/types';
 import { enrichChallenges } from './rich';
+import { OBJECTIVES } from './objectives';
 
 interface SchemaSpec {
   table: string;
@@ -223,6 +224,7 @@ export function buildChallenges(): Challenge[] {
       dataset: spec.dataset,
       difficulty: spec.d,
       recommended: spec.recommended ?? false,
+      objectives: OBJECTIVES[spec.title] ?? { lookingFor: `Que practiques ${spec.title.toLowerCase()}.`, outcomes: spec.stages.map((s) => s.title), skills: [] },
       scenario: spec.statement,
       task: '',
       data: { engine: 'duckdb' as const, tables: toTables(spec.schema) },

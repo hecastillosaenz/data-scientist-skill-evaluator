@@ -14,16 +14,26 @@ const python = process.env.PYTHON ?? 'python3';
 const nb = (cells: { type: 'code' | 'markdown'; src: string }[]) =>
   JSON.stringify({ cells: cells.map((c) => ({ cell_type: c.type, source: c.src, metadata: {} })), metadata: {}, nbformat: 4, nbformat_minor: 5 });
 
-const stageBase = { challengeId: 'challenge-test', domain: 'sql', difficulty: 1, bloom: 3, estimatedMinutes: 20, apoyo: 'pistas', conceptIds: [], description: 'Tarea de prueba' };
+const stageBase = { challengeId: 'challenge-001', domain: 'sql', difficulty: 1, bloom: 3, estimatedMinutes: 20, apoyo: 'pistas', conceptIds: ['sql:cte'], description: 'Tarea de prueba para la etapa' };
 
 const challenge = {
-  id: 'challenge-test',
+  id: 'challenge-001',
   number: 1,
   title: 'Challenge de prueba',
+  dataset: 'Datos de prueba',
+  difficulty: 1,
+  recommended: false,
+  objectives: { lookingFor: 'Que compruebes el flujo de verificación de punta a punta.', outcomes: ['Un resultado verificado', 'Un feedback legible'], skills: ['Verificación'] },
+  scenario: 'Escenario mínimo de prueba para el orquestador de verificación.',
+  task: '',
+  businessQuestions: [
+    { id: 'challenge-001-bq1', text: 'Pregunta de negocio de prueba número uno.' },
+    { id: 'challenge-001-bq2', text: 'Pregunta de negocio de prueba número dos.' },
+  ],
   stages: [
-    { ...stageBase, id: 'challenge-test-s1', number: 1, title: 'Etapa SQL', mechanism: 'codigo_assert', content: { deliverables: ['Devuelve k y v'], expected: { columns: ['k', 'v'], rows: [['a', 1], ['b', 2]] } } },
-    { ...stageBase, id: 'challenge-test-s2', number: 2, title: 'Etapa conceptual', domain: 'business', mechanism: 'rubric_claude', content: { deliverables: ['Recomienda algo'], solution: { code: 'REFERENCIA SECRETA' } } },
-    { ...stageBase, id: 'challenge-test-s3', number: 3, title: 'Etapa con asserts', domain: 'python', mechanism: 'codigo_assert', content: { asserts: 'assert x == 3, "x debía valer 3"' } },
+    { ...stageBase, id: 'challenge-001-s1', number: 1, title: 'Etapa SQL', mechanism: 'codigo_assert', content: { deliverables: ['Devuelve k y v'], expected: { columns: ['k', 'v'], rows: [['a', 1], ['b', 2]] } } },
+    { ...stageBase, id: 'challenge-001-s2', number: 2, title: 'Etapa conceptual', domain: 'business', mechanism: 'rubric_claude', content: { deliverables: ['Recomienda algo'], solution: { code: 'REFERENCIA SECRETA' } } },
+    { ...stageBase, id: 'challenge-001-s3', number: 3, title: 'Etapa con asserts', domain: 'python', mechanism: 'codigo_assert', content: { asserts: 'assert x == 3, "x debía valer 3"' } },
   ],
 };
 
@@ -42,6 +52,7 @@ interface AgentCall { message: string; system?: string; addDirs?: string[] }
 function fakeDeps(opts: { text?: string; hasClaude?: boolean; calls?: AgentCall[]; gate?: Promise<void> } = {}): Partial<VerifyDeps> {
   return {
     python,
+    strict: false,
     hasClaude: () => opts.hasClaude ?? true,
     runAgent: async (o: AgentRunOptions) => {
       opts.calls?.push({ message: o.message, ...(o.system ? { system: o.system } : {}), ...(o.addDirs ? { addDirs: o.addDirs } : {}) });
@@ -56,7 +67,7 @@ function fakeDeps(opts: { text?: string; hasClaude?: boolean; calls?: AgentCall[
 
 async function collect(stageNumber: number, deps: Partial<VerifyDeps>, extra: { signal?: AbortSignal; apoyo?: 'guiado' | 'pistas' | 'autonomo' } = {}): Promise<VerifyEvent[]> {
   const events: VerifyEvent[] = [];
-  for await (const e of verifyStage({ repoRoot: repo, challengeId: 'challenge-test', stageNumber, apoyo: extra.apoyo ?? 'pistas', deps, ...(extra.signal ? { signal: extra.signal } : {}) })) events.push(e);
+  for await (const e of verifyStage({ repoRoot: repo, challengeId: 'challenge-001', stageNumber, apoyo: extra.apoyo ?? 'pistas', deps, ...(extra.signal ? { signal: extra.signal } : {}) })) events.push(e);
   return events;
 }
 const summary = (events: VerifyEvent[]) => events.map((e) => (e.type === 'step' ? `${e.id}:${e.status}` : e.type));
@@ -220,12 +231,12 @@ describe('POST /api/challenges/:id/stages/:n/verify', () => {
     await app?.close();
     app = undefined;
   });
-  const url = '/api/challenges/challenge-test/stages/1/verify';
+  const url = '/api/challenges/challenge-001/stages/1/verify';
   const parse = (body: string) => body.trim().split('\n').map((l) => JSON.parse(l) as VerifyEvent);
 
   it('responde NDJSON con los eventos en orden', async () => {
     writeNotebook([{ type: 'code', src: '# Entregable - Etapa 1:\nresultado = [{"k": "a", "v": 1}, {"k": "b", "v": 2}]' }]);
-    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', verifyDeps: fakeDeps() });
+    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false, verifyDeps: fakeDeps() });
     const res = await app.inject({ method: 'POST', url, payload: { apoyo: 'guiado' } });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('application/x-ndjson');
@@ -237,7 +248,7 @@ describe('POST /api/challenges/:id/stages/:n/verify', () => {
 
   it('rechaza con 403 un Host ajeno sin lanzar ningún proceso (AC-R25)', async () => {
     const calls: AgentCall[] = [];
-    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', verifyDeps: fakeDeps({ calls }) });
+    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false, verifyDeps: fakeDeps({ calls }) });
     const res = await app.inject({ method: 'POST', url, headers: { host: 'evil.com' }, payload: {} });
     expect(res.statusCode).toBe(403);
     expect(calls).toHaveLength(0);
@@ -249,8 +260,8 @@ describe('POST /api/challenges/:id/stages/:n/verify', () => {
     writeNotebook([{ type: 'markdown', src: '# Entregable - Etapa 2:\ntexto' }]);
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));
-    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', verifyDeps: fakeDeps({ gate, text: 'ok\nVEREDICTO: correcta' }) });
-    const stage2 = '/api/challenges/challenge-test/stages/2/verify';
+    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false, verifyDeps: fakeDeps({ gate, text: 'ok\nVEREDICTO: correcta' }) });
+    const stage2 = '/api/challenges/challenge-001/stages/2/verify';
     const first = app.inject({ method: 'POST', url: stage2, payload: {} });
     await new Promise((r) => setTimeout(r, 150));
     expect((await app.inject('/api/status')).json()).toEqual({ busy: true, operation: 'verificar' });
@@ -264,13 +275,13 @@ describe('POST /api/challenges/:id/stages/:n/verify', () => {
   });
 
   it('valida el número de etapa', async () => {
-    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', verifyDeps: fakeDeps() });
-    expect((await app.inject({ method: 'POST', url: '/api/challenges/challenge-test/stages/abc/verify', payload: {} })).statusCode).toBe(400);
+    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false, verifyDeps: fakeDeps() });
+    expect((await app.inject({ method: 'POST', url: '/api/challenges/challenge-001/stages/abc/verify', payload: {} })).statusCode).toBe(400);
   });
 
   it('GET /api/challenges lista los challenge.json reales', async () => {
-    app = await buildApp({ repoRoot: repo, webDist: '/no/existe' });
+    app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false });
     const res = await app.inject('/api/challenges');
-    expect(res.json().challenges.map((c: { id: string }) => c.id)).toEqual(['challenge-test']);
+    expect(res.json().challenges.map((c: { id: string }) => c.id)).toEqual(['challenge-001']);
   });
 });

@@ -246,5 +246,19 @@
       "rubric": "Menciona la tasa base baja (el phishing es raro) y que los falsos positivos sobre muchísimos correos legítimos superan a las alertas verdaderas.",
       "explanation": "El phishing es raro (2 %), así que aunque el filtro detecte el 90 % de ellos, el 5 % de falsos positivos sobre el 98 % de correos legítimos genera más alertas falsas (0,049) que verdaderas (0,018)."
     }
-  ]
+  ],
+  "objectives": {
+    "lookingFor": "Que entiendas por qué un filtro que acierta el 90 % puede dar alertas poco confiables, y que calcules la probabilidad real con Bayes en lugar de confiar en la intuición.",
+    "outcomes": [
+      "El cálculo completo de P(F|A) con la ley de probabilidad total, con su resultado en %.",
+      "La comparación de dos prevalencias que muestra el peso de la tasa base.",
+      "Una función en Python que reproduce el cálculo y pasa sus asserts."
+    ],
+    "skills": [
+      "Probabilidad condicional",
+      "Teorema de Bayes",
+      "Tasa base",
+      "Funciones verificables en Python"
+    ]
+  }
 }
