@@ -11,7 +11,7 @@ export function RunningTimerChip() {
   const { data } = useApp();
   if (!running) return null;
   const stage = data?.challenges.flatMap((c) => c.stages).find((s) => s.id === running);
-  const challengeId = running.split('-s')[0];
+  const challengeId = /^(.*)-s\d+$/.exec(running)?.[1] ?? running;
   return (
     <Link to={`/challenge-actual/${challengeId}`} className={styles.chip} aria-label={`Cronómetro en marcha: ${formatClock(elapsed(running))}${stage ? `, etapa ${stage.number}` : ''}`}>
       <Timer size={14} strokeWidth={1.75} aria-hidden="true" />

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import { ChevronDown, Eye, EyeOff, ExternalLink, Lightbulb, Network } from 'lucide-react';
 import { APOYO_LABEL, DOMAIN_BY_ID } from '../../../../shared/domains';
-import type { Apoyo, AttemptResult, Concept, ConceptState, Stage, StageStatus } from '../../../../shared/types';
+import type { Apoyo, Concept, ConceptState, Stage, StageStatus } from '../../../../shared/types';
 import { BloomChip, DifficultyChip, StatusChip, TimeChip } from '../../components/chips';
 import { DomainTile } from '../../components/DomainTile';
 import { Markdown } from '../../components/Markdown';
@@ -9,6 +9,8 @@ import { ResultTable } from '../../components/ResultTable';
 import { Segmented } from '../../components/Segmented';
 import { TimerControl } from '../../components/TimerControl';
 import type { StageResult } from '../../domain/simulate';
+import type { VerifyState } from '../../domain/verifyState';
+import { VerificationPanel } from './VerificationPanel';
 import { initialHelp, toggleHint, toggleSolution } from '../../domain/stageHelp';
 import styles from './StageCard.module.css';
 
@@ -32,7 +34,6 @@ const APOYO_OPTIONS: { value: Apoyo; label: string }[] = [
   { value: 'autonomo', label: APOYO_LABEL.autonomo },
 ];
 
-const RESULT_LABEL: Record<AttemptResult, string> = { aprobada: 'Aprobada', parcial: 'Parcial', fallida: 'No pasó' };
 const search = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
 interface Props {
@@ -45,7 +46,11 @@ interface Props {
   onApoyo: (apoyo: Apoyo) => void;
   onUI: (patch: Partial<StageUI>) => void;
   onActivate: () => void;
+  /** Challenge real: se resuelve en el notebook de VS Code y se verifica con el orquestador. */
+  real: boolean;
+  verification: VerifyState | undefined;
   onVerify: () => void;
+  onCancelVerify: () => void;
 }
 
 const SOLUTION_SECTIONS = [
@@ -58,7 +63,7 @@ const SOLUTION_SECTIONS = [
   ['skill', 'Habilidad que entrena'],
 ] as const;
 
-export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo, onUI, onActivate, onVerify }: Props) {
+export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo, onUI, onActivate, real, verification, onVerify, onCancelVerify }: Props) {
   const navigate = useNavigate();
   const c = stage.content;
   const isCode = stage.mechanism === 'codigo_assert';
@@ -242,40 +247,38 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
             </p>
           </section>
 
-          {isCode ? (
-            <section className={styles.verify}>
-              <h3>Verificación</h3>
+          <section className={styles.verify}>
+            <h3>{isCode ? 'Verificación' : real ? 'Evaluación' : 'Tu respuesta'}</h3>
+            {isCode || real ? (
               <p>
-                Se ejecuta solo la celda de tu notebook cuya primera línea sea{' '}
-                <code className="mono">{`# Entregable - Etapa ${stage.number}:`}</code> contra el resultado esperado.
+                Resuelve en tu notebook de VS Code. Se ejecuta solo la celda cuya primera línea sea{' '}
+                <code className="mono">{`# Entregable - Etapa ${stage.number}:`}</code>
+                {isCode ? ' contra el resultado esperado.' : ' y su texto se evalúa con la rúbrica.'}
               </p>
-              <button type="button" className="btn btn-primary btn-sm" onClick={onVerify}>Verificar etapa</button>
-            </section>
-          ) : (
-            <section className={styles.verify}>
-              <h3>Tu respuesta</h3>
-              <label className="visually-hidden" htmlFor={`${panelId}-answer`}>Respuesta de la Etapa {stage.number}</label>
-              <textarea
-                id={`${panelId}-answer`}
-                className={styles.textarea}
-                rows={6}
-                placeholder="Escribe tu respuesta…"
-                value={ui.answer}
-                onChange={(e) => onUI({ answer: e.target.value, result: null })}
-              />
-              <button type="button" className="btn btn-primary btn-sm" disabled={ui.answer.trim().length === 0} onClick={onVerify}>
-                Evaluar respuesta
-              </button>
-            </section>
-          )}
+            ) : (
+              <>
+                <label className="visually-hidden" htmlFor={`${panelId}-answer`}>Respuesta de la Etapa {stage.number}</label>
+                <textarea
+                  id={`${panelId}-answer`}
+                  className={styles.textarea}
+                  rows={6}
+                  placeholder="Escribe tu respuesta…"
+                  value={ui.answer}
+                  onChange={(e) => onUI({ answer: e.target.value, result: null })}
+                />
+              </>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={verification?.phase === 'running' || (!isCode && !real && ui.answer.trim().length === 0)}
+              onClick={onVerify}
+            >
+              {isCode ? 'Verificar etapa' : 'Evaluar respuesta'}
+            </button>
+          </section>
 
-          {ui.result && (
-            <div className={`${styles.result} ${styles[ui.result.status]}`} role="status">
-              <strong>{isCode ? RESULT_LABEL[ui.result.status] : ui.result.status === 'aprobada' ? 'Correcta' : ui.result.status === 'parcial' ? 'Parcial' : 'Incorrecta'}</strong>
-              <p>{ui.result.detail}</p>
-              <p className={styles.note}>Resultado listo: regístralo con el botón «Registrar etapa» de la columna lateral.</p>
-            </div>
-          )}
+          {verification && <VerificationPanel state={verification} simulated={!real} onCancel={onCancelVerify} onRetry={onVerify} />}
 
           {c.solution && (
             <section className={styles.solution}>

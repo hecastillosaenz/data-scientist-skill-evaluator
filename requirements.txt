@@ -1,0 +1,12 @@
+# Entorno Python para ejecutar los notebooks de los challenges (no es parte de la app).
+# Instalar en el .venv del proyecto:
+#   uv pip install --python .venv/bin/python -r requirements.txt
+duckdb>=1.1
+pandas>=2.2
+numpy>=2.0
+scipy>=1.14
+statsmodels>=0.14
+scikit-learn>=1.5
+matplotlib>=3.9
+seaborn>=0.13
+ipykernel>=6.29

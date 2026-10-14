@@ -17,9 +17,15 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - `npm run app` — compila el frontend, levanta el orquestador en `127.0.0.1:4317` (o `PORT`) y abre el navegador.
 - `npm run dev` — servidor con `tsx watch` + Vite con proxy a `/api`.
 - `npm test` — vitest (`app/test/`). `npm run typecheck` — `tsc --noEmit`.
+- Entorno Python de los notebooks (no es parte de la app): `uv pip install --python .venv/bin/python -r requirements.txt`.
+- La verificación real necesita Claude Code instalado y con sesión iniciada (`claude` una vez en una terminal); sin él, las etapas de código siguen dando el resultado automático y las conceptuales avisan.
 
 ### Estructura de `app/` (un solo `package.json`, TypeScript, Fastify)
-- `server/` — `app.ts` (`buildApp`, testeable con `inject()`), `mutex.ts`, `atomic-write.ts`, `ndjson.ts`, `start.ts` (`HOST` fijo en loopback), `paths.ts`, `index.ts`.
+- `server/` — `app.ts` (`buildApp`, testeable con `inject()`), `mutex.ts`, `atomic-write.ts`, `ndjson.ts`, `start.ts` (`HOST` fijo en loopback), `guard.ts` (R25: Host/Origin locales), `paths.ts`, `index.ts`.
+  - `agents/agent-runner.ts` — `spawn('claude', …)` sin shell, mensaje por stdin, `ANTHROPIC_API_KEY` vacía, `cwd` neutro, solo lectura (nunca Bash, R9). `CLAUDE_BIN` lo sustituye en los tests.
+  - `verify/` — `notebook-parser` (celda `# Entregable - Etapa X:`, R16, celdas `# Datos`), `notebook-runner` (Python con timeout; traduce tracebacks), `compare`, `evaluator-prompts`, `verify-service` (eventos NDJSON, R26).
+  - `challenges/challenge-fs.ts` — lee `challenge-N/challenge.json` y reconstruye `datos/challenge.duckdb` desde el seed (R24).
+- `challenge-001/` (raíz del repo) — reto **real**: `challenge.json`, `datos/seed.sql`, `notebook.ipynb`, `logs-avance.md`. Los ids reales son el nombre de la carpeta; los de ejemplo son `c001`…
 - `shared/` — contrato de datos (`types.ts`) y metadatos de dominios/etiquetas (`domains.ts`).
 - `web/` — React + Vite + react-router, CSS plano con variables (tokens de UI-UX §1.3); el build (`web/dist`) lo sirve el propio servidor.
   - `src/screens/` — Inicio, Challenges, ChallengeActual, Repaso, Grafo, Analítica. `src/components/`, `src/charts/` (SVG propio), `src/layout/`.
@@ -33,10 +39,13 @@ Antes de implementar un paquete, leer la sección correspondiente. Si algo contr
 - Evaluador `rubric_claude` sin `Bash`; Evaluador `código_assert` con `Bash` acotado por `--add-dir` a `challenge-N/` (R9).
 - El Evaluador nunca comparte contexto de sesión con el Generador (R14).
 - Una sola operación de escritura en vuelo (mutex en memoria); la segunda se rechaza, no se encola.
+- Los agentes (Generador, Evaluador, Analista) son de solo lectura: **nadie ejecuta código salvo el orquestador** (`notebook-runner`).
 - Marcador de entregable: `# Entregable - Etapa X:` como primera línea de la celda; X debe coincidir con los metadatos del challenge o se rechaza con error explícito (R8, R16).
 
 ## Estado de la UI
-Las 6 pantallas están construidas sobre datos sintéticos. La verificación/evaluación de etapas, el refuerzo y "Iniciar challenge" son **simulados** (`domain/simulate.ts`, `domain/reinforcement.ts`) hasta que existan P1–P5. Las fórmulas derivadas son **provisionales** (SDD, Fase 8).
+Las 6 pantallas funcionan con challenges **de ejemplo** (`data/sample/`) más los **reales** de `challenge-N/` (los reales sustituyen al de ejemplo con el mismo título). La verificación de los reales es de verdad (notebook + DuckDB + Evaluador de Claude); la de los de ejemplo, el refuerzo y «Iniciar challenge» siguen **simulados** (`domain/simulateVerify.ts`, `domain/reinforcement.ts`). Cronómetro y respuestas de negocio viven en el navegador (`localStorage`) hasta que el orquestador los guarde en `logs-avance.md`. Las fórmulas derivadas son **provisionales** (SDD, Fase 8).
+
+Contenido de los challenges: Markdown con KaTeX; **escapa los signos de moneda como `\$`** para que no se lean como fórmula. Las respuestas numéricas y las tablas esperadas se verifican ejecutándolas (SQLite/DuckDB) antes de publicarlas.
 
 ## Cómo trabajamos
 - Una sesión = un paquete de entrega (P0–P7, ver SDD §7.2). Plan Mode primero, luego implementar.

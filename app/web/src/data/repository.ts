@@ -1,4 +1,6 @@
 import type { AppData } from '../../../shared/types';
+import type { Challenge } from '../../../shared/types';
+import { mergeChallenges } from '../domain/mergeChallenges';
 import { buildSampleData, SCENARIOS, type Scenario } from './sample';
 
 /**
@@ -12,7 +14,20 @@ export function scenarioFromSearch(search: string): Scenario {
   return SCENARIOS.includes(value as Scenario) ? (value as Scenario) : 'normal';
 }
 
+/** Challenges reales servidos por el orquestador (`challenge-N/challenge.json`); si no responde, solo hay ejemplos. */
+async function fetchRealChallenges(): Promise<Challenge[]> {
+  try {
+    const res = await fetch('/api/challenges');
+    if (!res.ok) return [];
+    const body = (await res.json()) as { challenges?: Challenge[] };
+    return Array.isArray(body.challenges) ? body.challenges : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function loadAppData(scenario: Scenario): Promise<AppData> {
-  await new Promise((resolve) => setTimeout(resolve, 350));
-  return buildSampleData(scenario);
+  const [real] = await Promise.all([fetchRealChallenges(), new Promise((resolve) => setTimeout(resolve, 350))]);
+  const sample = buildSampleData(scenario);
+  return { ...sample, challenges: mergeChallenges(real, sample.challenges) };
 }

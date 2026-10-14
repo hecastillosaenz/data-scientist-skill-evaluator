@@ -282,4 +282,10 @@ La UI se construyó antes que los agentes (P6/P7 adelantados) sobre datos sinté
 - **Verificación en vivo (R25–R27, HU16).** Panel bajo el botón con línea de tiempo y feedback. La ejecución de la celda es del orquestador, no de un agente (R9 revisado).
 - **Columna "Entrega" retirada.** Pegar/Subir/Enlace no encaja con el flujo (el usuario resuelve en su notebook de VS Code, HU5). La columna lateral pasa a "Registro de la etapa": cronómetro, "¿Dónde te trabaste?", notas y registrar.
 - **Test final (R21, R23).** Cuenta como evidencia de Bloom 1–3, así que el nivel "Recordar/Comprender", vacío hasta ahora, empieza a tener datos.
+- **Implementado en el adelanto de P1/P2/P4.** `agent-runner`, `notebook-parser`/`notebook-runner` y `verify-service` existen y están probados con un `claude` falso y con DuckDB real (`challenge-001`). Quedan fuera: Generador (P3) y Analista (P5), y registrar el cronómetro y las respuestas en `logs-avance.md`.
+- **Veredicto.** En etapas de código lo decide el orquestador (ejecución + comparación con `expected`/asserts); el Evaluador solo redacta el feedback y no puede cambiarlo. En etapas conceptuales el Evaluador aplica la rúbrica y termina con `VEREDICTO: correcta|parcial|incorrecta`; si no lo indica, cuenta como parcial.
+- **Convención de la celda SQL.** La celda entregable asigna el resultado a la variable `resultado` (relación de DuckDB, DataFrame o lista de diccionarios); el orquestador la serializa y la compara con `expected` (mismas columnas sin distinguir mayúsculas, mismas filas en el mismo orden). Por eso el entregable exige el `ROUND` del enunciado.
+- **Respuestas conceptuales en el notebook.** En los challenges reales la respuesta de una etapa conceptual se escribe en la celda markdown `# Entregable - Etapa N:` (como define §6.4.3); la UI ya no ofrece un cuadro de texto para esos casos.
+- **Contenido Markdown.** Los signos de moneda se escapan como `\$` para que KaTeX no los lea como fórmula.
+- **Tensión R10 sin resolver.** La Evidence se sigue creando al pulsar «Registrar etapa» (que añade tiempo, bloqueo y notas), no al verificar. Falta decidir si cada verificación debe crear la suya.
 

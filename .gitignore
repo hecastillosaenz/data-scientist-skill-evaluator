@@ -35,3 +35,7 @@ knowledge-graph.json.*
 .vscode/*
 !.vscode/settings.json
 *.swp
+
+# Bases de datos de los challenges (se reconstruyen desde datos/seed.sql, R24)
+challenge-*/datos/*.duckdb
+challenge-*/datos/*.duckdb.wal

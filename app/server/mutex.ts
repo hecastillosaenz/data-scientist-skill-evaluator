@@ -21,6 +21,21 @@ export class OperationMutex {
     }
   }
 
+  /**
+   * Reserva la operación a mano (para respuestas en streaming que sobreviven al handler). Devuelve una función de
+   * liberación idempotente; si ya hay una operación en vuelo lanza `OperationBusyError`.
+   */
+  acquire(name: string): () => void {
+    if (this.active !== null) throw new OperationBusyError(this.active);
+    this.active = name;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.active = null;
+    };
+  }
+
   status(): MutexStatus {
     return { busy: this.active !== null, operation: this.active };
   }

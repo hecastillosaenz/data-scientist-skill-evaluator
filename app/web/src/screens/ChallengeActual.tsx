@@ -10,7 +10,9 @@ import { Markdown } from '../components/Markdown';
 import { StageBar } from '../components/StageBar';
 import { isTestUnlocked } from '../domain/finalTest';
 import { challengeMinutes } from '../domain/progress';
-import { simulateCodeVerification, simulateConceptEvaluation } from '../domain/simulate';
+import { isRealChallenge } from '../domain/mergeChallenges';
+import { simulateVerification } from '../domain/simulateVerify';
+import { useVerifier } from './challenge/useVerifier';
 import { useApp } from '../data/DataContext';
 import { BusinessQuestions } from './challenge/BusinessQuestions';
 import { FinalTest } from './challenge/FinalTest';
@@ -62,14 +64,22 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
   const domains = [...new Set(challenge.stages.map((s) => s.domain))];
   const priorAttempts = (stageId: string) => data?.evidence.filter((e) => e.stageId === stageId).length ?? 0;
 
+  const real = isRealChallenge(challenge.id);
+  const verifier = useVerifier((stageId, result) => patch(stageId, { result: { status: result.status, detail: result.summary } }));
+
   const verify = (stageId: string) => {
     const stage = challenge.stages.find((s) => s.id === stageId)!;
-    const result =
-      stage.mechanism === 'codigo_assert'
-        ? simulateCodeVerification(stage.number, priorAttempts(stageId))
-        : simulateConceptEvaluation(ui(stageId).answer);
-    patch(stageId, { result });
     setActiveId(stageId);
+    patch(stageId, { result: null });
+    void verifier.run({
+      stageId,
+      challengeId: challenge.id,
+      stageNumber: stage.number,
+      apoyo: apoyoOf(stageId, stage.apoyo),
+      real,
+      simulate: (signal) =>
+        simulateVerification({ stage, apoyo: apoyoOf(stageId, stage.apoyo), priorAttempts: priorAttempts(stageId), answer: ui(stageId).answer, signal }),
+    });
   };
 
   return (
@@ -115,7 +125,10 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
                 onApoyo={(a: Apoyo) => actions.setApoyo(stage.id, a)}
                 onUI={(p) => patch(stage.id, p)}
                 onActivate={() => setActiveId(stage.id)}
+                real={real}
+                verification={verifier.states[stage.id]}
                 onVerify={() => verify(stage.id)}
+                onCancelVerify={() => verifier.cancel(stage.id)}
               />
             );
           })}
