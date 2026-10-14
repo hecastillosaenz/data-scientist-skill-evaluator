@@ -1,4 +1,5 @@
 import { DOMAINS } from '../../shared/domains';
+import type { TemaPedido } from '../../shared/objetivos';
 import type { Apoyo, Bloom, Challenge, Concept, ConceptState, Difficulty, DomainId, EvalMechanism, Evidence, TestResult } from '../../shared/types';
 import { computeInsights, type ConceptInsight } from '../../web/src/domain/conceptState';
 import { levelByDomain } from '../../web/src/domain/level';
@@ -38,6 +39,25 @@ export interface ChallengePlan {
   /** Datasets y títulos de los últimos challenges: el nuevo no puede repetir dataset ni sector. */
   avoid: { datasets: string[]; titles: string[] };
   rationale: string[];
+  /** Tema que pidió el usuario (R43): ocupa las etapas de avance. */
+  tema?: TemaPedido;
+  /** Títulos de los focos de aprendizaje que influyeron en el plan (R45). */
+  focos: string[];
+}
+
+/** Un foco activo reducido a lo que el plan necesita (R45). */
+export interface FocoPlan {
+  id: string;
+  titulo: string;
+  conceptIds: string[];
+}
+
+/** El tema pedido no se puede aplicar (concepto inexistente). */
+export class TemaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TemaError';
+  }
 }
 
 export interface PlanInput {
@@ -49,6 +69,10 @@ export interface PlanInput {
   now: Date;
   /** Dominio elegido por el usuario; por defecto lo recomienda el grafo. */
   domain?: DomainId;
+  /** Tema a pedido (R43): el concepto elegido decide qué se practica; la calibración decide cuánto. */
+  tema?: TemaPedido;
+  /** Focos de aprendizaje activos y vigentes (R45): desempatan, no sustituyen el refuerzo. */
+  focos?: FocoPlan[];
 }
 
 const DAY_MS = 86_400_000;
@@ -81,6 +105,32 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   const deps = (id: string) => dependents.get(id) ?? 0;
   const byIdOrder = (a: Concept, b: Concept) => a.id.localeCompare(b.id);
 
+  // Tema a pedido (R43) y focos de aprendizaje (R45).
+  const tema = input.tema ? byId.get(input.tema.conceptId) : undefined;
+  if (input.tema && !tema) throw new TemaError(`El concepto «${input.tema.conceptId}» del tema no existe en el grafo.`);
+  const closure = new Set<string>();
+  if (tema) {
+    const walk = (id: string) => {
+      for (const p of byId.get(id)?.prerequisites ?? []) if (!closure.has(p)) {
+        closure.add(p);
+        walk(p);
+      }
+    };
+    walk(tema.id);
+  }
+  // Con un tema técnico, el refuerzo y la consolidación se limitan a sus fundamentos (el resto espera su turno).
+  const inScope = (id: string) => !tema || tema.domain === 'business' || id === tema.id || closure.has(id);
+  const focos = input.focos ?? [];
+  const focoOf = (id: string): FocoPlan | undefined => focos.find((f) => f.conceptIds.includes(id));
+  const focusRank = (c: Concept) => (focoOf(c.id) ? 0 : 1);
+  const influencing = new Set<string>();
+  const noteFoco = (c: Concept): string => {
+    const f = focoOf(c.id);
+    if (!f) return '';
+    influencing.add(f.titulo);
+    return ` Toca tu foco «${f.titulo}».`;
+  };
+
   // Fallos históricos de cada concepto (todas las etapas que lo practican): decide el Apoyo de un refuerzo.
   const stageById = new Map(challenges.flatMap((c) => c.stages.map((s) => [s.id, s] as const)));
   const failuresOf = (conceptId: string) =>
@@ -98,7 +148,7 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   };
 
   // ── Refuerzo o consolidación ──────────────────────────────────────────────
-  const queue = buildReviewQueue(concepts, challenges, evidence, now, input.testResults ?? []).filter((i) => i.reason !== 'olvido');
+  const queue = buildReviewQueue(concepts, challenges, evidence, now, input.testResults ?? []).filter((i) => i.reason !== 'olvido' && inScope(i.concept.id));
   let anchor: { concept: Concept; role: 'refuerzo' | 'consolidacion'; why: string; reason: 'fallos' | 'olvido' | null; bloom: Bloom | null } | null = null;
 
   const preferred = input.domain ? queue.filter((i) => i.concept.domain === input.domain) : [];
@@ -121,14 +171,28 @@ export function planChallenge(input: PlanInput): ChallengePlan {
         return ins?.state === 'dominado' && ins.lastPracticed !== null && (now.getTime() - Date.parse(ins.lastPracticed)) / DAY_MS > config.diasOlvido;
       })
       .filter((c) => !input.domain || c.domain === input.domain)
-      .sort((a, b) => Date.parse(insights.get(a.id)!.lastPracticed!) - Date.parse(insights.get(b.id)!.lastPracticed!) || deps(b.id) - deps(a.id) || byIdOrder(a, b));
+      .filter((c) => inScope(c.id))
+      .sort((a, b) => focusRank(a) - focusRank(b) || Date.parse(insights.get(a.id)!.lastPracticed!) - Date.parse(insights.get(b.id)!.lastPracticed!) || deps(b.id) - deps(a.id) || byIdOrder(a, b));
     const c = forgotten[0];
     if (c) anchor = { concept: c, role: 'consolidacion', why: `«${c.name}» está dominado pero hace más de ${config.diasOlvido} días que no lo practicas: se consolida.`, reason: 'olvido', bloom: null };
   }
 
+  // Frontera del grafo: conceptos no firmes cuyos prerrequisitos ya están al menos «Vistos» (o van antes en este challenge).
+  const frontier = (domain: DomainId | null) =>
+    concepts
+      .filter((c) => !used.has(c.id) && (domain === null || c.domain === domain))
+      .filter((c) => stateOf(c.id) === 'no_visto' || stateOf(c.id) === 'visto')
+      // Un prerrequisito planeado en una etapa anterior del mismo challenge cuenta como cubierto: las etapas son secuenciales.
+      .filter((c) => c.prerequisites.every((p) => ['visto', 'dominado'].includes(stateOf(p)) || used.has(p)))
+      .sort((a, b) => focusRank(a) - focusRank(b) || (stateOf(a.id) === 'no_visto' ? 0 : 1) - (stateOf(b.id) === 'no_visto' ? 0 : 1) || deps(b.id) - deps(a.id) || byIdOrder(a, b));
+  const pickAvance = (): Concept | undefined => frontier(technical)[0] ?? frontier(null).filter((c) => c.domain !== 'business')[0];
+
   // Dominio técnico del challenge: el del ancla; si no hay, el usuario o el menos cubierto.
+  const focusDomain = frontier(null).find((c) => c.domain !== 'business' && focoOf(c.id))?.domain;
   const technical = anchor && anchor.concept.domain !== 'business' ? anchor.concept.domain
+    : tema && tema.domain !== 'business' ? tema.domain
     : input.domain && input.domain !== 'business' ? input.domain
+    : focusDomain ? focusDomain
     : [...TECHNICAL].sort((a, b) => coverage(a) - coverage(b) || TECHNICAL.indexOf(a) - TECHNICAL.indexOf(b))[0]!;
 
   const difficultyIn = (d: DomainId): Difficulty => (arranque ? 1 : clamp<Difficulty>(levels[d].index + 1, 1, 3));
@@ -156,25 +220,47 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     });
   };
 
-  // Frontera del grafo: conceptos no firmes cuyos prerrequisitos ya están al menos «Vistos» (o van antes en este challenge).
-  const frontier = (domain: DomainId | null) =>
-    concepts
-      .filter((c) => !used.has(c.id) && (domain === null || c.domain === domain))
-      .filter((c) => stateOf(c.id) === 'no_visto' || stateOf(c.id) === 'visto')
-      // Un prerrequisito planeado en una etapa anterior del mismo challenge cuenta como cubierto: las etapas son secuenciales.
-      .filter((c) => c.prerequisites.every((p) => ['visto', 'dominado'].includes(stateOf(p)) || used.has(p)))
-      .sort((a, b) => (stateOf(a.id) === 'no_visto' ? 0 : 1) - (stateOf(b.id) === 'no_visto' ? 0 : 1) || deps(b.id) - deps(a.id) || byIdOrder(a, b));
-  const pickAvance = (): Concept | undefined => frontier(technical)[0] ?? frontier(null).filter((c) => c.domain !== 'business')[0];
-
   const advanceSlots = Math.max(0, slots - 1 - (anchor ? 1 : 0));
   if (anchor) {
     add(anchor.role, anchor.concept, anchor.why, { reason: anchor.reason, keepBloom: anchor.bloom });
-    rationale.push(anchor.why);
+    rationale.push(anchor.why + (anchor.role === 'consolidacion' ? noteFoco(anchor.concept) : ''));
   }
-  for (let i = 0; i < advanceSlots; i++) {
+  let temaForIntegration: Concept | undefined;
+  if (tema && tema.domain === 'business') {
+    // Un tema de negocio ocupa la integración; el avance técnico sigue su curso.
+    temaForIntegration = tema;
+  }
+  const temaSlots: Concept[] = [];
+  if (tema && tema.domain !== 'business' && !used.has(tema.id)) {
+    // Si sus fundamentos aún no se han visto y hay hueco, uno va antes del tema (las etapas son secuenciales).
+    // Se prefiere el prerrequisito directo (lo más cercano al tema); si no hay, el primero de la clausura listo para verse.
+    const unseen = (ids: Iterable<string>) =>
+      [...ids]
+        .map((id) => byId.get(id))
+        .filter((c): c is Concept => !!c && !used.has(c.id) && stateOf(c.id) === 'no_visto' && c.domain !== 'business')
+        .sort((a, b) => deps(b.id) - deps(a.id) || byIdOrder(a, b));
+    const foundation =
+      unseen(tema.prerequisites)[0] ??
+      unseen(closure).find((c) => c.prerequisites.every((p) => ['visto', 'dominado'].includes(stateOf(p))));
+    if (foundation && advanceSlots >= 2) temaSlots.push(foundation);
+    temaSlots.push(tema);
+  }
+  for (const c of temaSlots) {
+    const isTema = c.id === tema?.id;
+    const why = isTema
+      ? `Pediste practicar «${input.tema!.texto}»: se trabaja «${c.name}».${stateOf(c.id) === 'no_visto' ? ' Aún no lo has visto, así que empieza Guiado.' : ''}${noteFoco(c)}`
+      : `«${c.name}» es un fundamento de «${tema!.name}» que aún no has visto: va antes.`;
+    add('avance', c, why);
+    rationale.push(why);
+  }
+  const unmet = tema && tema.domain !== 'business' ? tema.prerequisites.map((id) => byId.get(id)).filter((c): c is Concept => !!c && stateOf(c.id) === 'no_visto' && !used.has(c.id)) : [];
+  if (unmet.length > 0 && !temaSlots.some((c) => c.id !== tema?.id)) {
+    rationale.push(`Aviso: «${tema!.name}» se apoya en ${unmet.map((c) => `«${c.name}»`).join(', ')}, que aún no has visto; el reto empieza en Apoyo Guiado.`);
+  }
+  for (let i = temaSlots.length; i < advanceSlots; i++) {
     const c = pickAvance();
     if (!c) break;
-    const why = `«${c.name}» está en la frontera de tu grafo (${stateOf(c.id) === 'no_visto' ? 'aún no visto' : 'visto, sin dominar'}) y sus prerrequisitos ya están vistos.`;
+    const why = `«${c.name}» está en la frontera de tu grafo (${stateOf(c.id) === 'no_visto' ? 'aún no visto' : 'visto, sin dominar'}) y sus prerrequisitos ya están vistos.${noteFoco(c)}`;
     add('avance', c, why);
     rationale.push(why);
   }
@@ -182,10 +268,13 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   // ── Integración: Business interpretando el resultado ─────────────────────
   const businessPool = concepts.filter((c) => c.domain === 'business' && !used.has(c.id));
   const business =
+    temaForIntegration && !used.has(temaForIntegration.id) ? temaForIntegration :
     frontier('business')[0] ??
     [...businessPool].sort((a, b) => deps(b.id) - deps(a.id) || byIdOrder(a, b))[0];
   if (business) {
-    const why = `Integración: interpretar el resultado para negocio con «${business.name}».`;
+    const why = business === temaForIntegration
+      ? `Pediste practicar «${input.tema!.texto}»: se interpreta con «${business.name}».`
+      : `Integración: interpretar el resultado para negocio con «${business.name}».${noteFoco(business)}`;
     add('integracion', business, why);
     rationale.push(why);
   }
@@ -202,6 +291,8 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     domain: technical,
     stages,
     avoid: { datasets: recent.map((c) => c.dataset), titles: recent.map((c) => c.title) },
+    ...(input.tema ? { tema: input.tema } : {}),
+    focos: [...influencing],
     rationale: [
       arranque
         ? `Modo arranque: tienes ${evidence.length} de ${config.evidenciaSuficiente} registros necesarios; dificultad básica y todo en Apoyo Guiado.`

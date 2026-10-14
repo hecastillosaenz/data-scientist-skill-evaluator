@@ -41,3 +41,9 @@ challenge/challenge-*/datos/*.duckdb
 challenge/challenge-*/datos/*.duckdb.wal
 
 challenge/.generando/
+
+# Registro de ejecuciones de los agentes (R46): local, puede contener tus respuestas
+registro-agentes/
+
+# Material de estudio del usuario (R49): PDF y apuntes de terceros, no se versionan
+material/

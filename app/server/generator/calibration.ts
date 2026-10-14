@@ -17,6 +17,12 @@ export interface CalibrationConfig {
   horasConservacion: number;
   /** Tope de `--max-budget-usd` por análisis del Analista (R42). */
   presupuestoUsdAnalisis: number;
+  /** Caracteres del material de los focos que se entregan al Generador (R45). */
+  materialMaxCaracteres: number;
+  /** Máximo de focos de aprendizaje activos a la vez (R44). */
+  focosActivosMax: number;
+  /** Días que se conserva el registro de ejecuciones de los agentes (R46). */
+  diasRegistroAgentes: number;
 }
 
 export const DEFAULT_CALIBRATION: CalibrationConfig = {
@@ -28,6 +34,9 @@ export const DEFAULT_CALIBRATION: CalibrationConfig = {
   reparacionesPorFase: 2,
   horasConservacion: 24,
   presupuestoUsdAnalisis: 0.3,
+  materialMaxCaracteres: 4000,
+  focosActivosMax: 3,
+  diasRegistroAgentes: 30,
 };
 
 export class CalibrationError extends Error {
@@ -46,6 +55,9 @@ const RULES: Record<keyof CalibrationConfig, { min: number; max: number; integer
   reparacionesPorFase: { min: 0, max: 5, integer: true },
   horasConservacion: { min: 1, max: 720, integer: true },
   presupuestoUsdAnalisis: { min: 0.02, max: 20, integer: false },
+  materialMaxCaracteres: { min: 200, max: 40000, integer: true },
+  focosActivosMax: { min: 1, max: 10, integer: true },
+  diasRegistroAgentes: { min: 1, max: 365, integer: true },
 };
 
 /** Valida un objeto y completa con los valores por defecto lo que falte. Lo desconocido (salvo `$comentario`) es un error. */

@@ -2,11 +2,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useNavigate } from 'react-router';
 import { Check, Loader2, OctagonX, Sparkles, Square, X } from 'lucide-react';
 import { APOYO_LABEL, DOMAINS, DOMAIN_BY_ID } from '../../../../shared/domains';
+import type { TemaPedido } from '../../../../shared/objetivos';
 import type { DomainId } from '../../../../shared/types';
 import type { StageRole } from '../../../../server/generator/plan';
 import { FilterChip } from '../../components/FilterChip';
 import { useApp } from '../../data/DataContext';
 import { PHASE_LABEL } from '../../domain/generateState';
+import { TemaPicker } from './TemaPicker';
 import { useGenerator, usePlanPreview } from './useGenerator';
 import styles from './GenerateDialog.module.css';
 
@@ -40,8 +42,9 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
   const { data, actions, source } = useApp();
   const navigate = useNavigate();
   const [dominio, setDominio] = useState<DomainId | null>(null);
+  const [tema, setTema] = useState<TemaPedido | null>(null);
   const { state, start, cancel, reset } = useGenerator(() => void actions.reload());
-  const { plan, error: planError, pending } = usePlanPreview(state === null, dominio);
+  const { plan, error: planError, pending } = usePlanPreview(state === null, dominio, tema);
   const ref = useRef<HTMLDivElement>(null);
   const running = state?.phase === 'running';
   const conceptName = useCallback((id: string) => data?.concepts.find((c) => c.id === id)?.name ?? id, [data]);
@@ -55,7 +58,7 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [running, onClose]);
 
-  const request = (extra: { resume?: boolean; budgetFactor?: 1 | 2 } = {}) => void start({ ...(dominio ? { dominio } : {}), ...extra });
+  const request = (extra: { resume?: boolean; budgetFactor?: 1 | 2 } = {}) => void start({ ...(dominio ? { dominio } : {}), ...(tema ? { tema } : {}), ...extra });
   const failedPhase = state?.error?.phase;
 
   return (
@@ -83,6 +86,8 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
+            <TemaPicker value={tema} onChange={setTema} onConceptCreated={() => void actions.reload()} />
+
             <section className={styles.plan} aria-label="Plan de calibración" aria-busy={!plan && !planError}>
               <h3>Plan de este challenge</h3>
               {planError && <p className={styles.error}>{planError}</p>}
@@ -90,6 +95,7 @@ function GenerateDialog({ onClose }: { onClose: () => void }) {
               {plan && (
                 <>
                   <p className={styles.muted}>{plan.rationale[0]}</p>
+                  {plan.focos.length > 0 && <p className={styles.muted}>Influyen tus objetivos: {plan.focos.map((f) => `«${f}»`).join(', ')}.</p>}
                   <ol className={styles.stages}>
                     {plan.stages.map((s) => (
                       <li key={s.number}>

@@ -1,3 +1,4 @@
+import type { AttemptSummary } from './intentos';
 import type { Apoyo, AppData } from './types';
 
 /** Un challenge de `challenge/challenge-NNN/` que no cumple el contrato (R29), con sus errores en español. */
@@ -13,6 +14,8 @@ export interface StatePayload {
   apoyos: Record<string, Apoyo>;
   /** Fecha ISO de inicio por challenge. */
   started: Record<string, string>;
+  /** Intentos guardados de todos los challenges (R51): resúmenes; el código y el feedback se piden al abrir uno. */
+  attempts: AttemptSummary[];
   invalid: InvalidChallengeInfo[];
   /** Archivos de progreso ilegibles (R33): se muestran en un aviso, no se tocan. */
   problems: string[];

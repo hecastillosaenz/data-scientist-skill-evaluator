@@ -42,3 +42,4 @@
 .levelBar { flex: 1; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .levelBar > span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
 @media (max-width: 1099px) { .grid { grid-template-columns: 1fr; } .gaps li { grid-template-columns: 100px minmax(0, 1fr) auto; } .levels li { grid-template-columns: 100px 90px minmax(0, 1fr); } }
+.subhead { margin: 18px 0 8px; font-size: 15px; font-weight: 600; }

@@ -26,9 +26,9 @@ export interface Concept {
   domain: DomainId;
   /** Ids de conceptos prerrequisito (pueden ser de otro dominio). */
   prerequisites: string[];
-  /** Presente solo en conceptos que añadió el Analista (R41), para poder revisarlos. */
-  origin?: 'analista';
-  /** ISO 8601 de la creación por el Analista. */
+  /** Presente solo en conceptos que no vienen del catálogo inicial: los añadió el Analista (R41) o el usuario (R43). */
+  origin?: 'analista' | 'usuario';
+  /** ISO 8601 de la creación por el Analista o el usuario. */
   since?: string;
 }
 

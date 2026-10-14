@@ -2,7 +2,9 @@ import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { GenerateEvent } from '../../shared/generate';
+import type { TemaPedido } from '../../shared/objetivos';
 import type { Challenge, Concept, DomainId, TestQuestion } from '../../shared/types';
+import { recordAgent } from '../agents/registro';
 import { AgentError, hasClaude as defaultHasClaude, runAgent as defaultRunAgent } from '../agents/agent-runner';
 import { strictStageErrors, validateChallenge } from '../challenges/validate';
 import { configDir } from '../paths';
@@ -10,7 +12,8 @@ import { GraphError } from '../persistence/graph-store';
 import { readState } from '../persistence/state';
 import { assembleChallenge, buildNotebook, businessQuestionCount, logHeader } from './assemble';
 import { CalibrationError, loadCalibration, type CalibrationConfig } from './calibration';
-import { checkAgainstPlan, planChallenge, type ChallengePlan } from './plan';
+import { loadLearning } from './aprendizaje';
+import { checkAgainstPlan, planChallenge, TemaError, type ChallengePlan } from './plan';
 import { extractJson, generatorSystem, repairMessage, skeletonMessage, stageMessage, testMessage } from './prompts';
 import { checkDataset, checkReference } from './reference';
 import {
@@ -37,6 +40,8 @@ export interface GenerateParams {
   repoRoot: string;
   /** Elección manual opcional; por defecto lo recomienda el grafo (R38). */
   domain?: DomainId;
+  /** Tema a pedido (R43): ya resuelto a un concepto del grafo. */
+  tema?: TemaPedido;
   /** Retoma el trabajo conservado desde la última fase válida en vez de empezar de cero (R39). */
   resume?: boolean;
   /** Multiplica el presupuesto por fase: 2 = «Reintentar con el doble». */
@@ -77,6 +82,8 @@ interface Ctx {
   python: string;
   budget: number;
   dir: string;
+  /** Carpetas del material del usuario que el Generador puede leer (R49). */
+  materialDirs: string[];
 }
 
 /**
@@ -122,6 +129,9 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
     }
     const { data } = appState;
 
+    // Objetivos de aprendizaje (R44, R45): sesgan el plan y su material viaja al Generador como contexto.
+    const { focos, context: learning, materialDirs } = await loadLearning(repoRoot, data.concepts, config, now());
+
     // ¿Se retoma lo conservado o se empieza de cero?
     const existing = await readGenerationState(repoRoot);
     const taken = (id: string) => existsSync(path.join(repoRoot, 'challenge', id));
@@ -130,15 +140,25 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       state = existing;
     } else {
       await discardWork(repoRoot);
-      const plan = planChallenge({
-        concepts: data.concepts,
-        challenges: data.challenges,
-        evidence: data.evidence,
-        testResults: data.testResults,
-        config,
-        now: now(),
-        ...(params.domain ? { domain: params.domain } : {}),
-      });
+      let plan: ChallengePlan;
+      try {
+        plan = planChallenge({
+          concepts: data.concepts,
+          challenges: data.challenges,
+          evidence: data.evidence,
+          testResults: data.testResults,
+          config,
+          now: now(),
+          ...(params.domain ? { domain: params.domain } : {}),
+          ...(params.tema ? { tema: params.tema } : {}),
+          focos,
+        });
+      } catch (err) {
+        if (!(err instanceof TemaError)) throw err;
+        yield step('plan', 'Calculando el plan de calibración con tu grafo', 'error', err.message);
+        yield { type: 'error', code: 'state', message: err.message };
+        return;
+      }
       state = { version: 1, createdAt: now().toISOString(), plan, stages: {}, completed: [], spentUsd: 0 };
       await mkdir(workDir(repoRoot, plan.id), { recursive: true });
       await writeGenerationState(repoRoot, state);
@@ -156,6 +176,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       python: deps.python ?? path.join(repoRoot, '.venv', 'bin', 'python'),
       budget: config.presupuestoUsdPorFase * Math.max(1, params.budgetFactor ?? 1),
       dir: workDir(repoRoot, plan.id),
+      materialDirs,
     };
     const save = () => writeGenerationState(repoRoot, ctx.state);
     const done = async (id: string) => {
@@ -165,7 +186,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
 
     // ── Fase 1: esqueleto ──────────────────────────────────────────────────
     if (!state.completed.includes('esqueleto') || !state.skeleton) {
-      const skeleton = yield* runPhase<Skeleton>(ctx, 'esqueleto', 'Diseñando el caso y los datos', skeletonMessage(repoRoot, plan, data.concepts), async (json, signalAbort) => {
+      const skeleton = yield* runPhase<Skeleton>(ctx, 'esqueleto', 'Diseñando el caso y los datos', skeletonMessage(repoRoot, plan, data.concepts, learning), async (json, signalAbort) => {
         const parsed = parseSkeleton(json);
         if (!parsed.skeleton) return { errors: parsed.errors };
         return validateSkeleton(ctx, parsed.skeleton, signalAbort);
@@ -189,7 +210,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       }
       const proposed = skeleton.stages.find((s) => s.number === planned.number);
       const extra = (proposed?.conceptIds ?? []).filter((c) => !planned.conceptIds.includes(c));
-      const content = yield* runPhase<unknown>(ctx, id, label, stageMessage(repoRoot, plan, data.concepts, skeleton, planned.number, extra), (json, abortSignal) => validateStage(ctx, planned.number, json, abortSignal));
+      const content = yield* runPhase<unknown>(ctx, id, label, stageMessage(repoRoot, plan, data.concepts, skeleton, planned.number, extra, learning), (json, abortSignal) => validateStage(ctx, planned.number, json, abortSignal));
       if (!content) return;
       ctx.state.stages[String(planned.number)] = content;
       await done(id);
@@ -198,7 +219,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
     // ── Fase 3: test final ────────────────────────────────────────────────
     if (!ctx.state.completed.includes('test') || !ctx.state.finalTest) {
       const stageConcepts = [...new Set(assembleChallenge(plan, skeleton, ctx.state.stages).stages.flatMap((s) => s.conceptIds))];
-      const test = yield* runPhase<TestQuestion[]>(ctx, 'test', 'Preparando el test final', testMessage(repoRoot, plan, data.concepts, skeleton, stageConcepts), async (json) => validateTest(ctx, json));
+      const test = yield* runPhase<TestQuestion[]>(ctx, 'test', 'Preparando el test final', testMessage(repoRoot, plan, data.concepts, skeleton, stageConcepts, learning), async (json) => validateTest(ctx, json));
       if (!test) return;
       ctx.state.finalTest = test;
       await done('test');
@@ -263,10 +284,10 @@ async function* runPhase<T>(
     let text = '';
     let failure: unknown = null;
     try {
-      const result = await deps.runAgent({
+      const result = await recordAgent(params.repoRoot, 'generador', deps.runAgent, { challengeId: ctx.state.plan.id, fase: id }, deps.now)({
         message: attempt === 0 ? message : repairMessage(message, previous, errors),
         system: generatorSystem(),
-        addDirs: [path.join(configDir(params.repoRoot), 'plantillas')],
+        addDirs: [path.join(configDir(params.repoRoot), 'plantillas'), ...ctx.materialDirs],
         maxUsd: Math.round(remaining * 100) / 100,
         ...(params.signal ? { signal: params.signal } : {}),
         onEvent: (e) => e.type === 'tool' && tools.push({ type: 'tool', text: e.text }),

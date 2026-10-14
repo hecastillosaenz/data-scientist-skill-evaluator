@@ -1,0 +1,12 @@
+.wrap { display: flex; flex-direction: column; gap: 8px; }
+.opt { font-weight: 400; color: var(--muted); }
+.input { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; }
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.picked { display: flex; align-items: center; gap: 8px; margin: 0; min-height: 44px; padding: 0 8px 0 14px; border-radius: 12px; background: var(--d1-bg); font-size: 14px; }
+.picked span { flex: 1; overflow-wrap: anywhere; }
+.clear { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--ink2); }
+.clear:hover { background: var(--sel); }
+.options { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.error { margin: 0; font-size: 13px; color: var(--d3-fg); }

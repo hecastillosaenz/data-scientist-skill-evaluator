@@ -166,6 +166,8 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 - Columna lateral fija **Registro de la etapa** (sustituye a «Entrega»; ya no hay Pegar/Subir/Enlace porque la resolución ocurre en el notebook de VS Code): el **tiempo de esta vuelta** (desde el último registro; de solo lectura, «Editar» lo marca manual) frente al objetivo de la etapa, «¿Dónde te trabaste?» (5 chips), notas y «Registrar etapa».
 - Reglas: varias etapas pueden estar abiertas a la vez; se puede saltar a cualquier etapa (sin bloqueo por orden); revelar la solución antes de verificar marca «con ayuda» (R7); cada challenge tiene su propio cronómetro y cada registro toma el tiempo desde el anterior de ese challenge.
 
+**Intentos de la etapa (R54).** Bajo el panel de verificación de los challenges reales, un desplegable «Intentos de esta etapa» con el número de intentos y cuántos quedaron sin aprobar. Cada fila (más reciente primero): `#n`, chip de resultado, el fallo («Error de Python · KeyError: 'precio'») y la hora; al abrirla se ve tu código o respuesta de ese momento y el feedback del Evaluador. Aviso fijo: no cuentan como resultado oficial (eso es «Registrar etapa»). Los datos de ejemplo no muestran intentos.
+
 ### 4.4 Repaso
 - Encabezado + control "Por prioridad / Por motivo".
 - Chips de filtro por motivo con conteo.
@@ -204,10 +206,12 @@ Barra lateral de 240px en escritorio (≥1280px); por debajo de 860px pasa a bar
 
 ---
 
+**Dónde fallo (R54).** Tarjeta de Analítica con las barras de intentos sin aprobar por tipo de fallo y por concepto (cada concepto enlaza a su ventana de debilidad), en el periodo elegido, y una línea de lectura con los intentos promedio hasta aprobar. Vacío: «Aún no hay intentos guardados en este periodo».
+
 ### 4.7 Objetivos *(propuesto, R44–R45)*
 - Cabecera con tu **rol** (editable en línea) y un botón «Nuevo foco».
-- Una tarjeta por foco: título, estado (Activo/Pausado/Logrado como `Segmented`), fechas, conceptos del grafo vinculados (chips con buscador) y el **material** en un área de texto grande con contador frente a `materialMaxCaracteres`. Aviso: «El material se usa solo como contexto para generar tus retos».
-- Máximo 3 focos activos; al intentar un cuarto se pide pausar uno. Guardado optimista con aviso si falla (R37).
+- Una tarjeta por foco: título, estado (Activo/Pausado/Logrado como `Segmented`), fechas, conceptos del grafo vinculados (chips con buscador), la **carpeta de material** del repo (campo `material/…` que muestra al instante los archivos que encontró, los omitidos con su motivo y avisos si no existe) y el **material en texto** en un área grande con contador frente a `materialMaxCaracteres`. Aviso: «El material se usa solo como contexto para generar tus retos».
+- Máximo 3 focos activos (`focosActivosMax`): un foco nuevo nace en pausa si ya hay 3 y «Activo» no se ofrece hasta pausar otro. **Guardado explícito** (botón Guardar, con «Cambios sin guardar» y aviso al cerrar la pestaña) porque son textos largos; el orquestador valida el archivo completo y, si lo rechaza, muestra todos los motivos sin tocar lo guardado.
 - Vacío: «Cuéntale al sistema qué estás estudiando para que tus retos se relacionen con ese material».
 
 ### 4.8 Agentes *(propuesto, R46–R48)*

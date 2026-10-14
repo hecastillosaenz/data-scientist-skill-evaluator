@@ -18,6 +18,7 @@ import { useApp } from '../data/DataContext';
 import { BusinessQuestions } from './challenge/BusinessQuestions';
 import { FinalTest } from './challenge/FinalTest';
 import { StageLogPanel } from './challenge/StageLogPanel';
+import { attemptsOfStage } from '../domain/attempts';
 import { initialHelp } from '../domain/stageHelp';
 import { initialStageUI, StageCard, type StageUI } from './challenge/StageCard';
 import styles from './ChallengeActual.module.css';
@@ -44,7 +45,7 @@ export function ChallengeActual() {
 }
 
 function ChallengeView({ challenge }: { challenge: Challenge }) {
-  const { data, insights, apoyoOf, stageStatusesOf, actions } = useApp();
+  const { data, insights, apoyoOf, stageStatusesOf, actions, attempts } = useApp();
   const statuses = stageStatusesOf(challenge);
   const firstOpen = challenge.stages.find((s) => statuses.get(s.id) !== 'completada') ?? challenge.stages[0]!;
   const [activeId, setActiveId] = useState(firstOpen.id);
@@ -66,7 +67,11 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
   const priorAttempts = (stageId: string) => data?.evidence.filter((e) => e.stageId === stageId).length ?? 0;
 
   const real = isRealChallenge(challenge.id);
-  const verifier = useVerifier((stageId, result) => patch(stageId, { result: { status: result.status, detail: result.summary } }));
+  const verifier = useVerifier((stageId, result) => {
+    patch(stageId, { result: { status: result.status, detail: result.summary } });
+    // El intento ya quedó guardado antes del resultado (R51): se recarga para listarlo.
+    if (real) void actions.reload();
+  });
 
   const verify = (stageId: string) => {
     const stage = challenge.stages.find((s) => s.id === stageId)!;
@@ -131,6 +136,7 @@ function ChallengeView({ challenge }: { challenge: Challenge }) {
                 verification={verifier.states[stage.id]}
                 onVerify={() => verify(stage.id)}
                 onCancelVerify={() => verifier.cancel(stage.id)}
+                attempts={attemptsOfStage(attempts, stage.id)}
               />
             );
           })}

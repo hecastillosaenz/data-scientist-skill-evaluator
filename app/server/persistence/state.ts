@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { StatePayload } from '../../shared/state';
+import { readAttempts } from '../attempts/attempt-store';
 import { scanChallenges } from '../challenges/challenge-fs';
 import { configDir } from '../paths';
 import { readGraph } from './graph-store';
@@ -36,12 +37,14 @@ export async function readState(opts: ReadStateOptions): Promise<StatePayload> {
     data: { user: { name }, now: now().toISOString(), concepts: graph.concepts, challenges: [], evidence: [], businessAnswers: [], testResults: [] },
     apoyos: {},
     started: {},
+    attempts: [],
     invalid: scan.invalid,
     problems: [],
     analysis: { pending: [], running: false, failed: {} },
   };
   for (const { dir, challenge } of scan.loaded) {
     payload.data.challenges.push(challenge);
+    payload.attempts.push(...(await readAttempts(dir)));
     try {
       const p = await readProgress(dir);
       payload.data.evidence.push(...p.evidence);

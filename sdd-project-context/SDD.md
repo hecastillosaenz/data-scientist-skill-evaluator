@@ -52,6 +52,8 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **HU25.** Como usuario, quiero **pedir un tema concreto** al planificar un reto (p. ej. «descenso del gradiente», porque estudio una certificación de cálculo para deep learning), para practicar justo eso en vez de lo que el sistema elegiría solo, sin perder la adaptación a mi nivel.
 - **HU26.** Como usuario, quiero **registrar mis objetivos de aprendizaje** (mi rol, lo que estudio ahora, su material y su fecha) para que los retos se relacionen con ese material de forma continua y no solo cuando pido un tema.
 - **HU27.** Como usuario, quiero una **ventana de monitoreo de los cuatro agentes** (Generador, Evaluador de código, Evaluador conceptual y Analista) con sus ejecuciones, costos, resultados y los últimos análisis, para saber qué hizo cada uno y por qué.
+- **HU28.** Como usuario, quiero que un foco de aprendizaje apunte a una **carpeta de mi repo** con mi material (PDFs, apuntes, notebooks) y que el Generador lo lea, para que los retos salgan de lo que estudio sin tener que pegar texto.
+- **HU29.** Como usuario, quiero que **cada intento** de una etapa (cada verificación, no solo el resultado que registro) quede guardado con mi código y **por qué falló**, versionable en git, para ver cómo avanzo y entender dónde fallo.
 
 ---
 
@@ -116,6 +118,13 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 - **R46.** *(Registro de ejecuciones.)* Cada invocación de un agente DEBE dejar un registro en `registro-agentes/ejecuciones/` con: id, **rol** (`generador` | `evaluador-codigo` | `evaluador-conceptual` | `analista`), inicio y fin, challenge/etapa/fase/Evidence asociados, presupuesto y costo, resultado (`ok` | `error` | `cancelado` | `presupuesto`), código de error, el mensaje de entrada, los eventos relevantes (texto, uso de herramientas, resultado) y la salida final. Es **local y fuera de git** (puede contener respuestas del usuario); se purga por antigüedad según `diasRegistroAgentes` de `calibracion.json`. Un fallo al escribir el registro NUNCA DEBE interrumpir ni alterar la ejecución del agente.
 - **R47.** *(Traspasos, no conversación.)* Los agentes NO se comunican entre sí (R14, S3): cada uno es un proceso aislado y se pasan información solo a través del orquestador y de artefactos (challenge publicado, Evidence, grafo). La ventana de monitoreo DEBE mostrar esos **traspasos** enlazando ejecuciones por challenge/etapa/Evidence («Generador publicó challenge-004 → Evaluador de código evaluó su etapa 2 → Analista observó la Evidence»), no un chat simulado.
 - **R48.** *(Ventana de monitoreo.)* Pantalla «Agentes»: (a) estado de cada uno de los cuatro (en ejecución / inactivo, última ejecución, costo del día y acumulado); (b) línea de tiempo de ejecuciones filtrable por rol, resultado y challenge; (c) detalle de una ejecución (entrada, eventos, salida, costo, error); (d) **últimos análisis** del Analista (observaciones aplicadas, enlaces propuestos, candidatos); (e) errores recientes. Se actualiza en vivo mientras haya una ejecución en curso, sin que la pantalla lance ni reintente nada: es de solo lectura.
+- **R49.** *(Material desde una carpeta.)* Un foco PUEDE indicar una **carpeta** relativa a la raíz del repo (`carpeta`, p. ej. `material/certificacion-dl`). El orquestador DEBE escanearla y entregar al Generador un **índice** (archivo, tipo, tamaño) más lectura de solo lectura sobre esa carpeta; el Generador abre solo lo que necesita (los PDF, por páginas). Tipos admitidos: `.pdf`, `.md`, `.txt`, `.ipynb`; hasta 60 archivos, 3 niveles de profundidad, 25 MB por PDF y 1 MB por el resto; lo demás se lista como omitido con su motivo. El texto pegado (`material`, R45) sigue existiendo y se suma.
+- **R50.** *(Seguridad del material.)* La carpeta DEBE quedar dentro del repo: se rechazan rutas absolutas, `..`, carpetas ocultas (`.git`…), `node_modules` y cualquier enlace simbólico que salga de la carpeta. El contenido es **dato del usuario, nunca instrucciones**, y solo lo ve el Generador (nunca el Evaluador ni el Analista). Una carpeta ausente o ilegible NO DEBE impedir generar: se avisa y se sigue sin ese material. `material/` está ignorada por git (S1 no la versiona: son archivos de terceros y pesan).
+- **R51.** *(Intento.)* Cada verificación de una etapa que llegue a un resultado (`aprobada`, `fallida` o `parcial`) DEBE guardarse como un **intento**: número correlativo por challenge, etapa, fecha, Apoyo, resultado, **snapshot del entregable** (el código o la respuesta de la celda `# Entregable` tal como estaba), el fallo clasificado (R52), el feedback del Evaluador y el costo. Una verificación que termina antes de leer la celda (celda no encontrada, marcador de otra etapa, datos que no se pudieron preparar) NO es un intento. Un intento NO es la Evidence (R10): no cambia el estado de ningún Concept, ni la racha, ni el nivel, ni Repaso.
+- **R52.** *(Clasificación del fallo.)* Todo intento no aprobado DEBE llevar un fallo con `tipo` y `resumen` en español: `error_python` (excepción y su última línea), `resultado_incorrecto` (qué fila o columna no coincide), `assert_fallido`, `tiempo_agotado`, `sin_resultado` (la celda no define el resultado esperado), `respuesta_incorrecta` o `respuesta_parcial` (etapas conceptuales). Una celda conceptual vacía no es un intento: es un error de la verificación. La clasificación la hace el orquestador con lo que ejecutó, no el agente.
+- **R53.** *(Versionado.)* Los intentos se escriben como archivos legibles y versionables en `challenge/challenge-NNN/intentos/NNN-etapa-X/` (`intento.json` y el entregable como `entregable.py` o `entregable.md`), de forma atómica y solo de añadir (nunca se reescribe ni se borra uno). Cada intento añade además una línea a `logs-avance.md`. El usuario decide cuándo hacer commit; la app no toca git. Con `?datos=ejemplo` no se guarda nada. Un fallo al escribir un intento NUNCA DEBE impedir devolver el resultado de la verificación: se avisa en el panel.
+- **R54.** *(Historia y patrón de fallos.)* La etapa DEBE mostrar sus intentos en orden (número, fecha, resultado, fallo y, al abrirlos, el código y el feedback). Analítica DEBE resumir **dónde se falla**: intentos fallidos por tipo de fallo, conceptos con más intentos fallidos y cuántos intentos hizo cada etapa aprobada. Solo se registra lo que se verifica: las ediciones del notebook sin verificar siguen en el historial de git del notebook.
+- **R55.** *(Alcance de los intentos.)* El Analista NO lee los intentos (R12 sigue analizando solo Evidence con notas o bloqueo); alimentarlo con ellos queda como mejora futura medida por costo.
 
 ---
 
@@ -171,6 +180,12 @@ Reemplazar el sistema actual de retos diarios de Data Science en Notion (registr
 | AC-R46 | (a) Tras una generación, una evaluación de código, una conceptual y un análisis, existen cuatro registros con el rol correcto. (b) Si la escritura del registro falla, el agente termina igual. (c) Los registros anteriores a `diasRegistroAgentes` se purgan. (d) `registro-agentes/` está en `.gitignore`. |
 | AC-R47 | Dado un challenge generado, evaluado y analizado, la vista lista los traspasos en orden enlazando las tres ejecuciones; no existe ninguna vista de «conversación» entre agentes. |
 | AC-R48 | (a) Con un agente en ejecución, la pantalla lo muestra «en ejecución» y se actualiza al terminar sin recargar. (b) Filtrar por rol y resultado reduce la línea de tiempo. (c) Abrir una ejecución muestra su entrada, eventos y salida. (d) La pantalla no dispara ninguna ejecución. |
+| AC-R49 | (a) Un foco con `carpeta` válida lista sus `.pdf`, `.md`, `.txt` e `.ipynb` con tipo y tamaño y los omitidos con motivo; (b) el prompt del Generador trae ese índice y la carpeta se le da con `--add-dir`; (c) se respetan los límites de archivos, profundidad y tamaño. |
+| AC-R50 | (a) `../x`, una ruta absoluta, `.git`, `node_modules` y un enlace simbólico que sale del repo se rechazan; (b) una carpeta inexistente no impide generar y se avisa; (c) el Evaluador y el Analista no reciben la carpeta; (d) `material/` está en `.gitignore`. |
+| AC-R51 | (a) Tras verificar una etapa aprobada, una fallida y una parcial existen tres intentos con número correlativo y el snapshot exacto de la celda; (b) «celda no encontrada» no crea intento; (c) registrar la etapa (Evidence) no cambia ni crea intentos, y los intentos no cambian el estado del Concept. |
+| AC-R52 | Cada causa de fallo (excepción de Python, tabla distinta, assert, timeout, sin resultado, respuesta incorrecta, parcial) produce su `tipo` con un `resumen` concreto, sin llamar al agente. |
+| AC-R53 | (a) Existen `intentos/NNN-etapa-X/intento.json` y `entregable.py`/`.md` y una línea en `logs-avance.md`; (b) un segundo intento no modifica el primero; (c) si la escritura falla, el resultado de la verificación se entrega igual con un aviso; (d) con `?datos=ejemplo` no se escribe nada. |
+| AC-R54 | La etapa lista sus intentos en orden con su fallo; Analítica agrupa los fallidos por tipo y por concepto y calcula los intentos por etapa aprobada. |
 
 **Deuda de diseño pendiente:** ninguna.
 
@@ -305,12 +320,14 @@ data-scientist-skill-evaluator/
 8. **P7** — Frontend: Grafo de conocimiento con cross-domain-by-default. *(R15, `UI-UX.md` §5)*
 9. **P8** — Tema a pedido y objetivos de aprendizaje, en dos subpasos: **P8a** `objetivos-store` + resolución de tema + cambios en `planChallenge` y en el diálogo de generar *(R43–R45)*; **P8b** pantalla «Objetivos» *(R44, R45, `UI-UX.md` §4.7)*.
 10. **P9** — Monitoreo de agentes: `registro-agentes` (instrumenta `agent-runner`) + API de lectura + pantalla «Agentes». *(R46–R48, `UI-UX.md` §4.8)*
+11. **P10** — Material desde una carpeta del repo: `material.ts` (escaneo seguro), índice en el prompt del Generador y campo «Carpeta» en Objetivos. *(R49, R50)*
+12. **P11** — Intentos: registro versionado de cada verificación con su fallo clasificado, lista por etapa y «Dónde fallo» en Analítica. *(R51–R55, `UI-UX.md` §4.3, §4.6)*
 
 > **Nota de orden.** P6 y P7 se construyeron antes que los agentes, sobre datos de ejemplo. Tras revisar la UI, P1 (`agent-runner`), P2 (`notebook-parser`) y una porción de P4 (verificación en vivo, R25–R27) se adelantan con un `challenge-001/` real para probar de punta a punta; P3 y P5 quedaron desbloqueados el 2026-10-14 (R38–R40; R12, R41, R42).
 
 ### 7.3 Deuda de diseño pendiente
 
-Ninguna en P0–P7. **P8 y P9** están especificados (R43–R48, §7.6) y a la espera de aprobación del autor. **P3 (Generador)** se desbloqueó con R38–R40 (§7.4) y **P5 (Analista)** con R12, R41 y R42 (§7.5), ambos el 2026-10-14.
+Ninguna. **P8** (tema y objetivos, R43–R45) y **P9** (monitoreo de agentes, R46–R48) están implementados (§7.6). **P3 (Generador)** se desbloqueó con R38–R40 (§7.4) y **P5 (Analista)** con R12, R41 y R42 (§7.5), ambos el 2026-10-14.
 
 ### 7.4 Resolución de la deuda de P3 *(aprobada por el autor el 2026-10-14; normativa en R38–R40)*
 
@@ -416,7 +433,7 @@ C primero (es una función pura sobre lo que ya hay y la usa A), luego A (`planC
 
 ---
 
-### 7.6 Tema a pedido, objetivos y monitoreo *(propuesta, decisiones del autor del 2026-10-14)*
+### 7.6 Tema a pedido, objetivos y monitoreo *(aprobado por el autor el 2026-10-14)*
 
 Objetivo del producto: la app es **adaptativa** y su meta es practicar el hands-on real de un data scientist. Tres necesidades nuevas, derivadas de que el autor estudia una certificación de cálculo para deep learning:
 
@@ -424,11 +441,32 @@ Objetivo del producto: la app es **adaptativa** y su meta es practicar el hands-
 2. **Objetivos de aprendizaje (R44, R45).** Un foco activo es contexto continuo (sesga, no manda); un tema es una orden puntual (manda). El material pegado es dato, nunca instrucción.
 3. **Monitoreo (R46–R48).** *Decisiones del autor:* los cuatro agentes son **Generador, Evaluador de código, Evaluador conceptual y Analista** (el Evaluador ya corre con herramientas y prompt distintos según el mecanismo, solo se separa en la pantalla); el registro se guarda en **archivos locales fuera de git**. Hoy las ejecuciones se emiten por NDJSON y se pierden: P9 empieza por registrarlas.
 
+**Ampliación (2026-10-14):** el autor pidió leer material de una carpeta del repo y versionar **todos** los intentos. Decisiones: el Generador lee los PDF **directamente** (Claude Code los lee por páginas; sin librería de extracción); `material/` va **fuera de git** (derechos de autor y peso); los intentos se guardan como **archivos y el autor hace el commit** (la app no toca git); el alcance es **registrar y mostrar** (el Analista no los lee todavía, R55). Detalles en R49–R55.
+
 **Aclaración de alcance.** Los agentes no «conversan» (R14, S3); lo que se puede mostrar con fidelidad son las ejecuciones y sus traspasos (R47).
 
 **Parámetros nuevos en `calibracion.json`:** `materialMaxCaracteres` (propuesto 4000) y `diasRegistroAgentes` (propuesto 30).
 
-**Abierto para aprobación:** (i) si el tema debe poder fijar también el dominio de los ejes de integración (propongo que no: la integración sigue siendo de Business); (ii) el número máximo de focos activos (propongo 3); (iii) si «Objetivos» y «Agentes» van como dos entradas nuevas de la barra lateral (propongo que sí, UI-UX §3).
+**Resuelto (el autor aprobó las propuestas):** la integración sigue siendo de Business salvo que el tema sea de negocio; máximo de 3 focos activos (`focosActivosMax`); «Objetivos» y «Agentes» son entradas nuevas de la barra lateral; `materialMaxCaracteres` = 4000 y `diasRegistroAgentes` = 30.
+
+**Implementado en P8 (detalles que la spec dejaba abiertos):**
+- El tema se resuelve sin agente (`resolveTema`): todas las palabras significativas del tema (sin tildes ni artículos) deben estar en el nombre o el id del concepto; «gradiente» da varias opciones (`ml:gd`, `math:partial`, `ml:boosting`) y «descenso del gradiente» da una sola.
+- Con un tema técnico: el tema va en la primera etapa de avance; si hay hueco y su **prerrequisito directo** no se ha visto, ese va antes (secuencial). Refuerzo y consolidación se limitan a la clausura de prerrequisitos del tema; los fallos ajenos esperan su turno (se dice en el plan). Un tema de negocio ocupa la integración.
+- Un foco influye si toca un concepto que de otro modo entraría al plan (frontera o consolidación); el plan lista solo los focos que influyeron (`plan.focos`).
+- Un concepto creado por el usuario (`POST /api/concepts`) usa el candado del grafo compartido con el Analista y guarda `.prev`.
+**Implementado en P9:**
+- `recordAgent` envuelve `runAgent` en los tres servicios (Generador por fase, Evaluador de código y conceptual por etapa, Analista por Evidence) y escribe `registro-agentes/ejecuciones/<fecha>-<rol>-<id>.json` al empezar (`en_curso`) y al terminar. Acota el mensaje (60 000 caracteres), los eventos (300) y la salida (30 000). Una ejecución `en_curso` en disco que ya no corre en este proceso se muestra como `interrumpida`.
+- `GET /api/agentes` (estado de los cuatro, línea de tiempo de las 200 más recientes, últimos análisis, conceptos creados por el Analista y errores) y `GET /api/agentes/ejecuciones/:id`; ambos de solo lectura. La purga por `diasRegistroAgentes` ocurre al leer, como mucho una vez por hora.
+- La pantalla consulta cada 2 s mientras algo corre y cada 15 s en reposo, y se detiene con la pestaña oculta. Los traspasos se derivan agrupando por challenge; no se guarda ningún «mensaje entre agentes» porque no existe.
+- No se registran todavía las ejecuciones del Orquestador (no es un agente de Claude) ni el texto del *system prompt* (es fijo y vive en el código).
+
+**Implementado en P10 y P11:**
+- **Material (P10).** `scanMaterial` resuelve la ruta real de la carpeta y la de cada archivo y descarta lo que salga de ella; nunca lanza por un problema del usuario. `GET /api/material?carpeta=` lo muestra en la pantalla Objetivos mientras escribes. El Generador recibe el índice y la carpeta como `--add-dir`; el Evaluador y el Analista no. **Pendiente de medir:** cuánto cuesta en una generación real leer un PDF por páginas (el presupuesto por fase es el tope).
+- **Intentos (P11).** El orquestador guarda el intento justo antes de emitir `result`, como un paso más de la línea de tiempo (`attempt`); si no puede escribir, el paso sale en error y la verificación termina igual. `GET /api/state` trae los resúmenes y `GET /api/challenges/:id/attempts/:n` el código y el feedback. El fallo de un error de Python se resume con la línea de la excepción (`KeyError: 'precio'`), no con la última línea del traceback. Los intentos no entran en `computeInsights`, el nivel, la racha ni Repaso.
+- Los intentos hechos antes de este cambio no existen: solo se guarda desde ahora.
+
+- Los focos con `hasta` vencido o `desde` futuro no influyen aunque estén en estado `activo`.
+
 
 ## Fase 8 — Decisiones y supuestos de la UI con datos de ejemplo
 

@@ -2,8 +2,11 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Apoyo, AttemptResult, Challenge, Stage } from '../../shared/types';
 import type { VerifyEvent } from '../../shared/verify';
+import { recordAgent } from '../agents/registro';
 import { AgentError, hasClaude as defaultHasClaude, runAgent as defaultRunAgent, type AgentRunOptions } from '../agents/agent-runner';
 import { DatasetError, prepareDataset, scanChallenges } from '../challenges/challenge-fs';
+import { saveAttempt, type NewAttempt } from '../attempts/attempt-store';
+import { classifyCodeFailure, classifyConceptualFailure, exceptionLine } from './classify-failure';
 import { compareTables, type Comparison } from './compare';
 import { codeMessage, conceptualMessage, evaluatorSystem, parseVerdict } from './evaluator-prompts';
 import { NotebookError, dataCells, findDeliverable, markdownAnswer, parseNotebook } from './notebook-parser';
@@ -14,6 +17,8 @@ export interface VerifyDeps {
   hasClaude: () => boolean;
   /** Intérprete Python con el que se ejecutan las celdas (por defecto `.venv/bin/python` del repo). */
   python?: string;
+  /** Reloj para la fecha de los intentos; se sustituye en los tests. */
+  now?: () => Date;
   /** Modo estricto del contrato (R29). En producción siempre es true; los tests con fixtures mínimos lo desactivan. */
   strict?: boolean;
 }
@@ -39,7 +44,7 @@ function failureSummary(comparison: Comparison | null, run: RunResult): string {
   if (comparison && !comparison.match) return comparison.problems[0]!;
   if (run.timedOut) return 'Tu celda superó el tiempo máximo (30 s) y se cortó.';
   if (run.harnessError) return run.harnessError;
-  const lastError = run.stderr.split('\n').map((l) => l.trim()).filter(Boolean).at(-1);
+  const lastError = exceptionLine(run.stderr);
   return lastError ? `Tu celda terminó con un error: ${lastError}` : 'La celda no pasó las comprobaciones.';
 }
 
@@ -52,6 +57,20 @@ function fallbackFeedback(passed: boolean, comparison: Comparison | null, run: R
   else if (run.exitCode !== 0) lines.push('La celda terminó con un error. Revisa la salida de errores.');
   if (comparison && !comparison.match) lines.push(...comparison.problems);
   return lines.map((l) => `- ${l}`).join('\n') || 'Tu celda no pasó las comprobaciones.';
+}
+
+/**
+ * Guarda el intento (SDD R51–R53) y lo cuenta en la línea de tiempo. Si no se puede escribir, la verificación NO falla:
+ * se avisa en el panel y el resultado se entrega igual.
+ */
+async function* saveAttemptStep(dir: string, attempt: NewAttempt): AsyncGenerator<VerifyEvent> {
+  yield step('attempt', 'Guardando el intento', 'running');
+  try {
+    const saved = await saveAttempt(dir, attempt);
+    yield step('attempt', 'Guardando el intento', 'ok', `Intento ${saved.number} en ${path.basename(dir)}/${saved.folder}/`);
+  } catch (err) {
+    yield step('attempt', 'Guardando el intento', 'error', `No pude guardar el intento (${(err as Error).message}). El resultado sigue siendo válido.`);
+  }
 }
 
 /**
@@ -117,7 +136,7 @@ export async function* verifyStage(params: VerifyParams): AsyncGenerator<VerifyE
   yield step('cell', `Buscando la celda «${marker}» en tu notebook`, 'ok', `Celda ${source.kind === 'code' ? 'de código' : 'de texto'} de ${source.source.split('\n').length} líneas`);
 
   if (!isCode) {
-    yield* evaluateConceptual({ challenge, stage, apoyo, answer: markdownAnswer(source.source), dir, deps, signal });
+    yield* evaluateConceptual({ challenge, stage, apoyo, answer: markdownAnswer(source.source), dir, deps, signal, repoRoot });
     return;
   }
 
@@ -171,7 +190,7 @@ export async function* verifyStage(params: VerifyParams): AsyncGenerator<VerifyE
   } else {
     try {
       const events: VerifyEvent[] = [];
-      const result = await deps.runAgent({
+      const result = await recordAgent(repoRoot, 'evaluador-codigo', deps.runAgent, { challengeId: challenge.id, stageId: stage.id })({
         message: codeMessage({ challenge, stage, apoyo, code: source.source, run, comparison, passed }),
         system: evaluatorSystem(),
         addDirs: [dir],
@@ -191,6 +210,11 @@ export async function* verifyStage(params: VerifyParams): AsyncGenerator<VerifyE
   }
 
   const status: AttemptResult = passed ? 'aprobada' : 'fallida';
+  const fallo = classifyCodeFailure({ passed, run, comparison });
+  yield* saveAttemptStep(dir, {
+    challengeId: challenge.id, stageId: stage.id, stageNumber: stage.number, at: (deps.now ?? (() => new Date()))().toISOString(), apoyo, result: status,
+    mechanism: stage.mechanism, kind: 'code', ...(fallo ? { fallo } : {}), cost, entregable: source.source, feedback,
+  });
   yield { type: 'result', status, summary: passed ? `Etapa ${stage.number} verificada: pasó todas las comprobaciones.` : failureSummary(comparison, run) };
   yield { type: 'done', cost };
 }
@@ -203,8 +227,9 @@ async function* evaluateConceptual(input: {
   dir: string;
   deps: VerifyDeps;
   signal: AbortSignal | undefined;
+  repoRoot: string;
 }): AsyncGenerator<VerifyEvent> {
-  const { challenge, stage, apoyo, answer, dir, deps, signal } = input;
+  const { challenge, stage, apoyo, answer, dir, deps, signal, repoRoot } = input;
   if (!answer) {
     yield { type: 'error', code: 'respuesta_vacia', message: `La celda «# Entregable - Etapa ${stage.number}:» está vacía. Escribe tu respuesta debajo del encabezado y vuelve a verificar.` };
     return;
@@ -217,7 +242,7 @@ async function* evaluateConceptual(input: {
   yield step('agent', 'Evaluando tu respuesta con la rúbrica', 'running');
   try {
     const events: VerifyEvent[] = [];
-    const result = await deps.runAgent({
+    const result = await recordAgent(repoRoot, 'evaluador-conceptual', deps.runAgent, { challengeId: challenge.id, stageId: stage.id })({
       message: conceptualMessage({ challenge, stage, apoyo, answer }),
       system: evaluatorSystem(),
       addDirs: [dir],
@@ -232,7 +257,13 @@ async function* evaluateConceptual(input: {
       } else yield e;
     }
     yield step('agent', 'Evaluando tu respuesta con la rúbrica', 'ok', verdict.found ? undefined : 'El Evaluador no indicó veredicto: se marcó como parcial');
-    yield { type: 'result', status: verdict.status, summary: verdict.status === 'aprobada' ? 'Respuesta correcta.' : verdict.status === 'parcial' ? 'Respuesta parcial: revisa el feedback.' : 'La respuesta no cumple los criterios.' };
+    const summary = verdict.status === 'aprobada' ? 'Respuesta correcta.' : verdict.status === 'parcial' ? 'Respuesta parcial: revisa el feedback.' : 'La respuesta no cumple los criterios.';
+    const fallo = classifyConceptualFailure(verdict.status, verdict.feedback || summary);
+    yield* saveAttemptStep(dir, {
+      challengeId: challenge.id, stageId: stage.id, stageNumber: stage.number, at: (deps.now ?? (() => new Date()))().toISOString(), apoyo, result: verdict.status,
+      mechanism: stage.mechanism, kind: 'markdown', ...(fallo ? { fallo } : {}), cost: result.cost, entregable: answer, feedback: verdict.feedback,
+    });
+    yield { type: 'result', status: verdict.status, summary };
     yield { type: 'done', cost: result.cost };
   } catch (err) {
     if (err instanceof AgentError && err.code === 'aborted') return void (yield { type: 'error', message: 'Verificación cancelada.', code: 'aborted' });

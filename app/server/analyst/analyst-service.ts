@@ -1,3 +1,4 @@
+import { recordAgent } from '../agents/registro';
 import { AgentError, hasClaude as defaultHasClaude, runAgent as defaultRunAgent } from '../agents/agent-runner';
 import { extractJson } from '../agents/json';
 import { loadCalibration } from '../generator/calibration';
@@ -25,7 +26,7 @@ const defaults: AnalystDeps = { runAgent: defaultRunAgent, hasClaude: () => defa
 
 /** Cola por repositorio: leer-modificar-escribir el grafo una operación a la vez (S6) sin perder cambios. */
 const locks = new Map<string, Promise<unknown>>();
-function withGraphLock<T>(repoRoot: string, job: () => Promise<T>): Promise<T> {
+export function withGraphLock<T>(repoRoot: string, job: () => Promise<T>): Promise<T> {
   const run = (locks.get(repoRoot) ?? Promise.resolve()).then(job, job);
   locks.set(repoRoot, run.catch(() => {}));
   return run;
@@ -71,7 +72,7 @@ export async function analyzeEvidence(params: { repoRoot: string; evidenceId: st
       if (remaining < 0.02) return { status: 'error', code: 'budget', message: `Se agotó el presupuesto del análisis (US$ ${config.presupuestoUsdAnalisis}). El registro queda pendiente.` };
       let text: string;
       try {
-        const result = await deps.runAgent({
+        const result = await recordAgent(repoRoot, 'analista', deps.runAgent, { evidenceId, challengeId: evidence.challengeId, stageId: evidence.stageId }, deps.now)({
           message: attempt === 0 ? message : analystRepair(message, previous, problem),
           system: analystSystem(),
           maxUsd: Math.round(remaining * 100) / 100,

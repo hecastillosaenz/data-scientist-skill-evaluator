@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus } from 'lucide-react';
 import { APOYO_LABEL, BLOCKER_LABEL, DIFFICULTY_LABEL, DOMAINS, DOMAIN_BY_ID } from '../../../shared/domains';
-import type { Apoyo, DomainId } from '../../../shared/types';
+import { FALLO_LABEL, type AttemptSummary } from '../../../shared/intentos';
+import type { Apoyo, AppData, DomainId } from '../../../shared/types';
 import { Card, EmptyState, PageHeader, ReadingLine, Skeleton } from '../components/cards';
 import { DifficultyChip } from '../components/chips';
 import { DomainTile } from '../components/DomainTile';
@@ -13,6 +14,7 @@ import { StackedBars } from '../charts/StackedBars';
 import { formatShortDate } from '../charts/format';
 import { activityHeatmap, blockerTrend, domainGaps, performanceByDifficulty, periodActivity, stagesByDomainApoyo } from '../domain/analytics';
 import { activityReadingLine, difficultyReadingLine, domainsReadingLine, gapsReadingLine, timeReadingLine, weaknessReadingLine } from '../domain/readingLines';
+import { attemptsSince, attemptsToApprove, failureBreakdown, failuresByConcept } from '../domain/attempts';
 import { globalLevel, levelByDomain } from '../domain/level';
 import { addDays, timePoints } from '../domain/stats';
 import { useApp } from '../data/DataContext';
@@ -23,7 +25,7 @@ const APOYO_COLOR: Record<Apoyo, string> = { guiado: '--s3', pistas: '--s2', aut
 const APOYOS: Apoyo[] = ['guiado', 'pistas', 'autonomo'];
 
 export function Analitica() {
-  const { loading, data, now } = useApp();
+  const { loading, data, now, attempts } = useApp();
   const [period, setPeriod] = useState<Period>('30');
   const days = Number(period);
 
@@ -38,8 +40,10 @@ export function Analitica() {
       heat: activityHeatmap(data.evidence, now, days),
       activity: periodActivity(data.evidence, now, days),
       levels: levelByDomain(data.challenges, data.evidence),
+      // Los intentos (R51) son las verificaciones, no los registros: aquí se ve dónde se falla (R54).
+      inPeriod: attemptsSince(attempts, addDays(now, -days)),
     };
-  }, [data, now, days]);
+  }, [data, now, days, attempts]);
 
   if (loading || !data || !view) {
     return <div aria-busy="true"><Skeleton w={220} h={32} /><div style={{ height: 24 }} /><Skeleton h={320} r={16} /></div>;
@@ -203,6 +207,8 @@ export function Analitica() {
           <ReadingLine>{difficultyReadingLine(view.difficulty)}</ReadingLine>
         </Card>
 
+        <WhereIFail attempts={view.inPeriod} allAttempts={attempts} data={data} />
+
         <Card className={styles.wide}>
           <h2>Actividad por día</h2>
           <p className={styles.sub}>Intentos registrados cada día</p>
@@ -211,5 +217,59 @@ export function Analitica() {
         </Card>
       </div>
     </>
+  );
+}
+
+/** «Dónde fallo» (SDD R54): el patrón de fallos de tus intentos, no solo de lo que registraste. */
+function WhereIFail({ attempts, allAttempts, data }: { attempts: AttemptSummary[]; allAttempts: AttemptSummary[]; data: AppData }) {
+  const byType = failureBreakdown(attempts);
+  const byConcept = failuresByConcept(attempts, data.challenges);
+  const toApprove = attemptsToApprove(allAttempts);
+  const failedTotal = byType.reduce((sum, x) => sum + x.count, 0);
+  const typeMax = Math.max(1, ...byType.map((x) => x.count));
+  const conceptMax = Math.max(1, ...byConcept.map((x) => x.count));
+  const nameOf = (id: string) => data.concepts.find((c) => c.id === id)?.name ?? id;
+
+  return (
+    <Card>
+      <h2>Dónde fallo</h2>
+      <p className={styles.sub}>Intentos de verificación sin aprobar en el periodo, no solo lo que registraste</p>
+      {attempts.length === 0 ? (
+        <p className={styles.muted}>Aún no hay intentos guardados en este periodo. Cada vez que verifiques una etapa quedará aquí.</p>
+      ) : failedTotal === 0 ? (
+        <p className={styles.muted}>{attempts.length} {attempts.length === 1 ? 'intento' : 'intentos'} y ninguno sin aprobar. Nada que corregir por ahora.</p>
+      ) : (
+        <>
+          <ul className={styles.gaps} aria-label="Fallos por tipo">
+            {byType.map((x) => (
+              <li key={x.tipo}>
+                <span>{FALLO_LABEL[x.tipo]}</span>
+                <span className={styles.levelBar} role="img" aria-label={`${x.count} intentos`}><span style={{ width: `${(x.count / typeMax) * 100}%` }} /></span>
+                <span className="mono">{x.count}</span>
+              </li>
+            ))}
+          </ul>
+          {byConcept.length > 0 && (
+            <>
+              <h3 className={styles.subhead}>Conceptos con más intentos sin aprobar</h3>
+              <ul className={styles.gaps} aria-label="Fallos por concepto">
+                {byConcept.map((x) => (
+                  <li key={x.conceptId}>
+                    <Link to={`/debilidad/${encodeURIComponent(x.conceptId)}`}>{nameOf(x.conceptId)}</Link>
+                    <span className={styles.levelBar} role="img" aria-label={`${x.count} intentos`}><span style={{ width: `${(x.count / conceptMax) * 100}%` }} /></span>
+                    <span className="mono">{x.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )}
+      {toApprove.stages > 0 && (
+        <ReadingLine>
+          En las {toApprove.stages} {toApprove.stages === 1 ? 'etapa aprobada' : 'etapas aprobadas'} necesitaste {toApprove.average.toFixed(1).replace('.', ',')} intentos en promedio (máximo {toApprove.max}).
+        </ReadingLine>
+      )}
+    </Card>
   );
 }

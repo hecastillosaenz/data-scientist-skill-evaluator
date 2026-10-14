@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import { DEFAULT_CALIBRATION, CalibrationError, loadCalibration, parseCalibration } from '../server/generator/calibration';
-import { checkAgainstPlan, planChallenge, type PlanInput } from '../server/generator/plan';
+import { checkAgainstPlan, planChallenge, TemaError, type PlanInput } from '../server/generator/plan';
 import { readGraph } from '../server/persistence/graph-store';
 import type { Apoyo, Bloom, Challenge, Concept, Difficulty, DomainId, Evidence, Stage } from '../shared/types';
 
@@ -222,10 +222,102 @@ describe('calibracion.json', () => {
   it('el archivo del repo es válido y coincide con lo documentado en el SDD', async () => {
     const config = await loadCalibration(path.resolve(import.meta.dirname, '../..'));
     expect(config).toEqual(DEFAULT_CALIBRATION);
-    expect(config).toMatchObject({ evidenciaSuficiente: 8, etapasPorChallenge: 3, diasOlvido: 21, ventanaTemas: 3, presupuestoUsdPorFase: 0.75, reparacionesPorFase: 2, horasConservacion: 24, presupuestoUsdAnalisis: 0.3 });
+    expect(config).toMatchObject({ evidenciaSuficiente: 8, etapasPorChallenge: 3, diasOlvido: 21, ventanaTemas: 3, presupuestoUsdPorFase: 0.75, reparacionesPorFase: 2, horasConservacion: 24, presupuestoUsdAnalisis: 0.3, materialMaxCaracteres: 4000, focosActivosMax: 3, diasRegistroAgentes: 30 });
   });
 
   it('un archivo ausente usa los valores por defecto', async () => {
     expect(await loadCalibration('/no/existe')).toEqual(DEFAULT_CALIBRATION);
+  });
+});
+
+describe('tema a pedido y focos de aprendizaje (R43, R45)', () => {
+  const DL: Concept[] = [
+    concept('math:opt', 'math'),
+    concept('math:partial', 'math'),
+    concept('ml:gd', 'ml', ['math:partial', 'math:opt']),
+    concept('sql:a', 'sql'),
+    concept('sql:b', 'sql'),
+    concept('python:x', 'python'),
+    concept('business:kpi', 'business'),
+  ];
+  const calibrated = { ...DEFAULT_CALIBRATION, evidenciaSuficiente: 0 };
+  const failed = (n: number, conceptId: string, times = 2) => {
+    const s = stageOf(`challenge-${n}`, conceptId, { bloom: 3 });
+    return { challenge: challengeOf(n, [s], { title: `Falla ${n}`, dataset: `D${n}` }), evidence: Array.from({ length: times }, (_, i) => ev(s, { result: 'fallida', apoyo: 'pistas', at: daysAgo(3 - i) })) };
+  };
+  const tema = { conceptId: 'ml:gd', texto: 'descenso del gradiente' };
+
+  it('AC-R43a: el tema ocupa las etapas de avance y se anota en el plan y en el razonamiento', () => {
+    const plan = planChallenge(input({ concepts: DL, tema }));
+    expect(plan.tema).toEqual(tema);
+    const avance = plan.stages.filter((s) => s.role === 'avance');
+    expect(avance.map((s) => s.conceptIds[0])).toContain('ml:gd');
+    expect(plan.domain).toBe('ml');
+    expect(plan.rationale.join(' ')).toContain('Pediste practicar «descenso del gradiente»');
+    expect(plan.stages.at(-1)!.role).toBe('integracion');
+  });
+
+  it('un fundamento sin ver va antes del tema (las etapas son secuenciales) y el tema empieza Guiado', () => {
+    const plan = planChallenge(input({ concepts: DL, tema }));
+    const order = plan.stages.map((s) => s.conceptIds[0]);
+    expect(order.indexOf('math:opt')).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf('math:opt')).toBeLessThan(order.indexOf('ml:gd'));
+    expect(plan.stages.find((s) => s.conceptIds[0] === 'ml:gd')!.apoyo).toBe('guiado');
+  });
+
+  it('AC-R43b: un fundamento del tema con fallos entra como refuerzo antes', () => {
+    const f = failed(901, 'math:partial');
+    const plan = planChallenge(input({ concepts: DL, tema, config: calibrated, challenges: [f.challenge], evidence: f.evidence }));
+    expect(plan.stages[0]).toMatchObject({ role: 'refuerzo', conceptIds: ['math:partial'], apoyo: 'guiado' });
+    expect(plan.stages[1]!.conceptIds).toEqual(['ml:gd']);
+  });
+
+  it('los fallos de conceptos ajenos al tema esperan su turno', () => {
+    const f = failed(902, 'sql:a');
+    const plan = planChallenge(input({ concepts: DL, tema, config: calibrated, challenges: [f.challenge], evidence: f.evidence }));
+    expect(plan.stages.some((s) => s.role === 'refuerzo')).toBe(false);
+    expect(plan.stages.map((s) => s.conceptIds[0])).toContain('ml:gd');
+  });
+
+  it('la calibración sigue mandando: con poca evidencia el plan sigue en modo arranque con el tema', () => {
+    const plan = planChallenge(input({ concepts: DL, tema }));
+    expect(plan.mode).toBe('arranque');
+    expect(plan.stages.every((s) => s.difficulty === 1 && s.apoyo === 'guiado')).toBe(true);
+  });
+
+  it('un tema inexistente se rechaza con un error explícito', () => {
+    expect(() => planChallenge(input({ concepts: DL, tema: { conceptId: 'ml:nope', texto: 'x' } }))).toThrow(TemaError);
+  });
+
+  it('el plan con tema es determinista', () => {
+    expect(planChallenge(input({ concepts: DL, tema }))).toEqual(planChallenge(input({ concepts: [...DL].reverse(), tema })));
+  });
+
+  it('AC-R45a: entre dos candidatos de avance equivalentes gana el del foco y se registra', () => {
+    const base = planChallenge(input({ concepts: DL, config: calibrated, domain: 'sql' }));
+    expect(base.stages.find((s) => s.role === 'avance')!.conceptIds).toEqual(['sql:a']);
+    const focused = planChallenge(input({ concepts: DL, config: calibrated, domain: 'sql', focos: [{ id: 'f', titulo: 'Mi certificación', conceptIds: ['sql:b'] }] }));
+    expect(focused.stages.find((s) => s.role === 'avance')!.conceptIds).toEqual(['sql:b']);
+    expect(focused.focos).toEqual(['Mi certificación']);
+    expect(focused.rationale.join(' ')).toContain('Toca tu foco «Mi certificación»');
+  });
+
+  it('un foco decide el dominio del avance cuando nada más lo fija', () => {
+    expect(planChallenge(input({ concepts: DL, config: calibrated })).domain).toBe('sql');
+    const plan = planChallenge(input({ concepts: DL, config: calibrated, focos: [{ id: 'f', titulo: 'Python', conceptIds: ['python:x'] }] }));
+    expect(plan.domain).toBe('python');
+    expect(plan.stages[0]!.conceptIds).toEqual(['python:x']);
+  });
+
+  it('AC-R45b: un concepto con fallos sigue entrando como refuerzo aunque no sea del foco', () => {
+    const f = failed(903, 'sql:a');
+    const plan = planChallenge(input({ concepts: DL, config: calibrated, challenges: [f.challenge], evidence: f.evidence, focos: [{ id: 'f', titulo: 'Python', conceptIds: ['python:x'] }] }));
+    expect(plan.stages[0]).toMatchObject({ role: 'refuerzo', conceptIds: ['sql:a'] });
+  });
+
+  it('sin focos el plan no cambia', () => {
+    const plain = planChallenge(input({ concepts: DL, config: calibrated }));
+    expect(planChallenge(input({ concepts: DL, config: calibrated, focos: [] }))).toEqual(plain);
+    expect(plain.focos).toEqual([]);
   });
 });

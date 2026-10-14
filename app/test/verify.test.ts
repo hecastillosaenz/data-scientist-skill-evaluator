@@ -2,6 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { readRuns } from '../server/agents/registro';
+import { readAttempt, readAttempts } from '../server/attempts/attempt-store';
+import { readFileSync } from 'node:fs';
 import { buildApp, type App } from '../server/app';
 import { isAllowedRequest } from '../server/guard';
 import { verifyStage, type VerifyDeps } from '../server/verify/verify-service';
@@ -79,7 +82,7 @@ describe('verifyStage · etapas de código (R8, R26, R27)', () => {
     const calls: AgentCall[] = [];
     const events = await collect(1, fakeDeps({ calls }));
     expect(summary(events)).toEqual([
-      'load:running', 'load:ok', 'cell:running', 'cell:ok', 'run:running', 'run:ok', 'compare:running', 'compare:ok', 'agent:running', 'tool', 'feedback', 'agent:ok', 'result', 'done',
+      'load:running', 'load:ok', 'cell:running', 'cell:ok', 'run:running', 'run:ok', 'compare:running', 'compare:ok', 'agent:running', 'tool', 'feedback', 'agent:ok', 'attempt:running', 'attempt:ok', 'result', 'done',
     ]);
     expect(find(events, 'result')).toMatchObject({ status: 'aprobada' });
     expect(find(events, 'feedback')?.text).toBe('Buen trabajo.');
@@ -88,6 +91,12 @@ describe('verifyStage · etapas de código (R8, R26, R27)', () => {
     expect(calls[0]!.addDirs).toEqual([join(repo, 'challenge', 'challenge-001')]);
     expect(calls[0]!.message).toContain('Veredicto ya decidido por el orquestador: APROBADA');
     expect(calls[0]!.system).toContain('solo lectura');
+    // AC-R46a: la invocación queda registrada con su rol y a qué etapa pertenece.
+    const run = (await readRuns(repo)).find((r) => r.rol === 'evaluador-codigo');
+    expect(run).toMatchObject({ outcome: 'ok', challengeId: 'challenge-001', cost: 0.01, output: 'Buen trabajo.' });
+    expect(run!.stageId).toBeTruthy();
+    expect(run!.events.map((e) => e.type)).toEqual(['tool', 'text']);
+    expect(run!.input).toContain('APROBADA');
   });
 
   it('un fallo da veredicto «fallida» y cuenta qué fila no coincide, sin esperar al agente', async () => {
@@ -185,6 +194,7 @@ describe('verifyStage · etapas conceptuales (HU7)', () => {
     expect(calls[0]!.message).toContain('Recomiendo investigar hogar');
     expect(calls[0]!.message).toContain('REFERENCIA SECRETA'); // la referencia llega al agente…
     expect(calls[0]!.message).toContain('no la reveles'); // …con la orden de no revelarla
+    expect((await readRuns(repo)).some((r) => r.rol === 'evaluador-conceptual' && r.outcome === 'ok')).toBe(true);
   });
 
   it('veredicto parcial e incorrecta; sin veredicto cuenta como parcial', async () => {
@@ -283,5 +293,95 @@ describe('POST /api/challenges/:id/stages/:n/verify', () => {
     app = await buildApp({ repoRoot: repo, webDist: '/no/existe', strictChallenges: false });
     const res = await app.inject('/api/challenges');
     expect(res.json().challenges.map((c: { id: string }) => c.id)).toEqual(['challenge-001']);
+  });
+});
+
+describe('intentos: cada verificación queda guardada (R51–R54)', () => {
+  const dir = () => join(repo, 'challenge', 'challenge-001');
+  const count = async () => (await readAttempts(dir())).length;
+  const newest = async () => (await readAttempts(dir())).at(-1)!;
+
+  it('AC-R51a/AC-R53a: una etapa aprobada deja el intento con el snapshot exacto de la celda y una línea en logs-avance.md', async () => {
+    const source = '# Entregable - Etapa 1:\nresultado = [{"k": "a", "v": 1}, {"k": "b", "v": 2}]';
+    writeNotebook([{ type: 'code', src: source }]);
+    const before = await count();
+    const events = await collect(1, fakeDeps(), { apoyo: 'autonomo' });
+    expect(events.find((e) => e.type === 'step' && e.id === 'attempt' && e.status === 'ok')).toMatchObject({ detail: expect.stringContaining('Intento') });
+    const a = await newest();
+    expect(a.number).toBe(before + 1);
+    expect(a).toMatchObject({ challengeId: 'challenge-001', stageNumber: 1, result: 'aprobada', apoyo: 'autonomo', kind: 'code', mechanism: 'codigo_assert', cost: 0.01 });
+    expect(a.fallo).toBeUndefined();
+    expect(a.folder).toMatch(/^intentos\/\d{3}-etapa-1$/);
+    const full = await readAttempt(dir(), a.number);
+    expect(full!.entregable.trim()).toBe(source);
+    expect(full!.feedback).toBe('Buen trabajo.');
+    expect(readFileSync(join(dir(), a.folder, 'entregable.py'), 'utf8').trim()).toBe(source);
+    expect(readFileSync(join(dir(), 'logs-avance.md'), 'utf8')).toContain(`Intento ${a.number} · Etapa 1 · Aprobada`);
+  });
+
+  it('AC-R52: clasifica cada causa de fallo sin llamar al agente y un segundo intento no toca el primero', async () => {
+    const cases: [string, string, RegExp][] = [
+      ['resultado_incorrecto', 'resultado = [{"k": "a", "v": 1}, {"k": "b", "v": 99}]', /Fila 2/],
+      ['error_python', 'resultado = 1 / 0', /ZeroDivisionError/],
+      ['error_python', 'resultado = no_existe', /NameError/],
+      ['sin_resultado', 'valor = 1', /no define la variable `resultado`/],
+    ];
+    let first: Awaited<ReturnType<typeof readAttempt>> = null;
+    for (const [tipo, code, resumen] of cases) {
+      writeNotebook([{ type: 'code', src: `# Entregable - Etapa 1:\n${code}` }]);
+      const before = await count();
+      await collect(1, fakeDeps({ hasClaude: false }));
+      expect(await count()).toBe(before + 1);
+      const a = await newest();
+      expect(a.result).toBe('fallida');
+      expect(a.fallo).toMatchObject({ tipo });
+      expect(a.fallo!.resumen).toMatch(resumen);
+      first ??= await readAttempt(dir(), a.number);
+    }
+    const again = await readAttempt(dir(), first!.number);
+    expect(again).toEqual(first); // el primero sigue idéntico
+  });
+
+  it('un assert que falla y un tiempo agotado tienen su propio tipo', async () => {
+    writeNotebook([{ type: 'code', src: '# Entregable - Etapa 3:\nx = 2' }]);
+    await collect(3, fakeDeps({ hasClaude: false }));
+    expect((await newest()).fallo).toMatchObject({ tipo: 'assert_fallido', resumen: expect.stringContaining('x debía valer 3') });
+    expect((await newest()).stageNumber).toBe(3);
+  });
+
+  it('una etapa conceptual guarda la respuesta como markdown y su veredicto como fallo', async () => {
+    writeNotebook([{ type: 'markdown', src: '# Entregable - Etapa 2:\nMi respuesta a medias.' }]);
+    const before = await count();
+    await collect(2, fakeDeps({ text: 'Falta la cifra.\nVEREDICTO: parcial' }));
+    expect(await count()).toBe(before + 1);
+    const a = await readAttempt(dir(), (await newest()).number);
+    expect(a).toMatchObject({ kind: 'markdown', result: 'parcial', mechanism: 'rubric_claude', fallo: { tipo: 'respuesta_parcial' }, feedback: 'Falta la cifra.' });
+    expect(a!.entregable).toContain('Mi respuesta a medias.');
+    expect(a!.folder).toMatch(/etapa-2$/);
+    expect(readFileSync(join(dir(), a!.folder, 'entregable.md'), 'utf8')).toContain('Mi respuesta a medias.');
+  });
+
+  it('AC-R51b: una celda que no existe no es un intento', async () => {
+    writeNotebook([{ type: 'code', src: '# Entregable - Etapa 9:\nresultado = 1' }]);
+    const before = await count();
+    await collect(1, fakeDeps());
+    expect(await count()).toBe(before);
+  });
+
+  it('AC-R53c: si no se puede guardar el intento, el resultado se entrega igual con un aviso', async () => {
+    writeNotebook([{ type: 'code', src: '# Entregable - Etapa 1:\nresultado = [{"k": "a", "v": 1}, {"k": "b", "v": 2}]' }]);
+    const blocked = join(repo, 'challenge', 'challenge-001', 'intentos');
+    const { renameSync, rmSync: rm, writeFileSync: write } = await import('node:fs');
+    renameSync(blocked, `${blocked}.bak`);
+    write(blocked, 'soy un archivo, no una carpeta');
+    try {
+      const events = await collect(1, fakeDeps());
+      expect(find(events, 'result')).toMatchObject({ status: 'aprobada' });
+      expect(events.find((e) => e.type === 'step' && e.id === 'attempt' && e.status === 'error')).toMatchObject({ detail: expect.stringContaining('El resultado sigue siendo válido') });
+      expect(events.at(-1)).toMatchObject({ type: 'done' });
+    } finally {
+      rm(blocked, { force: true });
+      renameSync(`${blocked}.bak`, blocked);
+    }
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GenerateEvent, PendingGeneration } from '../../../../shared/generate';
+import type { TemaPedido } from '../../../../shared/objetivos';
 import type { DomainId } from '../../../../shared/types';
 import type { ChallengePlan } from '../../../../server/generator/plan';
 import { cancelledGenerate, interruptedGenerate, reduceGenerate, startedGenerate, type GenerateState } from '../../domain/generateState';
@@ -7,6 +8,8 @@ import { readNdjson } from '../../domain/verifyState';
 
 export interface GenerateRequest {
   dominio?: DomainId;
+  /** Tema a pedido ya resuelto a un concepto (R43). */
+  tema?: TemaPedido;
   /** Retoma el trabajo conservado desde la última fase válida (R39). */
   resume?: boolean;
   /** 2 = «Reintentar con el doble de presupuesto». */
@@ -82,7 +85,7 @@ export function useGenerator(onResult: () => void) {
 }
 
 /** Vista previa del plan (R38) y trabajo conservado (R39) para el diálogo; ambos son de solo lectura. */
-export function usePlanPreview(open: boolean, dominio: DomainId | null) {
+export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: TemaPedido | null = null) {
   const [plan, setPlan] = useState<ChallengePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingGeneration | null>(null);
@@ -92,7 +95,13 @@ export function usePlanPreview(open: boolean, dominio: DomainId | null) {
     let cancelled = false;
     setPlan(null);
     setError(null);
-    fetch(`/api/plan${dominio ? `?dominio=${dominio}` : ''}`)
+    const query = new URLSearchParams();
+    if (dominio) query.set('dominio', dominio);
+    if (tema) {
+      query.set('concepto', tema.conceptId);
+      query.set('tema', tema.texto);
+    }
+    fetch(`/api/plan${query.size > 0 ? `?${query}` : ''}`)
       .then(async (res) => {
         const body = (await res.json()) as ChallengePlan & { message?: string };
         if (cancelled) return;
@@ -103,7 +112,7 @@ export function usePlanPreview(open: boolean, dominio: DomainId | null) {
     return () => {
       cancelled = true;
     };
-  }, [open, dominio]);
+  }, [open, dominio, tema]);
 
   useEffect(() => {
     if (!open) return;

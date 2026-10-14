@@ -1,12 +1,18 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Apoyo, Challenge } from '../../shared/types';
 import type { StatePayload } from '../../shared/state';
+import { readAttempt } from '../attempts/attempt-store';
 import { scanChallenges, type LoadedChallenge } from '../challenges/challenge-fs';
 import { CalibrationError, loadCalibration } from '../generator/calibration';
-import { planChallenge } from '../generator/plan';
+import { loadLearning } from '../generator/aprendizaje';
+import { planChallenge, TemaError } from '../generator/plan';
+import { newConceptId, resolveTema } from '../generator/tema';
+import { withGraphLock } from '../analyst/analyst-service';
+import { scanMaterial } from '../generator/material';
+import { ObjetivosError, readObjetivos, writeObjetivos } from './objetivos-store';
 import { DOMAINS } from '../../shared/domains';
 import type { DomainId } from '../../shared/types';
-import { GraphError, readGraph } from './graph-store';
+import { GraphError, readGraph, writeGraph } from './graph-store';
 import { readState } from './state';
 import {
   ProgressCorruptError,
@@ -44,6 +50,7 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
 
   const sendError = (reply: FastifyReply, err: unknown) => {
     if (err instanceof ProgressCorruptError) return reply.code(422).send({ error: 'progress_corrupt', message: err.message });
+    if (err instanceof ObjetivosError) return reply.code(422).send({ error: 'objetivos_invalid', message: err.message, errors: err.errors });
     if (err instanceof GraphError) return reply.code(503).send({ error: 'graph_corrupt', message: err.message, errors: err.errors });
     throw err;
   };
@@ -69,13 +76,15 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
    * Plan de calibración del próximo challenge (R38): qué practicar según el grafo y la evidencia. `?dominio=` es la
    * elección manual opcional; por defecto lo recomienda el grafo. Es de solo lectura: no genera nada.
    */
-  app.get<{ Querystring: { dominio?: string } }>('/api/plan', async (req, reply) => {
+  app.get<{ Querystring: { dominio?: string; concepto?: string; tema?: string } }>('/api/plan', async (req, reply) => {
     const wanted = req.query.dominio;
     if (wanted !== undefined && !DOMAINS.some((d) => d.id === wanted)) {
       return invalid(reply, [`«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.`]);
     }
     try {
       const [state, config] = await Promise.all([gatherState(), loadCalibration(opts.repoRoot)]);
+      const { focos } = await loadLearning(opts.repoRoot, state.data.concepts, config, now());
+      const tema = req.query.concepto ? { conceptId: req.query.concepto, texto: (req.query.tema ?? '').slice(0, 120) || req.query.concepto } : undefined;
       return planChallenge({
         concepts: state.data.concepts,
         challenges: state.data.challenges,
@@ -84,11 +93,89 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
         config,
         now: now(),
         ...(wanted ? { domain: wanted as DomainId } : {}),
+        ...(tema ? { tema } : {}),
+        focos,
       });
     } catch (err) {
+      if (err instanceof TemaError) return invalid(reply, [err.message]);
       if (err instanceof CalibrationError) return reply.code(422).send({ error: 'calibration_invalid', message: err.message });
       return sendError(reply, err);
     }
+  });
+
+  /** Resuelve un tema de texto libre contra el grafo (R43): una coincidencia, varias para elegir o ninguna. Solo lectura. */
+  app.get<{ Querystring: { q?: string } }>('/api/tema', async (req, reply) => {
+    try {
+      const graph = await readGraph(opts.repoRoot);
+      const r = resolveTema(req.query.q ?? '', graph.concepts);
+      return { status: r.status, matches: r.matches.map((c) => ({ id: c.id, name: c.name, domain: c.domain })) };
+    } catch (err) {
+      return sendError(reply, err);
+    }
+  });
+
+  /**
+   * Crea un concepto a petición del usuario (R43): cuando su tema no existe en el grafo. Origen `usuario`; los
+   * prerrequisitos deben existir y no puede formar ciclos. Comparte la cola del grafo con el Analista.
+   */
+  app.post<{ Body: { name?: unknown; domain?: unknown; prerequisites?: unknown } | undefined }>('/api/concepts', async (req, reply) => {
+    const b = req.body ?? {};
+    const name = typeof b.name === 'string' ? b.name.trim() : '';
+    const errors: string[] = [];
+    if (name === '' || name.length > 80) errors.push('«name» debe tener entre 1 y 80 caracteres.');
+    if (typeof b.domain !== 'string' || !DOMAINS.some((d) => d.id === b.domain)) errors.push(`«domain» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.`);
+    const prereqs = Array.isArray(b.prerequisites) && b.prerequisites.every((p) => typeof p === 'string') ? ([...new Set(b.prerequisites)] as string[]) : b.prerequisites === undefined ? [] : null;
+    if (prereqs === null || prereqs.length > 5) errors.push('«prerequisites» debe ser una lista de hasta 5 ids.');
+    if (errors.length > 0) return invalid(reply, errors);
+    try {
+      const created = await withGraphLock(opts.repoRoot, async () => {
+        const graph = await readGraph(opts.repoRoot);
+        const ids = new Set(graph.concepts.map((c) => c.id));
+        const missing = prereqs!.filter((p) => !ids.has(p));
+        if (missing.length > 0) return { error: `Los prerrequisitos ${missing.join(', ')} no existen en el grafo.` };
+        if (graph.concepts.some((c) => c.domain === b.domain && c.name.toLowerCase() === name.toLowerCase())) return { error: `Ya existe un concepto «${name}» en ese dominio.` };
+        const concept = { id: newConceptId(b.domain as string, name, ids), name, domain: b.domain as DomainId, prerequisites: prereqs!, origin: 'usuario' as const, since: now().toISOString() };
+        await writeGraph(opts.repoRoot, { ...graph, concepts: [...graph.concepts, concept] }, { backup: true });
+        return { concept };
+      });
+      if ('error' in created) return invalid(reply, [created.error!]);
+      return reply.code(201).send(created.concept);
+    } catch (err) {
+      return sendError(reply, err);
+    }
+  });
+
+  /** Objetivos de aprendizaje (R44). `PUT` reemplaza el archivo completo tras validarlo; si no es válido no se toca. */
+  app.get('/api/objetivos', async (_req, reply) => {
+    try {
+      const [graph, config] = await Promise.all([readGraph(opts.repoRoot), loadCalibration(opts.repoRoot)]);
+      const objetivos = await readObjetivos(opts.repoRoot, { conceptIds: new Set(graph.concepts.map((c) => c.id)), focosActivosMax: config.focosActivosMax });
+      return { objetivos, limites: { focosActivosMax: config.focosActivosMax, materialMaxCaracteres: config.materialMaxCaracteres } };
+    } catch (err) {
+      return sendError(reply, err);
+    }
+  });
+
+  /** Qué hay en la carpeta de material de un foco (R49): archivos con tipo y tamaño, omitidos con motivo y avisos. Solo lectura. */
+  app.get<{ Querystring: { carpeta?: string } }>('/api/material', async (req) => scanMaterial(opts.repoRoot, req.query.carpeta ?? ''));
+
+  app.put<{ Body: unknown }>('/api/objetivos', async (req, reply) => {
+    try {
+      const [graph, config] = await Promise.all([readGraph(opts.repoRoot), loadCalibration(opts.repoRoot)]);
+      const objetivos = await writeObjetivos(opts.repoRoot, req.body, { conceptIds: new Set(graph.concepts.map((c) => c.id)), focosActivosMax: config.focosActivosMax });
+      return { objetivos };
+    } catch (err) {
+      return sendError(reply, err);
+    }
+  });
+
+  /** Un intento completo (R51): snapshot del entregable y feedback. Solo lectura. */
+  app.get<{ Params: { id: string; n: string } }>('/api/challenges/:id/attempts/:n', async (req, reply) => {
+    const found = await load(req.params.id);
+    if (!found) return notFound(reply, req.params.id);
+    const attempt = /^\d{1,6}$/.test(req.params.n) ? await readAttempt(found.dir, Number(req.params.n)) : null;
+    if (!attempt) return reply.code(404).send({ error: 'attempt_not_found', message: `No encontré el intento ${req.params.n} de «${req.params.id}».` });
+    return attempt;
   });
 
   type P = { Params: { id: string } };

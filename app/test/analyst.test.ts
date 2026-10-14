@@ -1,3 +1,4 @@
+import { readRuns } from '../server/agents/registro';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -88,6 +89,10 @@ describe('qué se analiza (R12, AC-R12a)', () => {
     expect(calls[0]!.message).toContain('Me confundí con el LEFT JOIN');
     expect(calls[0]!.message).toContain(concept);
     expect((await readGraph(tmp)).observations![0]).toMatchObject({ status: 'ok', diagnosis: 'Confunde el grano de las tablas al unir.' });
+    // AC-R46a: el análisis queda registrado con su rol y la Evidence que analizó.
+    const runs = await readRuns(tmp);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ rol: 'analista', outcome: 'ok', evidenceId: 'ev-nota01', challengeId: 'challenge-001', maxUsd: 0.3, cost: 0.05 });
   });
 
   it('un bloqueo marcado basta para analizar aunque no haya notas', async () => {

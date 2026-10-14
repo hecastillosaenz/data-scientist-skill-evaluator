@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router';
-import { ChartLine, House, ListChecks, Network, PlayCircle, RefreshCw } from 'lucide-react';
+import { Bot, ChartLine, House, ListChecks, Network, PlayCircle, RefreshCw, Target } from 'lucide-react';
 import { EmptyState, SampleDataTag } from '../components/cards';
 import { Notices } from '../components/Notices';
 import { GapDialog } from '../components/GapDialog';
@@ -15,6 +15,8 @@ const NAV = [
   { to: '/repaso', label: 'Repaso', short: 'Repaso', icon: RefreshCw },
   { to: '/grafo', label: 'Grafo de conocimiento', short: 'Grafo', icon: Network },
   { to: '/analitica', label: 'Analítica', short: 'Analítica', icon: ChartLine },
+  { to: '/objetivos', label: 'Objetivos', short: 'Metas', icon: Target },
+  { to: '/agentes', label: 'Agentes', short: 'Agentes', icon: Bot },
 ];
 
 export function AppShell() {

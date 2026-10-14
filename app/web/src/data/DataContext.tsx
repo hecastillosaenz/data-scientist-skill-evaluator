@@ -43,6 +43,8 @@ interface AppState {
   notices: Notice[];
   /** Estado del Analista: registros pendientes, análisis en curso y fallidos (R12, R42). */
   analysis: StatePayload['analysis'];
+  /** Intentos guardados de todos los challenges (R51, R54). */
+  attempts: StatePayload['attempts'];
   data: AppData | null;
   now: Date;
   insights: Map<string, ConceptInsight>;
@@ -64,6 +66,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [started, setStarted] = useState<Set<string>>(new Set());
   const [notices, setNotices] = useState<Notice[]>([]);
   const [analysis, setAnalysis] = useState<StatePayload['analysis']>({ pending: [], running: false, failed: {} });
+  const [attempts, setAttempts] = useState<StatePayload['attempts']>([]);
   const watching = useRef(false);
 
   useEffect(() => {
@@ -77,6 +80,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setApoyos(loaded.apoyos);
         setStarted(new Set(loaded.started));
         setAnalysis(loaded.analysis);
+        setAttempts(loaded.attempts);
         setNotices([
           ...loaded.problems.map((detail, i) => ({ id: `problem-${i}`, kind: 'error' as const, title: 'Progreso ilegible', detail })),
           ...loaded.invalid.map((c) => ({
@@ -107,6 +111,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setApoyos(loaded.apoyos);
       setStarted(new Set(loaded.started));
       setAnalysis(loaded.analysis);
+        setAttempts(loaded.attempts);
     } catch (err) {
       fail('la recarga de tus datos', err);
     }
@@ -266,6 +271,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       source,
       notices,
       analysis,
+      attempts,
       data,
       now: data ? new Date(data.now) : new Date(),
       insights,
@@ -275,7 +281,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       currentChallenge: current,
       actions,
     };
-  }, [data, error, source, notices, analysis, insights, apoyos, started, actions]);
+  }, [data, error, source, notices, analysis, attempts, insights, apoyos, started, actions]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

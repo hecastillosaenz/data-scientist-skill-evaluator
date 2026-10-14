@@ -7,6 +7,7 @@ import { OperationBusyError, OperationMutex } from './mutex';
 import { streamNdjson } from './ndjson';
 import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
+import { registerAgentRoutes } from './agents/routes';
 import { registerStateRoutes } from './persistence/routes';
 import { analyzeEvidence, AnalystQueue, type AnalysisOutcome, type AnalystDeps } from './analyst/analyst-service';
 import { readState } from './persistence/state';
@@ -83,6 +84,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
     return { challenges: loaded.map((c) => c.challenge), invalid };
   });
 
+  registerAgentRoutes(app, { repoRoot, ...(options.now ? { now: options.now } : {}) });
+
   registerStateRoutes(app, {
     repoRoot,
     strict: options.strictChallenges ?? true,
@@ -142,11 +145,16 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
    * Genera un challenge (R38, R39): NDJSON `plan | step | tool | result | error | done`. Una sola operación a la vez
    * (409 si hay otra); cancelar la petición borra el área de trabajo y no deja nada a medias.
    */
-  app.post<{ Body: { dominio?: string; resume?: boolean; budgetFactor?: number } | undefined }>('/api/generate', async (request, reply) => {
+  app.post<{ Body: { dominio?: string; resume?: boolean; budgetFactor?: number; tema?: { conceptId?: unknown; texto?: unknown } } | undefined }>('/api/generate', async (request, reply) => {
     const dominio = request.body?.dominio;
     if (dominio !== undefined && !DOMAINS.some((d) => d.id === dominio)) {
       return reply.code(400).send({ error: 'bad_request', message: `«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.` });
     }
+    const rawTema = request.body?.tema;
+    if (rawTema !== undefined && (typeof rawTema.conceptId !== 'string' || rawTema.conceptId === '' || (rawTema.texto !== undefined && typeof rawTema.texto !== 'string'))) {
+      return reply.code(400).send({ error: 'bad_request', message: '«tema» debe traer «conceptId» (texto) y, opcionalmente, «texto».' });
+    }
+    const tema = rawTema ? { conceptId: rawTema.conceptId as string, texto: (typeof rawTema.texto === 'string' && rawTema.texto ? rawTema.texto : (rawTema.conceptId as string)).slice(0, 120) } : undefined;
     const factor = request.body?.budgetFactor === 2 ? 2 : 1;
     const release = mutex.acquire('generar');
     const abort = new AbortController();
@@ -158,6 +166,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
       generateChallenge({
         repoRoot,
         ...(dominio ? { domain: dominio as DomainId } : {}),
+        ...(tema ? { tema } : {}),
         resume: request.body?.resume === true,
         budgetFactor: factor,
         signal: abort.signal,

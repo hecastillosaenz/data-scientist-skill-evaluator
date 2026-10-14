@@ -1,3 +1,4 @@
+import { readRuns } from '../server/agents/registro';
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -187,6 +188,11 @@ describe.skipIf(!hasDuckdb)('Generador (R38, R39)', () => {
     const cells = parseNotebook(readFileSync(path.join(pub(), 'notebook.ipynb'), 'utf8'));
     expect(findDeliverable(cells, 1).source).toContain('resultado = con.sql');
     expect(findDeliverable(cells, 3).kind).toBe('markdown');
+
+    // AC-R46a: cada llamada al Generador queda registrada con su fase.
+    const runs = (await readRuns(tmp)).filter((r) => r.rol === 'generador').sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.id.localeCompare(b.id));
+    expect(runs.map((r) => r.fase).sort()).toEqual(['esqueleto', 'etapa-1', 'etapa-2', 'etapa-3', 'test']);
+    expect(runs.every((r) => r.outcome === 'ok' && r.challengeId === 'challenge-001')).toBe(true);
   }, 60_000);
 
   it('AC-R39a: si el presupuesto se agota en la etapa 2 no se publica nada, el error nombra la fase y «Reintentar» retoma ahí', async () => {

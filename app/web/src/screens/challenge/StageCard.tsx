@@ -9,7 +9,9 @@ import { ResultTable } from '../../components/ResultTable';
 import { Segmented } from '../../components/Segmented';
 import type { StageResult } from '../../domain/simulate';
 import type { VerifyState } from '../../domain/verifyState';
+import { StageAttempts } from './StageAttempts';
 import { VerificationPanel } from './VerificationPanel';
+import type { AttemptSummary } from '../../../../shared/intentos';
 import { initialHelp, toggleHint, toggleSolution } from '../../domain/stageHelp';
 import styles from './StageCard.module.css';
 
@@ -50,6 +52,8 @@ interface Props {
   verification: VerifyState | undefined;
   onVerify: () => void;
   onCancelVerify: () => void;
+  /** Intentos guardados de esta etapa (R54); solo hay con challenges reales. */
+  attempts: AttemptSummary[];
 }
 
 const SOLUTION_SECTIONS = [
@@ -62,7 +66,7 @@ const SOLUTION_SECTIONS = [
   ['skill', 'Habilidad que entrena'],
 ] as const;
 
-export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo, onUI, onActivate, real, verification, onVerify, onCancelVerify }: Props) {
+export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo, onUI, onActivate, real, verification, onVerify, onCancelVerify, attempts }: Props) {
   const navigate = useNavigate();
   const c = stage.content;
   const isCode = stage.mechanism === 'codigo_assert';
@@ -273,6 +277,8 @@ export function StageCard({ stage, status, apoyo, active, ui, concepts, onApoyo,
           </section>
 
           {verification && <VerificationPanel state={verification} simulated={!real} onCancel={onCancelVerify} onRetry={onVerify} />}
+
+          {real && <StageAttempts attempts={attempts} />}
 
           {c.solution && (
             <section className={styles.solution}>

@@ -71,7 +71,7 @@ export function GraphPanel({ concepts, challenges, evidence, insights, selected,
 
         <dl className={styles.facts}>
           <div><dt>Estado</dt><dd><StatusChip state={state} kind="concept" /></dd></div>
-          {selected.origin === 'analista' && <div><dt>Origen</dt><dd>Creado por el Analista{selected.since ? ` el ${formatShortDate(new Date(selected.since))}` : ''}</dd></div>}
+          {selected.origin && <div><dt>Origen</dt><dd>{selected.origin === 'analista' ? 'Creado por el Analista' : 'Creado por ti'}{selected.since ? ` el ${formatShortDate(new Date(selected.since))}` : ''}</dd></div>}
           <div><dt>Nivel actual</dt><dd>{insight?.level ? DIFFICULTY_LABEL[insight.level] : '—'}</dd></div>
           <div><dt>Bloom máximo con evidencia</dt><dd>{insight?.maxBloom ? <BloomChip bloom={insight.maxBloom} /> : '—'}</dd></div>
         </dl>
