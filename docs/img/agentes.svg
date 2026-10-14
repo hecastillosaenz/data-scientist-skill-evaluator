@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" width="1100" height="700" role="img" aria-labelledby="t d">
+<title id="t">Los tres agentes</title>
+<desc id="d">Generador, Evaluador y Analista: procesos independientes de Claude Code, de solo lectura. El orquestador valida y es quien escribe.</desc>
+<defs>
+
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+</defs>
+<rect width="1100" height="700" rx="18" fill="#f4f6fa"/>
+<text x="32" y="46" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#15171c">Los tres agentes</text>
+<text x="32" y="69" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" fill="#5f6573">Qué hace cada rol, qué recibe, qué devuelve y qué decide el orquestador.</text>
+<rect x="32" y="96" width="332" height="440" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<rect x="32" y="96" width="332" height="56" rx="14" fill="#fdf0d5" stroke="#fdf0d5" stroke-width="0"/>
+<rect x="32" y="130" width="332" height="22" rx="0" fill="#fdf0d5" stroke="#fdf0d5" stroke-width="0"/>
+<text x="52" y="132" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#94560a" text-anchor="start">Generador</text>
+<text x="52" y="178" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">CUÁNDO</text>
+<text x="52" y="195" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Cuando pulsas «Generar nuevo challenge». Nunca</text>
+<text x="52" y="212" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">solo (R1).</text>
+<text x="52" y="241" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">RECIBE</text>
+<text x="52" y="258" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">El plan de calibración (conceptos, Bloom, Apoyo</text>
+<text x="52" y="275" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">y mecanismo de cada etapa), el contrato y las</text>
+<text x="52" y="292" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">plantillas.</text>
+<text x="52" y="321" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">DEVUELVE</text>
+<text x="52" y="338" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Un JSON por fase: esqueleto del caso, contenido</text>
+<text x="52" y="355" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">de cada etapa y test final.</text>
+<text x="52" y="384" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">EL ORQUESTADOR</text>
+<text x="52" y="401" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Fija id, dificultad y Bloom; ejecuta el seed y</text>
+<text x="52" y="418" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">la solución de referencia; repara hasta 2</text>
+<text x="52" y="435" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">veces; publica con rename.</text>
+<rect x="48" y="494" width="300" height="30" rx="9" fill="#f8f9fc" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="60" y="513" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#3a3f4b" text-anchor="start">Medido: ≈ US$ 0,6 por challenge (tope 0,75 por fase)</text>
+<rect x="388" y="96" width="332" height="440" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<rect x="388" y="96" width="332" height="56" rx="14" fill="#efe9fb" stroke="#efe9fb" stroke-width="0"/>
+<rect x="388" y="130" width="332" height="22" rx="0" fill="#efe9fb" stroke="#efe9fb" stroke-width="0"/>
+<text x="408" y="132" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#6b3fc9" text-anchor="start">Evaluador</text>
+<text x="408" y="178" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">CUÁNDO</text>
+<text x="408" y="195" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Cuando pulsas «Verificar etapa».</text>
+<text x="408" y="224" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">RECIBE</text>
+<text x="408" y="241" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Tu código y la salida que ejecutó el</text>
+<text x="408" y="258" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">orquestador, o tu respuesta escrita y la</text>
+<text x="408" y="275" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">rúbrica.</text>
+<text x="408" y="304" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">DEVUELVE</text>
+<text x="408" y="321" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Feedback en español según tu Apoyo; en etapas</text>
+<text x="408" y="338" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">conceptuales termina con VEREDICTO.</text>
+<text x="408" y="367" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">EL ORQUESTADOR</text>
+<text x="408" y="384" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Ejecuta tu celda y decide el veredicto de</text>
+<text x="408" y="401" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">código; el agente solo lo explica. Sesión</text>
+<text x="408" y="418" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">nueva, sin contexto del Generador (R14).</text>
+<rect x="404" y="494" width="300" height="30" rx="9" fill="#f8f9fc" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="416" y="513" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#3a3f4b" text-anchor="start">Tope: US$ 0,50 por verificación</text>
+<rect x="744" y="96" width="332" height="440" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<rect x="744" y="96" width="332" height="56" rx="14" fill="#e3f4ea" stroke="#e3f4ea" stroke-width="0"/>
+<rect x="744" y="130" width="332" height="22" rx="0" fill="#e3f4ea" stroke="#e3f4ea" stroke-width="0"/>
+<text x="764" y="132" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#1d7a4a" text-anchor="start">Analista</text>
+<text x="764" y="178" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">CUÁNDO</text>
+<text x="764" y="195" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Tras «Registrar etapa», en segundo plano, solo</text>
+<text x="764" y="212" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">si hay notas o un bloqueo.</text>
+<text x="764" y="241" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">RECIBE</text>
+<text x="764" y="258" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Tu registro, la etapa y sus conceptos,</text>
+<text x="764" y="275" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">observaciones previas y temas candidatos.</text>
+<text x="764" y="304" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">DEVUELVE</text>
+<text x="764" y="321" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Una observación y, si procede, prerrequisitos o</text>
+<text x="764" y="338" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">conceptos nuevos.</text>
+<text x="764" y="367" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="800" fill="#5f6573" text-anchor="start">EL ORQUESTADOR</text>
+<text x="764" y="384" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">Descarta lo que crea ciclos o no repite en 2</text>
+<text x="764" y="401" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">registros; guarda .prev y escribe el grafo de</text>
+<text x="764" y="418" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.4" font-weight="400" fill="#3a3f4b" text-anchor="start">forma atómica.</text>
+<rect x="760" y="494" width="300" height="30" rx="9" fill="#f8f9fc" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="772" y="513" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#3a3f4b" text-anchor="start">Medido: ≈ US$ 0,10 por análisis (tope 0,30)</text>
+<rect x="32" y="556" width="1038" height="120" rx="14" fill="#edf1fe" stroke="#c9d4fa" stroke-width="1.2"/>
+<text x="52" y="584" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#2f5bea" text-anchor="start">Reglas comunes a los tres</text>
+<text x="52" y="608" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• spawn('claude') sin shell, mensaje por stdin</text>
+<text x="52" y="626" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• ANTHROPIC_API_KEY vacía: solo tu suscripción</text>
+<text x="52" y="644" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• cwd neutro: no heredan el CLAUDE.md del repo</text>
+<text x="560" y="608" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• Solo Read, Grep y Glob; nunca Bash, Edit ni Write</text>
+<text x="560" y="626" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• Proponen en JSON; no escriben nada (S4, R9)</text>
+<text x="560" y="644" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#3a3f4b" text-anchor="start">• Nadie ejecuta código salvo el orquestador</text>
+</svg>

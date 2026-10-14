@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" width="1100" height="700" role="img" aria-labelledby="t d">
+<title id="t">Datos y persistencia</title>
+<desc id="d">Todo son archivos versionados por git. La Evidence es inmutable y cada escritura es atómica.</desc>
+<defs>
+
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+</defs>
+<rect width="1100" height="700" rx="18" fill="#f4f6fa"/>
+<text x="32" y="46" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#15171c">Datos y persistencia</text>
+<text x="32" y="69" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" fill="#5f6573">Qué se guarda, dónde y cómo se protege.</text>
+<rect x="32" y="96" width="520" height="560" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<text x="52" y="128" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#15171c" text-anchor="start">Qué hay en el repositorio</text>
+<text x="56" y="160" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">challenge/</text>
+<text x="82" y="196" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">challenge-001/</text>
+<text x="108" y="232" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#2f5bea" text-anchor="start">challenge.json</text>
+<text x="234.79999999999998" y="232" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· el caso: objetivos, datos, etapas, test</text>
+<text x="108" y="268" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#2f5bea" text-anchor="start">datos/seed.sql</text>
+<text x="234.79999999999998" y="268" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· datos sintéticos (DuckDB)</text>
+<text x="108" y="304" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#2f5bea" text-anchor="start">notebook.ipynb</text>
+<text x="234.79999999999998" y="304" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· donde resuelves, con celdas marcadas</text>
+<text x="108" y="340" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#1d7a4a" text-anchor="start">progreso.json</text>
+<text x="226.6" y="340" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· tu avance (fuente de verdad)</text>
+<text x="108" y="376" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#1d7a4a" text-anchor="start">logs-avance.md</text>
+<text x="234.79999999999998" y="376" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· bitácora legible, solo se agrega</text>
+<text x="82" y="412" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#3a3f4b" text-anchor="start">challenge-002/ …</text>
+<text x="56" y="448" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">configuracion-retos/</text>
+<text x="82" y="484" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#6b3fc9" text-anchor="start">knowledge-graph.json</text>
+<text x="258.0" y="484" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· conceptos, observaciones, candidatos</text>
+<text x="82" y="520" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#6b3fc9" text-anchor="start">calibracion.json</text>
+<text x="225.2" y="520" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· parámetros y presupuestos</text>
+<text x="82" y="556" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#6b3fc9" text-anchor="start">plantillas/</text>
+<text x="184.2" y="556" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">· esquema y contrato para el Generador</text>
+<rect x="52" y="594" width="480" height="44" rx="10" fill="#f8f9fc" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="66" y="613" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Ignorados por git: datos/challenge.duckdb (se reconstruye</text>
+<text x="66" y="629" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">del seed), knowledge-graph.json.prev y challenge/.generando/.</text>
+<rect x="576" y="96" width="492" height="560" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<text x="596" y="128" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#15171c" text-anchor="start">Qué pasa al «Registrar etapa»</text>
+<rect x="596" y="148" width="452" height="134" rx="12" fill="#f8f9fc" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="612" y="172" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13.5" font-weight="800" fill="#1d7a4a" text-anchor="start">Evidence</text>
+<text x="612" y="192" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">id · at · result (aprobada, parcial, fallida)</text>
+<text x="612" y="209" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">withHelp · apoyo · actualMinutes · timeSource</text>
+<text x="612" y="226" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">blocker · notes</text>
+<text x="612" y="258" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.8" font-weight="600" fill="#1d7a4a" text-anchor="start">Append-only: un intento nuevo nunca sobrescribe otro (R10).</text>
+<circle cx="614" cy="308" r="11" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="614" y="312" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+<text x="636" y="312" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">La UI la muestra al instante (guardado optimista).</text>
+<circle cx="614" cy="348" r="11" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="614" y="352" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+<text x="636" y="352" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">El servidor la valida contra challenge.json: etapa, enumeraciones, ids.</text>
+<circle cx="614" cy="388" r="11" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="614" y="392" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+<text x="636" y="392" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">Cola por archivo: lee, modifica y escribe progreso.json (tmp + rename).</text>
+<circle cx="614" cy="428" r="11" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="614" y="432" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+<text x="636" y="432" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">Agrega una entrada legible a logs-avance.md.</text>
+<circle cx="614" cy="468" r="11" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="614" y="472" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+<text x="636" y="472" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">Encola el análisis en segundo plano (si hay notas o bloqueo).</text>
+<rect x="596" y="520" width="452" height="112" rx="12" fill="#fce3ee" stroke="#fce3ee" stroke-width="0"/>
+<text x="612" y="544" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#b0245f" text-anchor="start">Si el guardado falla (R37, R42)</text>
+<text x="612" y="565" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">• la UI revierte el cambio y conserva lo que escribiste</text>
+<text x="612" y="581" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">• un progreso.json corrupto nunca se sobrescribe: se avisa</text>
+<text x="612" y="597" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">• si el Analista falla, la Evidence sigue guardada y queda</text>
+<text x="612" y="613" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.8" font-weight="400" fill="#3a3f4b" text-anchor="start">  pendiente; nada bloquea «Registrar etapa»</text>
+</svg>

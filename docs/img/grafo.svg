@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 752" width="1100" height="752" role="img" aria-labelledby="t d">
+<title id="t">Grafo de conocimiento</title>
+<desc id="d">Conceptos con prerrequisitos en seis dominios; el color de cada nodo es su estado, calculado solo con tus intentos.</desc>
+<defs>
+<marker id="ah-2f5bea" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,1 L9,5 L1,9 z" fill="#2f5bea"/></marker><marker id="as-2f5bea" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M9,1 L1,5 L9,9 z" fill="#2f5bea"/></marker><marker id="ah-8a90a0" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,1 L9,5 L1,9 z" fill="#8a90a0"/></marker><marker id="as-8a90a0" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M9,1 L1,5 L9,9 z" fill="#8a90a0"/></marker>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+</defs>
+<rect width="1100" height="752" rx="18" fill="#f4f6fa"/>
+<text x="32" y="46" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#15171c">Grafo de conocimiento</text>
+<text x="32" y="69" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" fill="#5f6573">241 conceptos, 329 prerrequisitos y 6 dominios: el estado sale solo de tu evidencia.</text>
+<rect x="36" y="96" width="400" height="232" rx="16" fill="#e9eefc" stroke="#e9eefc" stroke-width="0" opacity="0.65"/>
+<text x="52" y="122" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#3a3f4b" text-anchor="start">SQL</text>
+<rect x="36" y="342" width="400" height="190" rx="16" fill="#e6f4ec" stroke="#e6f4ec" stroke-width="0" opacity="0.65"/>
+<text x="52" y="368" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#3a3f4b" text-anchor="start">Python</text>
+<rect x="450" y="96" width="270" height="232" rx="16" fill="#fdf0d5" stroke="#fdf0d5" stroke-width="0" opacity="0.65"/>
+<text x="466" y="122" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#3a3f4b" text-anchor="start">Business</text>
+<rect x="450" y="342" width="270" height="190" rx="16" fill="#fce3ee" stroke="#fce3ee" stroke-width="0" opacity="0.65"/>
+<text x="466" y="368" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#3a3f4b" text-anchor="start">Machine Learning</text>
+<path d="M89,200 L159,140" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M89,200 L159,255" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M179,255 L264,190" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M179,255 L264,285" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M284,190 L369,150" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M284,285 L369,265" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M89,440 L159,400" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M179,400 L264,440" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M284,440 L369,400" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M509,200 L609,160" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M509,200 L619,270" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M509,440 L589,400" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M609,400 L639,480" fill="none" stroke="#8a90a0" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-8a90a0)"/>
+<path d="M284,285 L489,200" fill="none" stroke="#2f5bea" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4" marker-end="url(#ah-2f5bea)"/>
+<path d="M389,400 L489,440" fill="none" stroke="#2f5bea" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4" marker-end="url(#ah-2f5bea)"/>
+<path d="M284,190 L489,200" fill="none" stroke="#2f5bea" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4" marker-end="url(#ah-2f5bea)"/>
+<circle cx="80" cy="200" r="9" fill="#2f9e63" stroke="#fff" stroke-width="2"/>
+<text x="80" y="225" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">SELECT</text>
+<circle cx="170" cy="140" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="170" y="165" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">ORDER BY</text>
+<circle cx="170" cy="255" r="9" fill="#2f9e63" stroke="#fff" stroke-width="2"/>
+<text x="170" y="280" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">WHERE</text>
+<circle cx="275" cy="190" r="9" fill="#d6336c" stroke="#fff" stroke-width="2"/>
+<text x="275" y="215" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">JOIN</text>
+<circle cx="275" cy="285" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="275" y="310" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">GROUP BY</text>
+<circle cx="380" cy="150" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="380" y="175" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">CTE</text>
+<circle cx="380" cy="265" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="380" y="290" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">HAVING</text>
+<circle cx="80" cy="440" r="9" fill="#2f9e63" stroke="#fff" stroke-width="2"/>
+<text x="80" y="465" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Variables</text>
+<circle cx="170" cy="400" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="170" y="425" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Bucles</text>
+<circle cx="275" cy="440" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="275" y="465" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Funciones</text>
+<circle cx="380" cy="400" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="380" y="425" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">pandas</text>
+<circle cx="500" cy="200" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="500" y="225" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">KPIs</text>
+<circle cx="620" cy="160" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="620" y="185" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Storytelling</text>
+<circle cx="630" cy="270" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="630" y="295" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Recomendar</text>
+<circle cx="500" cy="440" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="500" y="465" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Train/test</text>
+<circle cx="600" cy="400" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="600" y="425" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Modelo</text>
+<circle cx="650" cy="480" r="9" fill="#d6336c" stroke="#fff" stroke-width="2"/>
+<text x="650" y="505" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.2" font-weight="600" fill="#3a3f4b" text-anchor="middle">Métricas</text>
+<text x="40" y="548" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Línea continua: prerrequisito dentro del dominio · línea punteada azul: prerrequisito entre dominios · muestra de 4 de los 6 dominios</text>
+<rect x="742" y="96" width="322" height="456" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<text x="762" y="126" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#15171c" text-anchor="start">Estado de un concepto</text>
+<circle cx="776" cy="156" r="9" fill="#a3a9b5" stroke="#fff" stroke-width="2"/>
+<text x="796" y="152" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">No visto</text>
+<circle cx="776" cy="200" r="9" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="796" y="196" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Visto</text>
+<circle cx="776" cy="244" r="9" fill="#2f9e63" stroke="#fff" stroke-width="2"/>
+<text x="796" y="240" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Dominado</text>
+<circle cx="776" cy="288" r="9" fill="#d6336c" stroke="#fff" stroke-width="2"/>
+<text x="796" y="284" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Con fallos</text>
+<text x="796" y="169" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Ninguna etapa ni pregunta lo ha practicado.</text>
+<text x="796" y="213" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Intentos parciales o resueltos con ayuda.</text>
+<text x="796" y="257" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Todos sus últimos intentos, aprobados y sin ayuda.</text>
+<text x="796" y="301" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">Algún último intento fallido: entra a Repaso.</text>
+<line x1="762" y1="332" x2="1044" y2="332" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="762" y="356" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Cómo se calcula</text>
+<text x="762" y="376.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">Solo cuenta el último intento de cada etapa que</text>
+<text x="762" y="392.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">practica el concepto (R11) y el último</text>
+<text x="762" y="409.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">resultado de cada pregunta del test final</text>
+<text x="762" y="425.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">(R23). Un fallo viejo no pesa si ya lo</text>
+<text x="762" y="442.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">corregiste.</text>
+<line x1="762" y1="452" x2="1044" y2="452" stroke="#dfe3ec" stroke-width="1.2"/>
+<text x="762" y="476" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">El Analista puede añadir</text>
+<text x="762" y="496" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">• observaciones sobre conceptos</text>
+<text x="762" y="512" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">• prerrequisitos nuevos, sin ciclos</text>
+<text x="762" y="528" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">• conceptos nuevos (≥ 2 registros)</text>
+<text x="36" y="592" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#15171c" text-anchor="start">Second brain: la vista unificada</text>
+<text x="36" y="612" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#5f6573" text-anchor="start">Cinco tipos de nodo en un solo mapa, con las relaciones entre ellos. Los chips por tipo y dominio atenúan, nunca ocultan.</text>
+<circle cx="90" cy="662" r="14" fill="#7d97f1" stroke="#fff" stroke-width="2"/>
+<text x="118" y="660" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Concepto</text>
+<text x="118" y="676" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">círculo</text>
+<rect x="276" y="648" width="28" height="28" rx="4" fill="#1f2430" stroke="#1f2430" stroke-width="0"/>
+<text x="318" y="660" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Challenge</text>
+<text x="318" y="676" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">cuadrado</text>
+<rect x="478" y="650" width="24" height="24" rx="3" fill="#7c5cd6" transform="rotate(45 490 662)"/>
+<text x="518" y="660" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Etapa</text>
+<text x="518" y="676" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">rombo</text>
+<path d="M690,646 L705,674 L675,674 z" fill="#d6336c" stroke-linejoin="round"/>
+<text x="718" y="660" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Test final</text>
+<text x="718" y="676" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">triángulo</text>
+<circle cx="890" cy="662" r="15" fill="none" stroke="#d98a1c" stroke-width="2.4"/>
+<circle cx="890" cy="662" r="6" fill="#d98a1c" stroke="none" stroke-width="0"/>
+<text x="918" y="660" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#15171c" text-anchor="start">Mejora</text>
+<text x="918" y="676" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#5f6573" text-anchor="start">círculo marcado</text>
+<text x="36" y="726" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#5f6573" text-anchor="start">Relaciones: prerrequisito · challenge contiene etapa · etapa practica concepto · test evalúa concepto · mejora apunta al concepto débil.</text>
+</svg>

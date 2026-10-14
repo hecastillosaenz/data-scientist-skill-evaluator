@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" width="1100" height="520" role="img" aria-labelledby="t d">
+<title id="t">Verificar una etapa</title>
+<desc id="d">El orquestador ejecuta tu celda en Python y decide el resultado; el Evaluador solo lo explica. Todo llega a la ventana en vivo.</desc>
+<defs>
+<marker id="ah-5f6573" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,1 L9,5 L1,9 z" fill="#5f6573"/></marker><marker id="as-5f6573" viewBox="0 0 10 10" refX="1.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M9,1 L1,5 L9,9 z" fill="#5f6573"/></marker>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101828" flood-opacity="0.08"/></filter>
+</defs>
+<rect width="1100" height="520" rx="18" fill="#f4f6fa"/>
+<text x="32" y="46" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#15171c">Verificar una etapa</text>
+<text x="32" y="69" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" fill="#5f6573">Del botón «Verificar etapa» al resultado, con la ejecución a cargo del orquestador.</text>
+<rect x="32" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="56" cy="140" r="13" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="56" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+<text x="78" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Cargar</text>
+<text x="48" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">challenge.json en modo</text>
+<text x="48" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">estricto (R29)</text>
+<path d="M194,162 L206,162" fill="none" stroke="#5f6573" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-5f6573)"/>
+<rect x="208" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="232" cy="140" r="13" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="232" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+<text x="254" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Preparar datos</text>
+<text x="224" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">seed.sql →</text>
+<text x="224" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">challenge.duckdb (R24)</text>
+<path d="M370,162 L382,162" fill="none" stroke="#5f6573" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-5f6573)"/>
+<rect x="384" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="408" cy="140" r="13" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="408" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+<text x="430" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Buscar la celda</text>
+<text x="400" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">«# Entregable - Etapa</text>
+<text x="400" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">X:» (R8, R16)</text>
+<path d="M546,162 L558,162" fill="none" stroke="#5f6573" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-5f6573)"/>
+<rect x="560" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="584" cy="140" r="13" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="584" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+<text x="606" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Ejecutar</text>
+<text x="576" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">Python, celdas # Datos</text>
+<text x="576" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">antes, 30 s (R27)</text>
+<path d="M722,162 L734,162" fill="none" stroke="#5f6573" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-5f6573)"/>
+<rect x="736" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="760" cy="140" r="13" fill="#2f5bea" stroke="none" stroke-width="0"/>
+<text x="760" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+<text x="782" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Comparar</text>
+<text x="752" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">con expected o con los</text>
+<text x="752" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">asserts</text>
+<path d="M898,162 L910,162" fill="none" stroke="#5f6573" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ah-5f6573)"/>
+<rect x="912" y="110" width="160" height="104" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<circle cx="936" cy="140" r="13" fill="#6b3fc9" stroke="none" stroke-width="0"/>
+<text x="936" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">6</text>
+<text x="958" y="145" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Evaluador</text>
+<text x="928" y="182" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">redacta el feedback,</text>
+<text x="928" y="198" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#3a3f4b" text-anchor="start">sin decidir</text>
+<rect x="32" y="238" width="1038" height="78" rx="14" fill="#ffffff" stroke="#dfe3ec" stroke-width="1.2" filter="url(#sh)"/>
+<text x="52" y="266" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#15171c" text-anchor="start">Resultado</text>
+<rect x="52" y="278" width="88" height="24" rx="12.0" fill="#e3f4ea" stroke="#e3f4ea" stroke-width="0"/>
+<text x="96.0" y="294.2" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#1d7a4a" text-anchor="middle">Aprobada</text>
+<rect x="152" y="278" width="88" height="24" rx="12.0" fill="#fdf0d5" stroke="#fdf0d5" stroke-width="0"/>
+<text x="196.0" y="294.2" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#94560a" text-anchor="middle">Parcial</text>
+<rect x="252" y="278" width="88" height="24" rx="12.0" fill="#fce3ee" stroke="#fce3ee" stroke-width="0"/>
+<text x="296.0" y="294.2" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#b0245f" text-anchor="middle">Fallida</text>
+<text x="360" y="288" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#3a3f4b" text-anchor="start">Código: lo decide el orquestador. Conceptual: el Evaluador aplica la rúbrica y termina con VEREDICTO.</text>
+<text x="360" y="306" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.3" font-weight="400" fill="#5f6573" text-anchor="start">Verificar es un borrador y se puede repetir; solo «Registrar etapa» crea la Evidence (R10).</text>
+<rect x="32" y="338" width="1038" height="150" rx="14" fill="#1f2430" stroke="#1f2430" stroke-width="1.2"/>
+<text x="52" y="366" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#e8eeff" text-anchor="start">Eventos NDJSON hacia la ventana de verificación (R26)</text>
+<text x="52" y="390" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#c8d3f5" text-anchor="start">{"type":"step","id":"run","label":"Ejecutando tu celda en Python","status":"ok"}</text>
+<text x="52" y="407" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#c8d3f5" text-anchor="start">{"type":"output","stream":"stdout","text":"…"}</text>
+<text x="52" y="424" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#c8d3f5" text-anchor="start">{"type":"tool","text":"Read challenge.json"}</text>
+<text x="52" y="441" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#c8d3f5" text-anchor="start">{"type":"feedback","text":"Tu consulta pierde las pólizas sin siniestros…"}</text>
+<text x="52" y="458" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="400" fill="#c8d3f5" text-anchor="start">{"type":"result","status":"fallida","summary":"Fila 2: esperaba …"}   →   {"type":"done","cost":…}</text>
+</svg>
