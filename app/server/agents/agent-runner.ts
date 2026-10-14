@@ -69,21 +69,21 @@ export interface AgentResult {
 }
 
 export class AgentError extends Error {
-  constructor(message: string, readonly code: 'no_claude' | 'agent_failed' | 'aborted') {
+  constructor(message: string, readonly code: 'no_claude' | 'agent_failed' | 'aborted' | 'budget') {
     super(message);
     this.name = 'AgentError';
   }
 }
 
 /** Interpreta una línea de `stream-json`; devuelve los eventos de interés y datos del resultado final. */
-export function parseStreamLine(line: string): { events: AgentEvent[]; sessionId?: string; cost?: number; error?: string } | null {
+export function parseStreamLine(line: string): { events: AgentEvent[]; sessionId?: string; cost?: number; error?: string; budget?: boolean } | null {
   let e: Record<string, any>;
   try {
     e = JSON.parse(line);
   } catch {
     return null;
   }
-  const out: { events: AgentEvent[]; sessionId?: string; cost?: number; error?: string } = { events: [] };
+  const out: { events: AgentEvent[]; sessionId?: string; cost?: number; error?: string; budget?: boolean } = { events: [] };
   if (typeof e.session_id === 'string') out.sessionId = e.session_id;
   if (e.type === 'assistant') {
     for (const block of e.message?.content ?? []) {
@@ -95,7 +95,9 @@ export function parseStreamLine(line: string): { events: AgentEvent[]; sessionId
     }
   } else if (e.type === 'result') {
     out.cost = typeof e.total_cost_usd === 'number' ? e.total_cost_usd : 0;
-    if (e.is_error) out.error = e.result || 'Claude Code terminó con error';
+    if (e.is_error || (typeof e.subtype === 'string' && e.subtype.startsWith('error'))) out.error = e.result || (typeof e.subtype === 'string' ? e.subtype : '') || 'Claude Code terminó con error';
+    // `--max-budget-usd` agotado: el resultado llega con subtype `error_max_budget_usd`.
+    if (typeof e.subtype === 'string' && /budget/i.test(e.subtype)) out.budget = true;
   }
   return out;
 }
@@ -124,6 +126,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentResult> {
   let sessionId: string | null = null;
   let cost = 0;
   let error = '';
+  let overBudget = false;
   let stderr = '';
 
   const handleLine = (line: string) => {
@@ -132,6 +135,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentResult> {
     if (parsed.sessionId) sessionId = parsed.sessionId;
     if (parsed.cost !== undefined) cost = parsed.cost;
     if (parsed.error) error = parsed.error;
+    if (parsed.budget) overBudget = true;
     for (const event of parsed.events) {
       if (event.type === 'text') text += (text ? '\n\n' : '') + event.text;
       opts.onEvent?.(event);
@@ -161,6 +165,9 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentResult> {
   if (rest) handleLine(rest);
 
   if (opts.signal?.aborted) throw new AgentError('Verificación cancelada.', 'aborted');
+  if (overBudget || /max.?budget/i.test(`${error} ${stderr}`)) {
+    throw new AgentError('Se agotó el presupuesto de esta llamada (--max-budget-usd).', 'budget');
+  }
   if (error || code !== 0) {
     const hint = /login|auth|credential/i.test(`${stderr} ${error}`) ? ' Abre una terminal y ejecuta «claude» para iniciar sesión.' : '';
     const detail = error || stderr.trim().split('\n').slice(-3).join(' ') || `claude salió con código ${code}`;

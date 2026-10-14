@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
-import type { Challenge } from '../../shared/types';
+import type { Challenge, Stage } from '../../shared/types';
 import { REPO_ROOT } from '../paths';
 
 /** Esquema de `challenge.json` (SDD R29): el mismo archivo que lee el Generador. */
@@ -51,6 +51,26 @@ function schemaErrors(value: unknown): string[] {
   });
 }
 
+/** Contenido completo que exige el modo estricto a una etapa (todas las capas de ayuda y su verificación). */
+export function strictStageErrors(s: Stage): string[] {
+  const errors: string[] = [];
+  if (s.mechanism === 'codigo_assert' && !s.content.expected && !s.content.asserts) {
+    errors.push(`La etapa ${s.number} es de código y necesita \`expected\` (tabla esperada) o \`asserts\` para poder verificarse.`);
+  }
+  const k = s.content;
+  const missing = [
+    ['teoría', k.theory?.length],
+    ['ejemplo resuelto', k.workedExample],
+    ['paso a paso', k.steps?.length],
+    ['pistas', k.hints?.length],
+    ['conceptos para investigar', k.research?.length],
+    ['solución', k.solution],
+  ].filter(([, v]) => !v).map(([n]) => n);
+  if (missing.length) errors.push(`Etapa ${s.number}: falta contenido de estudio (${missing.join(', ')}); el Generador produce todas las capas de ayuda.`);
+  for (const r of k.research ?? []) if (!s.conceptIds.includes(r.conceptId)) errors.push(`Etapa ${s.number}: investiga «${r.conceptId}», que no figura en sus \`conceptIds\`.`);
+  return errors;
+}
+
 /** Reglas que un JSON Schema no expresa: ids coherentes, llaves foráneas reales, filas con el ancho correcto, etc. */
 function semanticErrors(c: Challenge, strict: boolean): string[] {
   const errors: string[] = [];
@@ -85,28 +105,11 @@ function semanticErrors(c: Challenge, strict: boolean): string[] {
   }
 
   if (strict) {
-    for (const s of c.stages) {
-      if (s.mechanism === 'codigo_assert' && !s.content.expected && !s.content.asserts) {
-        errors.push(`La etapa ${s.number} es de código y necesita \`expected\` (tabla esperada) o \`asserts\` para poder verificarse.`);
-      }
-    }
     if (c.businessQuestions.length < 3) errors.push('Un challenge real necesita al menos 3 preguntas de negocio (Básico 3, Intermedio 4, Avanzado 5).');
     if (!c.finalTest) errors.push('Un challenge real necesita el test final de retención (5–8 preguntas).');
     if (!c.data && c.stages.some((s) => s.domain === 'sql')) errors.push('Hay etapas de SQL pero el challenge no declara `data` (tablas y seed).');
     if (c.data?.engine === 'duckdb' && !c.data.seedSql) errors.push('Los datos de DuckDB necesitan `seedSql`.');
-    for (const s of c.stages) {
-      const k = s.content;
-      const missing = [
-        ['teoría', k.theory?.length],
-        ['ejemplo resuelto', k.workedExample],
-        ['paso a paso', k.steps?.length],
-        ['pistas', k.hints?.length],
-        ['conceptos para investigar', k.research?.length],
-        ['solución', k.solution],
-      ].filter(([, v]) => !v).map(([n]) => n);
-      if (missing.length) errors.push(`Etapa ${s.number}: falta contenido de estudio (${missing.join(', ')}); el Generador produce todas las capas de ayuda.`);
-      for (const r of k.research ?? []) if (!s.conceptIds.includes(r.conceptId)) errors.push(`Etapa ${s.number}: investiga «${r.conceptId}», que no figura en sus \`conceptIds\`.`);
-    }
+    for (const s of c.stages) errors.push(...strictStageErrors(s));
   }
   return errors;
 }
