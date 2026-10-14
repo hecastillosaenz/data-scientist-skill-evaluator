@@ -26,6 +26,32 @@ export interface Concept {
   domain: DomainId;
   /** Ids de conceptos prerrequisito (pueden ser de otro dominio). */
   prerequisites: string[];
+  /** Presente solo en conceptos que añadió el Analista (R41), para poder revisarlos. */
+  origin?: 'analista';
+  /** ISO 8601 de la creación por el Analista. */
+  since?: string;
+}
+
+/**
+ * Observación del Analista sobre una Evidence (R41): una por Evidence procesada. `omitida` = sin notas ni bloqueo, no se
+ * llamó al agente; `sin_hallazgos` = se analizó pero no se pudo vincular a ningún concepto.
+ */
+export interface Observation {
+  evidenceId: string;
+  /** ISO 8601 de cuando se procesó. */
+  at: string;
+  status: 'ok' | 'omitida' | 'sin_hallazgos';
+  /** Conceptos existentes a los que se refiere la nota. */
+  conceptIds: string[];
+  /** Diagnóstico breve (hasta 300 caracteres); vacío si se omitió. */
+  diagnosis: string;
+}
+
+/** Tema que una nota menciona y no está en el catálogo: se crea un concepto cuando reúne 2 Evidence distintas (R41). */
+export interface Candidate {
+  label: string;
+  domain: DomainId;
+  evidenceIds: string[];
 }
 
 /** Valor de una celda de muestra; `null` se muestra como NULL. */
@@ -224,4 +250,7 @@ export interface AppData {
   evidence: Evidence[];
   businessAnswers: BusinessAnswer[];
   testResults: TestResult[];
+  /** Observaciones del Analista (una por Evidence procesada). Ausente en datos de ejemplo. */
+  observations?: Observation[];
+  candidates?: Candidate[];
 }
