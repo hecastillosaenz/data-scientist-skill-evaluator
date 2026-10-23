@@ -145,7 +145,7 @@ describe('API de monitoreo (R48)', () => {
   });
   afterEach(() => app.close());
 
-  it('AC-R48: trae los cuatro agentes con su estado, costos, línea de tiempo, análisis y errores', async () => {
+  it('AC-R48: trae los cinco agentes con su estado, costos, línea de tiempo, análisis y errores', async () => {
     const at = clock(new Date('2026-10-14T15:00:00.000Z'));
     await recordAgent(tmp, 'generador', ok('a', 0.5), { challengeId: 'challenge-004', fase: 'esqueleto' }, at)({ message: 'm' });
     await recordAgent(tmp, 'evaluador-codigo', ok('b', 0.01), { challengeId: 'challenge-004', stageId: 's1' }, at)({ message: 'm' });
@@ -153,7 +153,7 @@ describe('API de monitoreo (R48)', () => {
     await recordAgent(tmp, 'analista', async () => { throw new AgentError('Sin presupuesto', 'budget'); }, { evidenceId: 'ev-9' }, at)({ message: 'm' }).catch(() => {});
 
     const body = (await app.inject('/api/agentes')).json() as AgentesPayload;
-    expect(body.agentes.map((a) => a.rol)).toEqual(['generador', 'evaluador-codigo', 'evaluador-conceptual', 'analista']);
+    expect(body.agentes.map((a) => a.rol)).toEqual(['generador', 'evaluador-codigo', 'evaluador-conceptual', 'analista', 'planificador']);
     const by = Object.fromEntries(body.agentes.map((a) => [a.rol, a]));
     expect(by['generador']).toMatchObject({ enCurso: false, ejecuciones: 1, costoTotal: 0.5, errores: 0 });
     expect(by['evaluador-conceptual']).toMatchObject({ ejecuciones: 0, ultima: null, costoTotal: 0 });
@@ -192,7 +192,7 @@ describe('API de monitoreo (R48)', () => {
     expect(existsSync(path.join(tmp, 'challenge'))).toBe(false);
   });
 
-  it('sin registro todavía, devuelve los cuatro agentes inactivos', async () => {
+  it('sin registro todavía, devuelve los cinco agentes inactivos', async () => {
     const body = (await app.inject('/api/agentes')).json() as AgentesPayload;
     expect(body.agentes.every((a) => !a.enCurso && a.ejecuciones === 0)).toBe(true);
     expect(body.ejecuciones).toEqual([]);

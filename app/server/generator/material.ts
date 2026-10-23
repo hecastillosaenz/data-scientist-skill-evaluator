@@ -30,6 +30,9 @@ export interface MaterialScan {
   problem?: string;
 }
 
+/** Carpeta estándar de la biblioteca de estudio (ignorada por git). El Generador la mira en cada reto. */
+export const MATERIAL_DIR = 'material';
+
 export const MATERIAL_LIMITS = { maxFiles: 60, maxDepth: 3, maxPdfBytes: 25 * 1024 * 1024, maxTextBytes: 1024 * 1024 } as const;
 const KIND_BY_EXT: Record<string, MaterialKind> = { '.pdf': 'pdf', '.md': 'md', '.markdown': 'md', '.txt': 'txt', '.ipynb': 'ipynb' };
 const BLOCKED_SEGMENTS = new Set(['.git', 'node_modules', '.venv', '.env']);

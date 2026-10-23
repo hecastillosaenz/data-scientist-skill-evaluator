@@ -67,3 +67,13 @@
   .heroStages { flex-wrap: wrap; }
   .heroStages li { flex: 1 1 45%; }
 }
+
+.goalsRow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+@media (max-width: 1023px) { .goalsRow { grid-template-columns: minmax(0, 1fr); } }
+.goals { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.goalLink { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: var(--sunk); color: var(--ink); text-decoration: none; }
+.goalLink:hover { background: var(--sel); }
+.goalTop { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.goalTrack { display: block; height: 6px; border-radius: 999px; background: var(--sel); overflow: hidden; }
+.goalTrack > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.goalSub { font-size: 12px; color: var(--muted); line-height: 1.5; }

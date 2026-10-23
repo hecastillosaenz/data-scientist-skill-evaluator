@@ -1,5 +1,6 @@
-import { DOMAINS } from '../../shared/domains';
+import { DOMAINS, DOMAIN_BY_ID } from '../../shared/domains';
 import type { TemaPedido } from '../../shared/objetivos';
+import type { PropuestaReto } from '../../shared/generate';
 import type { Apoyo, Bloom, Challenge, Concept, ConceptState, Difficulty, DomainId, EvalMechanism, Evidence, TestResult } from '../../shared/types';
 import { computeInsights, type ConceptInsight } from '../../web/src/domain/conceptState';
 import { levelByDomain } from '../../web/src/domain/level';
@@ -32,6 +33,8 @@ export interface ChallengePlan {
   mode: 'arranque' | 'calibrado';
   id: string;
   number: number;
+  /** Proyecto de punta a punta (R60): un solo dataset, etapas encadenadas y reporte final. */
+  proyecto?: boolean;
   difficulty: Difficulty;
   /** Dominio técnico principal; la etapa de integración es de Business. */
   domain: DomainId;
@@ -50,6 +53,8 @@ export interface FocoPlan {
   id: string;
   titulo: string;
   conceptIds: string[];
+  /** Plan aceptado (o elegido a mano): su siguiente concepto pendiente decide el tema del challenge (R59). */
+  dirige?: boolean;
 }
 
 /** El tema pedido no se puede aplicar (concepto inexistente). */
@@ -73,10 +78,30 @@ export interface PlanInput {
   tema?: TemaPedido;
   /** Focos de aprendizaje activos y vigentes (R45): desempatan, no sustituyen el refuerzo. */
   focos?: FocoPlan[];
+  /** Cuántas etapas tiene el challenge (2–6); por defecto `etapasPorChallenge` de la calibración. */
+  etapas?: number;
+  /**
+   * Proyecto de punta a punta (R60): una sola historia con un solo dataset, descompuesta en etapas alcanzables que
+   * recorren Feature Engineering → Model Training → reporte para negocio. Ignora el refuerzo y el tema.
+   */
+  proyecto?: boolean;
+  /** Propuesta del Planificador a partir de lo que el usuario quiere lograr (R61): decide las etapas y sus conceptos. */
+  propuesta?: PropuestaReto;
 }
 
+/** Dominios técnicos de un proyecto según cuántas etapas técnicas hay (la última etapa es siempre el reporte de Business). */
+export const RUTA_PROYECTO: Record<number, DomainId[]> = {
+  1: ['training'],
+  2: ['features', 'training'],
+  3: ['features', 'features', 'training'],
+  4: ['features', 'features', 'training', 'training'],
+  5: ['cleaning', 'features', 'features', 'training', 'training'],
+};
+export const ETAPAS_MIN = 2;
+export const ETAPAS_MAX = 6;
+
 const DAY_MS = 86_400_000;
-const CODE_DOMAINS: ReadonlySet<DomainId> = new Set(['sql', 'python', 'cleaning', 'ml']);
+const CODE_DOMAINS: ReadonlySet<DomainId> = new Set(['sql', 'python', 'cleaning', 'ml', 'features', 'training']);
 const TECHNICAL: readonly DomainId[] = DOMAINS.map((d) => d.id).filter((d) => d !== 'business');
 const clamp = <T extends number>(n: number, min: number, max: number) => Math.min(max, Math.max(min, n)) as T;
 
@@ -105,9 +130,26 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   const deps = (id: string) => dependents.get(id) ?? 0;
   const byIdOrder = (a: Concept, b: Concept) => a.id.localeCompare(b.id);
 
-  // Tema a pedido (R43) y focos de aprendizaje (R45).
-  const tema = input.tema ? byId.get(input.tema.conceptId) : undefined;
-  if (input.tema && !tema) throw new TemaError(`El concepto «${input.tema.conceptId}» del tema no existe en el grafo.`);
+  const propuesta = input.propuesta;
+  const proyecto = propuesta ? propuesta.proyecto : input.proyecto === true;
+  // Tema a pedido (R43) y focos de aprendizaje (R45). Sin tema pedido, el plan aceptado de un objetivo (R59) pone el
+  // suyo: su primer concepto aún no dominado. Un concepto de la ruta cuyos fundamentos faltan igual se elige: la
+  // lógica del tema añade antes un fundamento. Solo el tema que escribe el usuario cuenta como «pedido».
+  let temaInput = proyecto || propuesta ? undefined : input.tema;
+  let temaDeFoco: FocoPlan | undefined;
+  if (!temaInput && !proyecto && !propuesta) {
+    for (const f of input.focos ?? []) {
+      if (!f.dirige) continue;
+      const next = f.conceptIds.find((id) => byId.has(id) && stateOf(id) !== 'dominado');
+      if (next) {
+        temaInput = { conceptId: next, texto: f.titulo };
+        temaDeFoco = f;
+        break;
+      }
+    }
+  }
+  const tema = temaInput ? byId.get(temaInput.conceptId) : undefined;
+  if (temaInput && !tema) throw new TemaError(`El concepto «${temaInput.conceptId}» del tema no existe en el grafo.`);
   const closure = new Set<string>();
   if (tema) {
     const walk = (id: string) => {
@@ -139,7 +181,7 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   const rationale: string[] = [];
   const used = new Set<string>();
   const stages: PlannedStage[] = [];
-  const slots = config.etapasPorChallenge;
+  const slots = clamp<number>(Math.round(input.propuesta?.etapas ?? input.etapas ?? config.etapasPorChallenge), ETAPAS_MIN, ETAPAS_MAX);
 
   // Cobertura por dominio: fracción de conceptos ya vistos. El avance va al dominio con menor cobertura.
   const coverage = (d: DomainId) => {
@@ -202,11 +244,11 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     const max = (insights.get(conceptId) as ConceptInsight | undefined)?.maxBloom ?? null;
     return clamp<Bloom>(max === null ? 3 : max + 1, 1, 6);
   };
-  const add = (role: StageRole, concept: Concept, why: string, opts: { reason?: 'fallos' | 'olvido' | null; keepBloom?: Bloom | null } = {}) => {
+  const add = (role: StageRole, concept: Concept, why: string, opts: { reason?: 'fallos' | 'olvido' | null; keepBloom?: Bloom | null; bloom?: Bloom } = {}) => {
     used.add(concept.id);
     const failures = failuresOf(concept.id);
     const integration = role === 'integracion';
-    const bloom = bloomFor(concept.id, opts.keepBloom ?? null, failures);
+    const bloom = opts.bloom ?? bloomFor(concept.id, opts.keepBloom ?? null, failures);
     stages.push({
       number: stages.length + 1,
       role,
@@ -220,6 +262,7 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     });
   };
 
+  if (proyecto || propuesta) anchor = null; // un proyecto o una propuesta del modelo es una sola historia: no se interrumpe con un refuerzo
   const advanceSlots = Math.max(0, slots - 1 - (anchor ? 1 : 0));
   if (anchor) {
     add(anchor.role, anchor.concept, anchor.why, { reason: anchor.reason, keepBloom: anchor.bloom });
@@ -248,7 +291,7 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   for (const c of temaSlots) {
     const isTema = c.id === tema?.id;
     const why = isTema
-      ? `Pediste practicar «${input.tema!.texto}»: se trabaja «${c.name}».${stateOf(c.id) === 'no_visto' ? ' Aún no lo has visto, así que empieza Guiado.' : ''}${noteFoco(c)}`
+      ? `${temaDeFoco ? `Tu objetivo «${temaDeFoco.titulo}» pide «${c.name}» (lo siguiente de su plan).` : `Pediste practicar «${temaInput!.texto}»: se trabaja «${c.name}».`}${stateOf(c.id) === 'no_visto' ? ' Aún no lo has visto, así que empieza Guiado.' : ''}${noteFoco(c)}`
       : `«${c.name}» es un fundamento de «${tema!.name}» que aún no has visto: va antes.`;
     add('avance', c, why);
     rationale.push(why);
@@ -257,7 +300,48 @@ export function planChallenge(input: PlanInput): ChallengePlan {
   if (unmet.length > 0 && !temaSlots.some((c) => c.id !== tema?.id)) {
     rationale.push(`Aviso: «${tema!.name}» se apoya en ${unmet.map((c) => `«${c.name}»`).join(', ')}, que aún no has visto; el reto empieza en Apoyo Guiado.`);
   }
-  for (let i = temaSlots.length; i < advanceSlots; i++) {
+  if (propuesta) {
+    // El modelo ya descompuso lo que el usuario quiere lograr: una etapa por paso, con su Bloom, validada contra el grafo.
+    for (const [i, paso] of propuesta.pasos.slice(0, slots - 1).entries()) {
+      const c = byId.get(paso.conceptId);
+      if (!c) throw new TemaError(`El concepto «${paso.conceptId}» de la propuesta no existe en el grafo.`);
+      if (used.has(c.id) || c.domain === 'business') continue;
+      const why = `Etapa ${i + 1} de tu propuesta: «${c.name}» (Bloom ${paso.bloom}). ${paso.porque}`;
+      add('avance', c, why, { bloom: paso.bloom });
+      rationale.push(why);
+    }
+    if (propuesta.integracion) {
+      const b = byId.get(propuesta.integracion.conceptId);
+      if (!b) throw new TemaError(`El concepto «${propuesta.integracion.conceptId}» de la propuesta no existe en el grafo.`);
+      if (b.domain === 'business') temaForIntegration = b;
+    }
+  }
+  if (proyecto && !propuesta) {
+    // Cada etapa técnica toma, en su dominio, el concepto con menos fundamentos sin ver: así la ruta es alcanzable.
+    const unseenAncestors = (c: Concept): number => {
+      const seen = new Set<string>();
+      const walk = (id: string) => {
+        for (const p of byId.get(id)?.prerequisites ?? []) if (!seen.has(p)) {
+          seen.add(p);
+          walk(p);
+        }
+      };
+      walk(c.id);
+      return [...seen].filter((id) => stateOf(id) === 'no_visto' && !used.has(id)).length;
+    };
+    const ruta = RUTA_PROYECTO[slots - 1] ?? RUTA_PROYECTO[3]!;
+    ruta.forEach((dom, i) => {
+      const c = concepts
+        .filter((x) => x.domain === dom && !used.has(x.id) && (stateOf(x.id) === 'no_visto' || stateOf(x.id) === 'visto'))
+        .sort((a, b) => unseenAncestors(a) - unseenAncestors(b) || focusRank(a) - focusRank(b) || deps(b.id) - deps(a.id) || byIdOrder(a, b))[0];
+      if (!c) return;
+      const pending = unseenAncestors(c);
+      const why = `Etapa ${i + 1} del proyecto (${DOMAIN_BY_ID[dom].name}): «${c.name}»${pending > 0 ? `; se apoya en ${pending} concepto${pending === 1 ? '' : 's'} que aún no has visto, así que va Guiado` : ''}.${noteFoco(c)}`;
+      add('avance', c, why);
+      rationale.push(why);
+    });
+  }
+  for (let i = temaSlots.length; !proyecto && !propuesta && i < advanceSlots; i++) {
     const c = pickAvance();
     if (!c) break;
     const why = `«${c.name}» está en la frontera de tu grafo (${stateOf(c.id) === 'no_visto' ? 'aún no visto' : 'visto, sin dominar'}) y sus prerrequisitos ya están vistos.${noteFoco(c)}`;
@@ -273,7 +357,7 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     [...businessPool].sort((a, b) => deps(b.id) - deps(a.id) || byIdOrder(a, b))[0];
   if (business) {
     const why = business === temaForIntegration
-      ? `Pediste practicar «${input.tema!.texto}»: se interpreta con «${business.name}».`
+      ? propuesta?.integracion ? `Etapa final de tu propuesta: «${business.name}». ${propuesta.integracion.porque}` : `Pediste practicar «${temaInput!.texto}»: se interpreta con «${business.name}».`
       : `Integración: interpretar el resultado para negocio con «${business.name}».${noteFoco(business)}`;
     add('integracion', business, why);
     rationale.push(why);
@@ -287,11 +371,12 @@ export function planChallenge(input: PlanInput): ChallengePlan {
     mode: arranque ? 'arranque' : 'calibrado',
     id: `challenge-${pad3(number)}`,
     number,
+    ...(proyecto ? { proyecto: true } : {}),
     difficulty,
     domain: technical,
     stages,
     avoid: { datasets: recent.map((c) => c.dataset), titles: recent.map((c) => c.title) },
-    ...(input.tema ? { tema: input.tema } : {}),
+    ...(input.tema && !proyecto ? { tema: input.tema } : {}),
     focos: [...influencing],
     rationale: [
       arranque

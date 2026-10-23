@@ -37,3 +37,24 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 @media (max-width: 559px) { .stages li { grid-template-columns: 1fr; gap: 4px; } .dialog { padding: 18px; } }
+
+.select { width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--btn-bg); box-shadow: var(--shadow-btn); color: var(--ink); font: inherit; font-size: 14px; }
+.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.caso { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 14px; background: var(--sunk); max-height: 46vh; overflow-y: auto; }
+.caso h3 { margin: 0; font-size: 16px; }
+.caso p { margin: 0; }
+.escenario { font-size: 13px; line-height: 1.6; text-align: justify; }
+.tablas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tablas li { padding: 3px 10px; border-radius: 999px; background: var(--card); font-size: 12px; }
+.casoEtapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.casoEtapa { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; opacity: 0.75; }
+.casoEtapa.listo { opacity: 1; }
+.pendiente { font-size: 11px; font-weight: 600; color: var(--muted); }
+.entregables { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+.ok { font-size: 12px; color: var(--d1-fg); }
+
+.textarea { width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.6; resize: vertical; }
+.textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.propHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.propHead h3 { margin: 0; }

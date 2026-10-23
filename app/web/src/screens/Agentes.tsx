@@ -13,7 +13,7 @@ import styles from './Agentes.module.css';
 const when = (iso: string) => new Date(iso).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /**
- * Monitoreo de los cuatro agentes (SDD R46–R48): estado, línea de tiempo de ejecuciones, traspasos por challenge, últimos
+ * Monitoreo de los cinco agentes (SDD R46–R48): estado, línea de tiempo de ejecuciones, traspasos por challenge, últimos
  * análisis y errores. Es de solo lectura: ningún botón lanza ni reintenta ejecuciones.
  */
 export function Agentes() {
@@ -117,6 +117,24 @@ export function Agentes() {
           </div>
         </>
       )}
+
+      <Card className={styles.review}>
+        <h2>Evaluación de tu avance</h2>
+        <p className={styles.muted}>Lo que el Planificador te respondió o evaluó en tus objetivos. «Ver la ejecución» abre lo que leyó, cómo razonó y su respuesta.</p>
+        {data.revisiones.length === 0 ? (
+          <p className={styles.muted}>Todavía no hay revisiones. Entra a un objetivo, abre «Conversación» y pide una revisión de tu avance.</p>
+        ) : (
+          <ul className={styles.plain}>
+            {data.revisiones.map((r) => (
+              <li key={`${r.focoId}-${r.at}`}>
+                <span className={styles.muted}>{when(r.at)} · {r.titulo} · {r.tipo === 'revision' ? 'Revisión de avance' : 'Respuesta a tu feedback'}{r.planCambiado ? ' · propuso un plan nuevo' : ''}</span>
+                <p>{r.texto}</p>
+                {r.runId && <button type="button" className={styles.link} onClick={() => setSelectedId(r.runId)}>Ver la ejecución</button>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <div className={styles.twoCol}>
         <Card>
@@ -236,12 +254,19 @@ function RunDetail({ run, runs, onSelect }: { run: RunSummary | null; runs: RunS
             <summary>Mensaje que recibió{full.inputTruncated ? ' (recortado)' : ''}</summary>
             <pre className={`${styles.pre} mono`}>{full.input}</pre>
           </details>
-          <details className={styles.block} open={full.events.length > 0 && full.events.length <= 12}>
-            <summary>Pasos ({full.events.length}{full.eventsTruncated ? '+' : ''})</summary>
+          <details className={styles.block} open>
+            <summary>Razonamiento y pasos ({full.events.length}{full.eventsTruncated ? '+' : ''})</summary>
             <ol className={styles.events}>
-              {full.events.map((e, i) => <li key={i} className={e.type === 'tool' ? `${styles.tool} mono` : ''}>{e.type === 'tool' ? `→ ${e.text}` : e.text}</li>)}
+              {full.events.map((e, i) => (
+                <li key={i} className={e.type === 'tool' ? `${styles.tool} mono` : e.type === 'thinking' ? styles.thought : styles.said}>
+                  {e.type === 'tool' ? `→ ${e.text}` : <><span className={styles.tag}>{e.type === 'thinking' ? 'Pensó' : 'Escribió'}</span>{e.text}</>}
+                </li>
+              ))}
               {full.events.length === 0 && <li className={styles.muted}>Sin pasos registrados.</li>}
             </ol>
+            {full.events.length > 0 && !full.events.some((e) => e.type === 'thinking') && (
+              <p className={styles.muted}>Claude Code no expuso su razonamiento interno en esta ejecución: arriba ves lo que escribió entre pasos y qué archivos abrió.</p>
+            )}
           </details>
           {full.output !== undefined && (
             <details className={styles.block}>

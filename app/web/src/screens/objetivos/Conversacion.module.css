@@ -1,0 +1,19 @@
+.wrap { display: flex; flex-direction: column; gap: 14px; }
+.intro, .hint { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.thread { list-style: none; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; border-radius: 14px; background: var(--sunk); }
+.empty { padding: 18px 8px; text-align: center; font-size: 14px; color: var(--muted); }
+.msg { display: flex; flex-direction: column; gap: 4px; max-width: 88%; padding: 10px 14px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow-btn); }
+.msg p { margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mine { align-self: flex-end; background: var(--sel); box-shadow: none; }
+.theirs { align-self: flex-start; }
+.who { font-size: 11px; font-weight: 600; color: var(--muted); }
+.planLink { align-self: flex-start; margin-top: 4px; padding: 4px 10px; border: 0; border-radius: 8px; background: var(--d2-bg); color: var(--d2-fg); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.spin { animation: conv-spin 1s linear infinite; }
+@keyframes conv-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+.error { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--d3-bg); color: var(--ink); font-size: 14px; }
+.composer { display: flex; flex-direction: column; gap: 8px; }
+.input { width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: var(--sunk); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.6; resize: vertical; }
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.actions { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }

@@ -8,7 +8,7 @@ import type { StatePayload } from '../shared/state';
 import type { Challenge, Evidence } from '../shared/types';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
-const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
+const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
 const stage1 = challenge.stages[0]!;
 const FIXED = new Date('2026-10-14T15:30:00.000Z');
 
@@ -38,7 +38,7 @@ const read = (...p: string[]) => readFileSync(file(...p), 'utf8');
 
 beforeEach(() => {
   tmp = mkdtempSync(path.join(tmpdir(), 'dsc-persist-'));
-  cpSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), (mkdirSync(file('challenge', 'challenge-001'), { recursive: true }), file('challenge', 'challenge-001', 'challenge.json')));
+  cpSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), (mkdirSync(file('challenge', 'challenge-001'), { recursive: true }), file('challenge', 'challenge-001', 'challenge.json')));
   writeFileSync(file('challenge', 'challenge-001', 'logs-avance.md'), '# Logs de avance · challenge-001\n');
   mkdirSync(file('configuracion-retos'));
   cpSync(path.join(repoRoot, 'configuracion-retos', 'knowledge-graph.json'), file('configuracion-retos', 'knowledge-graph.json'));

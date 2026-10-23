@@ -28,10 +28,12 @@ export interface BuildArgsOptions {
   /** Carpetas fuera del cwd que el agente puede leer (solo `challenge/challenge-NNN/`). */
   addDirs?: string[];
   maxUsd?: number;
+  /** Modelo de la suscripción (`--model`: alias como `opus`/`sonnet` o id completo). Sin valor, usa `CLAUDE_MODEL` y, si no, el predeterminado de Claude Code. */
+  model?: string;
 }
 
 /** Argumentos de la invocación; exportado para poder comprobar R9 (sin Bash) y S4 (scope explícito) en los tests. */
-export function buildArgs({ system, addDirs = [], maxUsd = DEFAULT_MAX_USD }: BuildArgsOptions): string[] {
+export function buildArgs({ system, addDirs = [], maxUsd = DEFAULT_MAX_USD, model = process.env.CLAUDE_MODEL }: BuildArgsOptions): string[] {
   const args = [
     '-p',
     '--output-format', 'stream-json',
@@ -44,6 +46,7 @@ export function buildArgs({ system, addDirs = [], maxUsd = DEFAULT_MAX_USD }: Bu
     // Cada evaluación es independiente y no comparte contexto con el Generador (R14).
     '--no-session-persistence',
   ];
+  if (model?.trim()) args.push('--model', model.trim());
   if (system) args.push('--append-system-prompt', system);
   for (const dir of addDirs) args.push('--add-dir', path.resolve(dir));
   return args;
@@ -51,6 +54,7 @@ export function buildArgs({ system, addDirs = [], maxUsd = DEFAULT_MAX_USD }: Bu
 
 export type AgentEvent =
   | { type: 'text'; text: string }
+  | { type: 'thinking'; text: string }
   | { type: 'tool'; text: string };
 
 export interface AgentRunOptions extends BuildArgsOptions {
@@ -88,6 +92,7 @@ export function parseStreamLine(line: string): { events: AgentEvent[]; sessionId
   if (e.type === 'assistant') {
     for (const block of e.message?.content ?? []) {
       if (block.type === 'text' && block.text) out.events.push({ type: 'text', text: block.text });
+      else if (block.type === 'thinking' && typeof block.thinking === 'string' && block.thinking.trim()) out.events.push({ type: 'thinking', text: block.thinking.trim() });
       else if (block.type === 'tool_use') {
         const target = block.input?.file_path || block.input?.path || block.input?.pattern || '';
         out.events.push({ type: 'tool', text: `${block.name} ${target}`.trim() });

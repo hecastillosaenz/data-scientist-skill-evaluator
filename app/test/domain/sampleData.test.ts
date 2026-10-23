@@ -4,9 +4,9 @@ import { SAMPLE_CONCEPTS } from '../../web/src/data/sample/concepts';
 describe('datos de ejemplo del grafo', () => {
   const ids = new Set(SAMPLE_CONCEPTS.map((c) => c.id));
 
-  it('tiene ~250 conceptos y los 6 dominios', () => {
+  it('tiene ~250 conceptos y los 8 dominios', () => {
     expect(SAMPLE_CONCEPTS.length).toBeGreaterThanOrEqual(240);
-    expect(new Set(SAMPLE_CONCEPTS.map((c) => c.domain)).size).toBe(6);
+    expect(new Set(SAMPLE_CONCEPTS.map((c) => c.domain)).size).toBe(8);
   });
 
   it('los ids son únicos', () => {

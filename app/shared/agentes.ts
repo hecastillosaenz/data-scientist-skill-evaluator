@@ -4,8 +4,8 @@ import type { Observation } from './types';
  * Registro de ejecuciones de agentes (SDD R46–R48): tipos compartidos entre el orquestador, que escribe y lee los
  * archivos de `registro-agentes/`, y la ventana de monitoreo del navegador.
  */
-export type AgentRole = 'generador' | 'evaluador-codigo' | 'evaluador-conceptual' | 'analista';
-export const AGENT_ROLES: readonly AgentRole[] = ['generador', 'evaluador-codigo', 'evaluador-conceptual', 'analista'];
+export type AgentRole = 'generador' | 'evaluador-codigo' | 'evaluador-conceptual' | 'analista' | 'planificador';
+export const AGENT_ROLES: readonly AgentRole[] = ['generador', 'evaluador-codigo', 'evaluador-conceptual', 'analista', 'planificador'];
 export type RunOutcome = 'en_curso' | 'ok' | 'error' | 'cancelado' | 'presupuesto' | 'interrumpida';
 
 /** A qué pertenece la ejecución: sirve para enlazar los traspasos entre roles (R47). */
@@ -15,10 +15,13 @@ export interface RunMeta {
   /** Fase del Generador (`esqueleto`, `etapa-2`, `test`…). */
   fase?: string;
   evidenceId?: string;
+  /** Foco cuyo plan armó el Planificador. */
+  focoId?: string;
 }
 
 export interface RunEventLog {
-  type: 'text' | 'tool';
+  /** `thinking` es el razonamiento que Claude Code expone (si lo hay); `text` lo que escribió entre pasos. */
+  type: 'text' | 'thinking' | 'tool';
   text: string;
 }
 
@@ -71,6 +74,8 @@ export interface AgentesPayload {
   ejecuciones: RunSummary[];
   /** Últimos análisis del Analista con hallazgos (sin las Evidence omitidas). */
   analisis: AnalysisEntry[];
+  /** Revisiones de avance y respuestas del Planificador sobre tus objetivos (R57), más recientes primero. */
+  revisiones: { focoId: string; titulo: string; at: string; tipo: 'feedback' | 'revision' | 'respuesta'; texto: string; planCambiado: boolean; runId: string | null }[];
   /** Conceptos que el Analista creó, más recientes primero. */
   conceptosCreados: { id: string; name: string; since: string }[];
   errores: RunSummary[];

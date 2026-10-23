@@ -43,7 +43,7 @@ describe('layoutGraph', () => {
 });
 
 describe('R15 / AC-R15: los dominios nunca se ocultan', () => {
-  it('sin selección, los 6 dominios se ven por completo', () => {
+  it('sin selección, los 8 dominios se ven por completo', () => {
     for (const d of DOMAINS) expect(domainOpacity(d.id, new Set())).toBe(1);
   });
   it('con cualquier selección, ningún dominio queda invisible', () => {
@@ -52,8 +52,8 @@ describe('R15 / AC-R15: los dominios nunca se ocultan', () => {
     expect(domainOpacity('sql', active)).toBe(1);
     expect(domainOpacity('python', active)).toBeLessThan(1);
   });
-  it('el layout inicial contiene nodos de los 6 dominios', () => {
-    expect(new Set(layout.nodes.map((n) => n.concept.domain)).size).toBe(6);
+  it('el layout inicial contiene nodos de los 8 dominios', () => {
+    expect(new Set(layout.nodes.map((n) => n.concept.domain)).size).toBe(8);
   });
 });
 

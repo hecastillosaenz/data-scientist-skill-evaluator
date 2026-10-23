@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activityDays, currentStreakDays, dayKey, isoWeek, longestStreak, startOfWeek, timePoints } from '../../web/src/domain/stats';
+import { activityDays, currentStreakDays, dailyActivity, dayKey, isoWeek, longestStreak, startOfWeek, timePoints } from '../../web/src/domain/stats';
 import { timeReadingLine } from '../../web/src/domain/readingLines';
 import type { Evidence } from '../../shared/types';
 
@@ -113,5 +113,19 @@ describe('analítica sobre los datos de ejemplo', () => {
     expect(domainsReadingLine(stagesByDomainApoyo(data.evidence, data.challenges, now, 90))).toMatch(/es el dominio que más practicaste \(\d+ de \d+\)\.$/);
     expect(difficultyReadingLine(performanceByDifficulty(data.evidence, data.challenges))).toMatch(/es donde más te desvías: /);
     expect(activityReadingLine(5, 30, 1)).toBe('Practicaste 5 de 30 días. Racha más larga del periodo: 1 día.');
+  });
+});
+
+describe('dailyActivity', () => {
+  it('cubre los últimos N días terminando hoy y suma intentos y minutos por día', () => {
+    const challenge = { id: 'c1', stages: [{ id: 'c1-s1', domain: 'sql', number: 1, title: 't' }] } as never;
+    const e = (d: Date, minutes: number) => ({ ...ev(d), stageId: 'c1-s1', actualMinutes: minutes });
+    const now = at(2026, 10, 19);
+    const days = dailyActivity([e(at(2026, 10, 19), 20), e(at(2026, 10, 19), 10), e(at(2026, 10, 17), 5), e(at(2026, 9, 1), 99)], [challenge], now, 14);
+    expect(days).toHaveLength(14);
+    expect(dayKey(days[13]!.day)).toBe(dayKey(now));
+    expect(days[13]).toMatchObject({ total: 2, minutes: 30 });
+    expect(days[11]).toMatchObject({ total: 1, minutes: 5 });
+    expect(days.reduce((a, d) => a + d.total, 0)).toBe(3); // el intento fuera de la ventana no cuenta
   });
 });

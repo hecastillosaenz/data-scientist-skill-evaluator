@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { DataProvider } from './data/DataContext';
+import { TimekeeperProvider } from './data/TimekeeperContext';
 import { AppShell } from './layout/AppShell';
 import { Agentes } from './screens/Agentes';
 import { Analitica } from './screens/Analitica';
@@ -15,6 +16,7 @@ import { GeneratorProvider } from './screens/generate/GenerateDialog';
 export function App() {
   return (
     <DataProvider>
+      <TimekeeperProvider>
       <BrowserRouter>
         <GeneratorProvider>
         <Routes>
@@ -32,6 +34,7 @@ export function App() {
         </Routes>
         </GeneratorProvider>
       </BrowserRouter>
+      </TimekeeperProvider>
     </DataProvider>
   );
 }

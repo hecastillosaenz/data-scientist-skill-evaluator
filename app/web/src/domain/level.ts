@@ -57,7 +57,7 @@ export function levelByDomain(challenges: Challenge[], evidence: Evidence[]): Re
   return result;
 }
 
-/** Nivel global (solo para mostrar): mediana de los seis niveles de dominio, redondeada hacia abajo; pide amplitud. */
+/** Nivel global (solo para mostrar): mediana de los niveles de los ocho dominios, redondeada hacia abajo; pide amplitud. */
 export function globalLevel(levels: Record<DomainId, DomainLevel>): UserLevel {
   const sorted = Object.values(levels).map((l) => l.index).sort((a, b) => a - b);
   const mid = sorted.length / 2;

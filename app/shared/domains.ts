@@ -11,6 +11,8 @@ export const DOMAINS: DomainInfo[] = [
   { id: 'python', name: 'Python', short: 'Python' },
   { id: 'math', name: 'Matemática Aplicada', short: 'Matemática' },
   { id: 'ml', name: 'Machine Learning', short: 'ML' },
+  { id: 'features', name: 'Feature Engineering', short: 'Features' },
+  { id: 'training', name: 'Model Training', short: 'Training' },
   { id: 'cleaning', name: 'Limpieza y Visualización', short: 'Limpieza' },
   { id: 'business', name: 'Business Analytics', short: 'Business' },
 ];

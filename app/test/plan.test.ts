@@ -222,7 +222,7 @@ describe('calibracion.json', () => {
   it('el archivo del repo es válido y coincide con lo documentado en el SDD', async () => {
     const config = await loadCalibration(path.resolve(import.meta.dirname, '../..'));
     expect(config).toEqual(DEFAULT_CALIBRATION);
-    expect(config).toMatchObject({ evidenciaSuficiente: 8, etapasPorChallenge: 3, diasOlvido: 21, ventanaTemas: 3, presupuestoUsdPorFase: 0.75, reparacionesPorFase: 2, horasConservacion: 24, presupuestoUsdAnalisis: 0.3, materialMaxCaracteres: 4000, focosActivosMax: 3, diasRegistroAgentes: 30 });
+    expect(config).toMatchObject({ evidenciaSuficiente: 8, etapasPorChallenge: 3, diasOlvido: 21, ventanaTemas: 3, presupuestoUsdPorFase: 0.75, reparacionesPorFase: 2, horasConservacion: 24, presupuestoUsdAnalisis: 0.3, materialMaxCaracteres: 4000, focosActivosMax: 5, diasRegistroAgentes: 30 });
   });
 
   it('un archivo ausente usa los valores por defecto', async () => {

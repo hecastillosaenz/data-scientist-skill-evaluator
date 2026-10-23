@@ -1,3 +1,4 @@
+import { formatMinutes } from '../charts/format';
 import type { Bloom, ConceptState, Difficulty, StageStatus } from '../../../shared/types';
 import { BLOOM_LABEL, CONCEPT_STATE_LABEL, DIFFICULTY_LABEL, STAGE_STATUS_LABEL } from '../../../shared/domains';
 import styles from './chips.module.css';
@@ -24,7 +25,7 @@ export function BloomChip({ bloom }: { bloom: Bloom }) {
 }
 
 export function TimeChip({ minutes }: { minutes: number }) {
-  return <span className={`${styles.chip} ${styles.neutral} mono`}>{minutes} min</span>;
+  return <span className={`${styles.chip} ${styles.neutral} mono`}>{formatMinutes(minutes)}</span>;
 }
 
 const TONE: Record<StageStatus | ConceptState, string> = {

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ArrowRight, Check, Minus, X } from 'lucide-react';
 import { DOMAINS, DOMAIN_BY_ID, DIFFICULTY_LABEL } from '../../../shared/domains';
@@ -12,8 +12,11 @@ import { StageBar } from '../components/StageBar';
 import { LineChart } from '../charts/LineChart';
 import { StackedBars } from '../charts/StackedBars';
 import { globalLevel, levelByDomain } from '../domain/level';
-import { addDays, activityDays, averageActualMinutes, averageEstimatedMinutes, completedStageCount, currentStreakDays, isoWeek, longestStreak, stageIndex, stagesCompletedThisWeek, timePoints, weeklyByDomain, WEEKLY_GOAL } from '../domain/stats';
-import { formatLongDate, formatWeekday, relativeTime } from '../charts/format';
+import { addDays, activityDays, dailyActivity, averageActualMinutes, averageEstimatedMinutes, completedStageCount, currentStreakDays, isoWeek, longestStreak, stageIndex, stagesCompletedThisWeek, timePoints, weeklyByDomain, WEEKLY_GOAL } from '../domain/stats';
+import { formatLongDate, formatMinutes, formatShortDate, formatWeekday, relativeTime } from '../charts/format';
+import { computeFocoProgress } from '../domain/objetivoProgress';
+import { loadObjetivos } from '../data/objetivosApi';
+import type { Objetivos } from '../../../shared/objetivos';
 import { timeReadingLine } from '../domain/readingLines';
 import { buildReviewQueue, reasonText, topWeaknesses } from '../domain/reviewQueue';
 import { useApp } from '../data/DataContext';
@@ -21,9 +24,19 @@ import { useGeneratorDialog } from './generate/GenerateDialog';
 import styles from './Inicio.module.css';
 
 const PERIOD_DAYS = 30;
+const ACTIVITY_DAYS = 14;
 
 export function Inicio() {
-  const { loading, data, now, currentChallenge, stageStatusesOf, challengeStatusOf, actions, source } = useApp();
+  const { loading, data, now, currentChallenge, stageStatusesOf, challengeStatusOf, actions, source, insights } = useApp();
+  const [objetivos, setObjetivos] = useState<Objetivos | null>(null);
+  useEffect(() => {
+    if (source === 'ejemplo') return;
+    let cancelled = false;
+    loadObjetivos().then((r) => !cancelled && setObjetivos(r.objetivos)).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [source]);
   const generator = useGeneratorDialog();
   const navigate = useNavigate();
 
@@ -44,9 +57,15 @@ export function Inicio() {
       queue: buildReviewQueue(data.concepts, data.challenges, data.evidence, now, data.testResults),
       points: timePoints(data.evidence, data.challenges, now, PERIOD_DAYS),
       week: weeklyByDomain(data.evidence, data.challenges, now),
+      daily: dailyActivity(data.evidence, data.challenges, now, ACTIVITY_DAYS),
       recent: [...data.evidence].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6).map((e) => ({ e, ref: stages.get(e.stageId) })),
     };
   }, [data, now]);
+
+  const goals = useMemo(() => {
+    if (!data || !objetivos) return [];
+    return objetivos.focos.filter((f) => f.estado === 'activo').map((f) => ({ foco: f, progress: computeFocoProgress(f, data, insights) }));
+  }, [data, objetivos, insights]);
 
   if (loading || !data || !view) return <InicioSkeleton />;
 
@@ -105,11 +124,61 @@ export function Inicio() {
           />
           <KpiCard
             label="Tiempo medio por etapa"
-            value={view.avgReal === null ? '—' : `${Math.round(view.avgReal)} min`}
-            context={view.avgEst === null ? 'Sin etapas aprobadas todavía' : `Estimado: ~${Math.round(view.avgEst)} min`}
+            value={view.avgReal === null ? '—' : formatMinutes(view.avgReal)}
+            context={view.avgEst === null ? 'Sin etapas aprobadas todavía' : `Estimado: ~${formatMinutes(view.avgEst)}`}
           />
-          <KpiCard label="Nivel actual" value={view.level} context="Mediana de tus 6 dominios" />
+          <KpiCard label="Nivel actual" value={view.level} context="Mediana de tus 8 dominios" />
         </div>
+      </div>
+
+      <div className={styles.goalsRow}>
+        <Card>
+          <div className={styles.cardHead}>
+            <h2>Mis objetivos</h2>
+            <Link to="/objetivos" className={styles.link}>Ver objetivos <ArrowRight size={14} aria-hidden="true" /></Link>
+          </div>
+          {goals.length === 0 ? (
+            <EmptyState title="Aún no tienes objetivos activos" text="Cuéntale al sistema qué estás estudiando y arma tu plan: aquí verás cuánto avanzas en cada uno." action={<Link className="btn" to="/objetivos">Crear un objetivo</Link>} />
+          ) : (
+            <ul className={styles.goals}>
+              {goals.map(({ foco, progress }) => (
+                <li key={foco.id}>
+                  <Link to="/objetivos" className={styles.goalLink}>
+                    <span className={styles.goalTop}>
+                      <strong>{foco.titulo}</strong>
+                      <span className="mono">{progress.pct}%</span>
+                    </span>
+                    <span className={styles.goalTrack} aria-hidden="true"><span style={{ width: `${progress.pct}%` }} /></span>
+                    <span className={styles.goalSub}>
+                      {progress.pasos.length === 0
+                        ? 'Sin plan todavía'
+                        : `${progress.done} de ${progress.pasos.length} conceptos · ${progress.retos.length} ${progress.retos.length === 1 ? 'reto' : 'retos'}${progress.next ? ` · sigue: ${progress.next.concept?.name ?? progress.next.paso.conceptId}` : ' · ¡plan cumplido!'}`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <h2>Actividad por día</h2>
+          <p className={styles.cardSub}>Intentos de los últimos {ACTIVITY_DAYS} días, por dominio</p>
+          <StackedBars
+            ariaLabel={`Intentos por día en los últimos ${ACTIVITY_DAYS} días, apilados por dominio`}
+            colorVar={(key) => DOMAIN_COLOR_VAR[key as keyof typeof DOMAIN_COLOR_VAR]}
+            bars={view.daily.map((d) => ({
+              label: String(d.day.getDate()),
+              tooltipTitle: `${formatShortDate(d.day)} · ${d.minutes} min`,
+              segments: DOMAINS.map((dom) => ({ key: dom.id, label: dom.short, value: d.counts[dom.id] })),
+            }))}
+          />
+          <ReadingLine>
+            {view.daily.some((d) => d.total > 0)
+              ? `${view.daily.reduce((a, d) => a + d.total, 0)} intentos y ${view.daily.reduce((a, d) => a + d.minutes, 0)} min en ${view.daily.filter((d) => d.total > 0).length} de ${ACTIVITY_DAYS} días; el más activo fue el ${formatShortDate([...view.daily].sort((a, b) => b.total - a.total)[0]!.day)}.`
+              : 'Aún no practicas en estos días: cada intento que verifiques aparecerá aquí.'}
+          </ReadingLine>
+        </Card>
       </div>
 
       <div className={styles.middle}>
@@ -245,7 +314,7 @@ function CurrentChallengeCard({ challenge, statuses }: { challenge: Challenge; s
         ))}
       </ol>
       <div className={styles.heroFoot}>
-        {next && <p>Siguiente: <strong>{next.stage.title}</strong> · <span className="mono">{next.stage.estimatedMinutes} min</span></p>}
+        {next && <p>Siguiente: <strong>{next.stage.title}</strong> · <span className="mono">{formatMinutes(next.stage.estimatedMinutes)}</span></p>}
         <Link to="/challenge-actual" className={`btn ${styles.heroBtn}`}>Continuar challenge <ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
     </section>

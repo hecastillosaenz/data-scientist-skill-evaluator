@@ -6,14 +6,11 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { App } from './App';
 import { ThemeProvider } from './theme/ThemeProvider';
-import { TimekeeperProvider } from './data/TimekeeperContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <TimekeeperProvider>
-        <App />
-      </TimekeeperProvider>
+      <App />
     </ThemeProvider>
   </StrictMode>,
 );

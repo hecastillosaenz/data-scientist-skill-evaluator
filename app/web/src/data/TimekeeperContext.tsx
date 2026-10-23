@@ -1,7 +1,11 @@
+import { useApp } from './DataContext';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   LEGACY_TIMER_KEYS,
+  STAMPS_KEY,
   TIMERS_KEY,
+  parseStamps,
+  reconcileTimers,
   beat,
   detectGap,
   elapsedMs,
@@ -94,6 +98,24 @@ export function TimekeeperProvider({ children }: { children: ReactNode }) {
   bookRef.current = book;
   const runningId = runningIdOf(book);
   const running = runningId !== null;
+
+  // Relojes huérfanos: un challenge borrado y regenerado con el mismo id no hereda el tiempo del anterior.
+  const { data } = useApp();
+  useEffect(() => {
+    if (!data) return;
+    const withEvidence = new Set(data.evidence.map((e) => e.challengeId));
+    const result = reconcileTimers(
+      bookRef.current,
+      parseStamps(storage()?.getItem(STAMPS_KEY)),
+      data.challenges.map((c) => ({ id: c.id, title: c.title, dataset: c.dataset, hasActivity: withEvidence.has(c.id) })),
+    );
+    try {
+      storage()?.setItem(STAMPS_KEY, JSON.stringify(result.stamps));
+    } catch {
+      /* sin almacenamiento: no se puede recordar de quién es cada reloj */
+    }
+    if (result.changed) setBook(result.book);
+  }, [data, book]);
 
   // Persistencia.
   useEffect(() => {

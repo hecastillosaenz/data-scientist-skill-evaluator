@@ -23,3 +23,12 @@ export function relativeTime(date: Date, now: Date): string {
   const days = Math.round(hours / 24);
   return days === 1 ? 'ayer' : `hace ${days} días`;
 }
+
+/** Duración legible: «45 min», «1 h 30 min», «2 h»; desde 8 h se muestra también en días de trabajo no, solo en horas. */
+export function formatMinutes(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes));
+  if (total < 60) return `${total} min`;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}

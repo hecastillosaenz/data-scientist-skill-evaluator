@@ -8,7 +8,8 @@
   "reparacionesPorFase": 2,
   "horasConservacion": 24,
   "presupuestoUsdAnalisis": 0.3,
+  "presupuestoUsdPlan": 0.5,
   "materialMaxCaracteres": 4000,
-  "focosActivosMax": 3,
+  "focosActivosMax": 5,
   "diasRegistroAgentes": 30
 }

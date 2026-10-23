@@ -9,6 +9,11 @@ import { verifyStage, type VerifyDeps } from './verify/verify-service';
 import type { Apoyo } from '../shared/types';
 import { registerAgentRoutes } from './agents/routes';
 import { registerStateRoutes } from './persistence/routes';
+import { MODELO_VALIDO } from './generator/objetivo';
+import { ETAPAS_MAX, ETAPAS_MIN } from './generator/plan';
+import { DESCRIPCION_MAX, proponerReto } from './planner/propuesta';
+import type { PropuestaReto } from '../shared/generate';
+import { converseFoco, planFoco, type PlannerDeps } from './planner/planner-service';
 import { analyzeEvidence, AnalystQueue, type AnalysisOutcome, type AnalystDeps } from './analyst/analyst-service';
 import { readState } from './persistence/state';
 import { loadCalibration } from './generator/calibration';
@@ -34,6 +39,7 @@ export type BuildAppOptions = {
   autoAnalyze?: boolean;
   /** Dependencias del Analista (agente): se sustituyen en los tests. */
   analystDeps?: Partial<AnalystDeps>;
+  plannerDeps?: Partial<PlannerDeps>;
   /** Se llama al terminar cada análisis (estado, costo…); `index.ts` lo registra en consola. */
   onAnalysisSettled?: (evidenceId: string, outcome: AnalysisOutcome) => void;
 };
@@ -145,7 +151,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
    * Genera un challenge (R38, R39): NDJSON `plan | step | tool | result | error | done`. Una sola operación a la vez
    * (409 si hay otra); cancelar la petición borra el área de trabajo y no deja nada a medias.
    */
-  app.post<{ Body: { dominio?: string; resume?: boolean; budgetFactor?: number; tema?: { conceptId?: unknown; texto?: unknown } } | undefined }>('/api/generate', async (request, reply) => {
+  app.post<{ Body: { dominio?: string; resume?: boolean; budgetFactor?: number; tema?: { conceptId?: unknown; texto?: unknown }; focoId?: unknown; modelo?: unknown; etapas?: unknown; proyecto?: unknown; descripcion?: unknown; propuesta?: unknown } | undefined }>('/api/generate', async (request, reply) => {
     const dominio = request.body?.dominio;
     if (dominio !== undefined && !DOMAINS.some((d) => d.id === dominio)) {
       return reply.code(400).send({ error: 'bad_request', message: `«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.` });
@@ -155,6 +161,26 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
       return reply.code(400).send({ error: 'bad_request', message: '«tema» debe traer «conceptId» (texto) y, opcionalmente, «texto».' });
     }
     const tema = rawTema ? { conceptId: rawTema.conceptId as string, texto: (typeof rawTema.texto === 'string' && rawTema.texto ? rawTema.texto : (rawTema.conceptId as string)).slice(0, 120) } : undefined;
+    const rawFoco = request.body?.focoId;
+    if (rawFoco !== undefined && (typeof rawFoco !== 'string' || rawFoco === '' || rawFoco.length > 60)) {
+      return reply.code(400).send({ error: 'bad_request', message: '«focoId» debe ser el id de un objetivo.' });
+    }
+    const rawModelo = request.body?.modelo;
+    if (rawModelo !== undefined && rawModelo !== '' && (typeof rawModelo !== 'string' || !MODELO_VALIDO.test(rawModelo))) {
+      return reply.code(400).send({ error: 'bad_request', message: '«modelo» debe ser un alias (opus, sonnet, haiku) o un id de modelo.' });
+    }
+    const rawEtapas = request.body?.etapas;
+    if (rawEtapas !== undefined && (typeof rawEtapas !== 'number' || !Number.isInteger(rawEtapas) || rawEtapas < ETAPAS_MIN || rawEtapas > ETAPAS_MAX)) {
+      return reply.code(400).send({ error: 'bad_request', message: `«etapas» debe ser un entero de ${ETAPAS_MIN} a ${ETAPAS_MAX}.` });
+    }
+    const rawDescripcion = request.body?.descripcion;
+    if (rawDescripcion !== undefined && (typeof rawDescripcion !== 'string' || rawDescripcion.length > DESCRIPCION_MAX)) {
+      return reply.code(400).send({ error: 'bad_request', message: `«descripcion» debe ser texto de hasta ${DESCRIPCION_MAX} caracteres.` });
+    }
+    const rawPropuesta = request.body?.propuesta;
+    if (rawPropuesta !== undefined && (typeof rawPropuesta !== 'object' || rawPropuesta === null || Array.isArray(rawPropuesta))) {
+      return reply.code(400).send({ error: 'bad_request', message: '«propuesta» debe ser la que devolvió /api/generate/propuesta.' });
+    }
     const factor = request.body?.budgetFactor === 2 ? 2 : 1;
     const release = mutex.acquire('generar');
     const abort = new AbortController();
@@ -167,6 +193,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
         repoRoot,
         ...(dominio ? { domain: dominio as DomainId } : {}),
         ...(tema ? { tema } : {}),
+        ...(typeof rawFoco === 'string' ? { focoId: rawFoco } : {}),
+        ...(typeof rawEtapas === 'number' ? { etapas: rawEtapas } : {}),
+        ...(request.body?.proyecto === true ? { proyecto: true } : {}),
+        ...(typeof rawDescripcion === 'string' && rawDescripcion.trim() ? { descripcion: rawDescripcion } : {}),
+        ...(rawPropuesta ? { propuesta: rawPropuesta as PropuestaReto } : {}),
+        ...(typeof rawModelo === 'string' && rawModelo !== '' ? { modelo: rawModelo } : {}),
         resume: request.body?.resume === true,
         budgetFactor: factor,
         signal: abort.signal,
@@ -174,6 +206,97 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<App> {
       }),
       { onClose: release },
     );
+  });
+
+  /**
+   * Plan de estudio de un foco (R56): lo arma el Planificador y queda como «propuesto» en objetivos.json. Una sola
+   * operación a la vez (comparte el mutex con generar y verificar); si el navegador se va, se cancela el agente.
+   */
+  app.post<{ Params: { id: string } }>('/api/objetivos/:id/plan', async (request, reply) => {
+    const release = mutex.acquire('planificar');
+    const abort = new AbortController();
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) abort.abort();
+    });
+    try {
+      const outcome = await planFoco({
+        repoRoot,
+        focoId: request.params.id,
+        signal: abort.signal,
+        ...(options.plannerDeps || options.now ? { deps: { ...options.plannerDeps, ...(options.now ? { now: options.now } : {}) } } : {}),
+      });
+      if (outcome.status === 'ok') return { plan: outcome.plan, cost: outcome.cost };
+      const code = outcome.code === 'not_found' ? 404 : outcome.code === 'no_claude' ? 503 : outcome.code === 'objetivos' || outcome.code === 'graph' ? 422 : 502;
+      return reply.code(code).send({ error: outcome.code, message: outcome.message });
+    } finally {
+      release();
+    }
+  });
+
+  /**
+   * Propone cómo aterrizar lo que el usuario quiere lograr (R61): conceptos, Bloom y número de etapas, antes de generar.
+   * No guarda nada. Comparte el mutex con las demás operaciones de agente; cerrar la petición cancela al agente.
+   */
+  app.post<{ Body: { descripcion?: unknown; tema?: { conceptId?: unknown; texto?: unknown }; focoId?: unknown; dominio?: unknown; etapas?: unknown; proyecto?: unknown } | undefined }>('/api/generate/propuesta', async (request, reply) => {
+    const b = request.body ?? {};
+    const bad = (message: string) => reply.code(400).send({ error: 'bad_request', message });
+    if (b.descripcion !== undefined && typeof b.descripcion !== 'string') return bad('«descripcion» debe ser texto.');
+    if (b.focoId !== undefined && (typeof b.focoId !== 'string' || b.focoId === '' || b.focoId.length > 60)) return bad('«focoId» debe ser el id de un objetivo.');
+    if (b.dominio !== undefined && (typeof b.dominio !== 'string' || !DOMAINS.some((d) => d.id === b.dominio))) return bad(`«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.`);
+    if (b.etapas !== undefined && b.etapas !== null && typeof b.etapas !== 'number') return bad('«etapas» debe ser un número o nulo (el modelo decide).');
+    if (b.tema !== undefined && (typeof b.tema.conceptId !== 'string' || b.tema.conceptId === '')) return bad('«tema» debe traer «conceptId».');
+    const release = mutex.acquire('planificar');
+    const abort = new AbortController();
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) abort.abort();
+    });
+    try {
+      const outcome = await proponerReto({
+        repoRoot,
+        descripcion: typeof b.descripcion === 'string' ? b.descripcion : '',
+        tema: b.tema ? { conceptId: b.tema.conceptId as string, texto: typeof b.tema.texto === 'string' && b.tema.texto ? b.tema.texto.slice(0, 120) : (b.tema.conceptId as string) } : undefined,
+        focoId: b.focoId as string | undefined,
+        dominio: b.dominio as DomainId | undefined,
+        etapas: typeof b.etapas === 'number' ? b.etapas : null,
+        proyecto: typeof b.proyecto === 'boolean' ? b.proyecto : null,
+        signal: abort.signal,
+        ...(options.plannerDeps || options.now ? { deps: { ...options.plannerDeps, ...(options.now ? { now: options.now } : {}) } } : {}),
+      });
+      if (outcome.status === 'ok') return { propuesta: outcome.propuesta, cost: outcome.cost };
+      const code = outcome.code === 'bad_request' ? 400 : outcome.code === 'no_claude' ? 503 : outcome.code === 'objetivo' || outcome.code === 'graph' ? 422 : 502;
+      return reply.code(code).send({ error: outcome.code, message: outcome.message });
+    } finally {
+      release();
+    }
+  });
+
+  /**
+   * Conversación con el Planificador sobre un objetivo (R57): feedback del usuario o revisión de su avance. Puede
+   * devolver un plan nuevo (propuesto). Comparte el mutex con las demás operaciones de agente.
+   */
+  app.post<{ Params: { id: string }; Body: { accion?: unknown; texto?: unknown } }>('/api/objetivos/:id/conversacion', async (request, reply) => {
+    const accion = request.body?.accion;
+    if (accion !== 'feedback' && accion !== 'revision') return reply.code(400).send({ error: 'bad_request', message: '«accion» debe ser «feedback» o «revision».' });
+    const release = mutex.acquire('planificar');
+    const abort = new AbortController();
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) abort.abort();
+    });
+    try {
+      const outcome = await converseFoco({
+        repoRoot,
+        focoId: request.params.id,
+        accion,
+        ...(typeof request.body?.texto === 'string' ? { texto: request.body.texto } : {}),
+        signal: abort.signal,
+        ...(options.plannerDeps || options.now ? { deps: { ...options.plannerDeps, ...(options.now ? { now: options.now } : {}) } } : {}),
+      });
+      if (outcome.status === 'ok') return { mensajes: outcome.mensajes, plan: outcome.plan ?? null, planCambiado: outcome.planCambiado, cost: outcome.cost };
+      const code = outcome.code === 'bad_request' ? 400 : outcome.code === 'not_found' ? 404 : outcome.code === 'no_claude' ? 503 : outcome.code === 'objetivos' || outcome.code === 'graph' ? 422 : 502;
+      return reply.code(code).send({ error: outcome.code, message: outcome.message });
+    } finally {
+      release();
+    }
   });
 
   if (hasWeb) await app.register(fastifyStatic, { root: webDist });

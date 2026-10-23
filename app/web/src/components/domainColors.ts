@@ -6,6 +6,8 @@ export const DOMAIN_COLOR_VAR: Record<DomainId, string> = {
   python: '--s2',
   math: '--s3',
   ml: '--s4',
+  features: '--s7',
+  training: '--s8',
   cleaning: '--s5',
   business: '--s6',
 };

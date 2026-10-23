@@ -50,3 +50,10 @@
 @media (max-width: 1099px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout, .twoCol { grid-template-columns: 1fr; } .detail { position: static; max-height: none; } }
 @media (max-width: 559px) { .cards { grid-template-columns: 1fr; } .run { grid-template-columns: auto minmax(0, 1fr); } .runMeta { grid-column: 2; align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .spin, .pulse { animation: none; } }
+
+.thought { padding: 8px 12px; border-radius: 10px; background: var(--sunk); font-style: italic; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.said { line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tag { display: inline-block; margin-right: 8px; font-size: 11px; font-style: normal; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--sel); color: var(--muted); }
+
+.review { margin-bottom: var(--gap); display: flex; flex-direction: column; gap: 12px; }
+.review h2 { margin: 0; }

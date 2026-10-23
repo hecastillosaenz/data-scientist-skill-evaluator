@@ -5,6 +5,7 @@ export const ROL_LABEL: Record<AgentRole, string> = {
   'evaluador-codigo': 'Evaluador de código',
   'evaluador-conceptual': 'Evaluador conceptual',
   analista: 'Analista',
+  planificador: 'Planificador',
 };
 
 /** Qué hace cada agente, en una línea (se muestra en su tarjeta). */
@@ -13,6 +14,7 @@ export const ROL_ROLE: Record<AgentRole, string> = {
   'evaluador-codigo': 'Explica el resultado de tu código',
   'evaluador-conceptual': 'Evalúa tus respuestas con la rúbrica',
   analista: 'Lee tus notas y mejora el grafo',
+  planificador: 'Arma el plan de estudio de un objetivo',
 };
 
 export type OutcomeFilter = 'todas' | 'ok' | 'fallo';

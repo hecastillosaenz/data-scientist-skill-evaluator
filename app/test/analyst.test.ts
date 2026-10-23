@@ -11,7 +11,7 @@ import type { StatePayload } from '../shared/state';
 import type { Challenge, Evidence } from '../shared/types';
 
 const realRoot = path.resolve(import.meta.dirname, '../..');
-const challenge = JSON.parse(readFileSync(path.join(realRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
+const challenge = JSON.parse(readFileSync(path.join(realRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
 const stage1 = challenge.stages[0]!;
 const concept = stage1.conceptIds[0]!;
 const FIXED = new Date('2026-10-14T21:00:00.000Z');
@@ -53,7 +53,7 @@ const boot = async (autoAnalyze = false) => {
 beforeEach(() => {
   tmp = mkdtempSync(path.join(tmpdir(), 'dsc-analyst-'));
   mkdirSync(file('challenge', 'challenge-001'), { recursive: true });
-  cpSync(path.join(realRoot, 'challenge', 'challenge-001', 'challenge.json'), file('challenge', 'challenge-001', 'challenge.json'));
+  cpSync(path.join(realRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), file('challenge', 'challenge-001', 'challenge.json'));
   mkdirSync(file('configuracion-retos'));
   // Catálogo del repo sin observaciones ni candidatos: los tests parten siempre de un grafo limpio.
   const catalog = JSON.parse(readFileSync(path.join(realRoot, 'configuracion-retos', 'knowledge-graph.json'), 'utf8'));

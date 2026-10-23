@@ -72,13 +72,13 @@ describe('Nivel por dominio (R40)', () => {
     expect(levelByDomain([challengeOf(top)], top.map((s) => ev(s))).sql.next).toBeNull();
   });
 
-  it('AC-R40d: el nivel global es la mediana de los seis dominios, redondeada hacia abajo', () => {
+  it('AC-R40d: el nivel global es la mediana de los ocho dominios, redondeada hacia abajo', () => {
     const only = (...idx: number[]) =>
       Object.fromEntries(DOMAINS.map((d, i) => [d.id, { level: LEVELS[idx[i] ?? 0]!, index: idx[i] ?? 0, counted: 0, next: null }])) as Parameters<typeof globalLevel>[0];
-    expect(globalLevel(only(3, 0, 0, 0, 0, 0))).toBe('Trainee'); // un dominio fuerte no basta
-    expect(globalLevel(only(3, 3, 3, 0, 0, 0))).toBe('Básico'); // mediana 1,5 → 1
-    expect(globalLevel(only(2, 2, 2, 2, 0, 0))).toBe('Intermedio');
-    expect(globalLevel(only(3, 3, 3, 3, 3, 3))).toBe('Avanzado');
+    expect(globalLevel(only(3, 0, 0, 0, 0, 0, 0, 0))).toBe('Trainee'); // un dominio fuerte no basta
+    expect(globalLevel(only(3, 3, 3, 3, 0, 0, 0, 0))).toBe('Básico'); // mediana 1,5 → 1
+    expect(globalLevel(only(2, 2, 2, 2, 2, 2, 0, 0))).toBe('Intermedio');
+    expect(globalLevel(only(3, 3, 3, 3, 3, 3, 3, 3))).toBe('Avanzado');
   });
 
   it('sin evidencia, todo es Trainee', () => {

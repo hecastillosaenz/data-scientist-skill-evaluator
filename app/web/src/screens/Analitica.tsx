@@ -130,7 +130,7 @@ export function Analitica() {
 
         <Card>
           <h2>Nivel por dominio</h2>
-          <p className={styles.sub}>Global: <strong>{globalLevel(view.levels)}</strong> · mediana de los seis dominios</p>
+          <p className={styles.sub}>Global: <strong>{globalLevel(view.levels)}</strong> · mediana de los ocho dominios</p>
           <ul className={styles.levels}>
             {DOMAINS.map((d) => {
               const l = view.levels[d.id];

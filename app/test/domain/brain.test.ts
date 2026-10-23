@@ -143,7 +143,7 @@ describe('buildBrainGraph (AC-R32)', () => {
     expect(d.byId.get('test:c011')!.score).toBe('1/5');
   });
 
-  it('rotula el territorio de los 6 dominios dentro del mapa', () => {
+  it('rotula el territorio de los 8 dominios dentro del mapa', () => {
     expect(graph.domainCenters.map((c) => c.domain).sort()).toEqual(DOMAINS.map((d) => d.id).sort());
     for (const c of graph.domainCenters) {
       expect(c.count).toBeGreaterThan(0);

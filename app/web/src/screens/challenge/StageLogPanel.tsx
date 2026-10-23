@@ -1,3 +1,4 @@
+import { formatMinutes } from '../../charts/format';
 import { useState } from 'react';
 import { Pause, Pencil, Play } from 'lucide-react';
 import { BLOCKER_LABEL } from '../../../../shared/domains';
@@ -63,8 +64,8 @@ export function StageLogPanel({ challengeId, stage, result, onRegister }: Props)
           <p className={`${styles.lapClock} mono`} role="timer" aria-live="off">{formatClock(lap)}</p>
           <div className={styles.track} aria-hidden="true"><span style={{ width: `${Math.round(Math.min(1, lap / (stage.estimatedMinutes * 60_000)) * 100)}%` }} /></div>
           <p className={styles.hint}>
-            Objetivo <span className="mono">{stage.estimatedMinutes} min</span>
-            {lap > stage.estimatedMinutes * 60_000 && <> · <span className="mono">+{Math.max(1, Math.round((lap - stage.estimatedMinutes * 60_000) / 60_000))} min</span> sobre el objetivo</>}
+            Objetivo <span className="mono">{formatMinutes(stage.estimatedMinutes)}</span>
+            {lap > stage.estimatedMinutes * 60_000 && <> · <span className="mono">+{formatMinutes(Math.max(1, Math.round((lap - stage.estimatedMinutes * 60_000) / 60_000)))}</span> sobre el objetivo</>}
             {' · '}es el tiempo desde tu último registro en este challenge.
           </p>
         </div>

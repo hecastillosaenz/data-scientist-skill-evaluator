@@ -9,7 +9,7 @@ import { verifyStage } from '../server/verify/verify-service';
 import type { VerifyEvent } from '../shared/verify';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
-const real = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8'));
+const real = JSON.parse(readFileSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), 'utf8'));
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 describe('contrato del challenge (R29)', () => {

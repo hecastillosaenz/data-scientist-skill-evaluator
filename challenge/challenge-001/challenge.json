@@ -1,0 +1,673 @@
+{
+  "id": "challenge-001",
+  "number": 1,
+  "title": "Cafés de especialidad: ingresos netos por pedido en línea",
+  "dataset": "Pedidos en línea de cafés",
+  "difficulty": 1,
+  "recommended": false,
+  "objectives": {
+    "lookingFor": "Que practiques a elegir y calcular columnas con SELECT, a filtrar filas con WHERE y a explicar el resultado como KPIs para una decisión comercial.",
+    "outcomes": [
+      "Obtienes una consulta que calcula el ingreso neto de cada pedido con un alias claro",
+      "Obtienes solo los pedidos entregados por la app, filtrados con WHERE",
+      "Calculas a mano y explicas ingreso neto, ticket promedio y tasa de cancelación",
+      "Redactas una recomendación de negocio de 2–4 líneas con una limitación"
+    ],
+    "skills": [
+      "SELECT y columnas calculadas",
+      "Filtrado con WHERE",
+      "Alias y orden",
+      "Interpretación de KPIs"
+    ]
+  },
+  "scenario": "Eres analista de datos en **Grano Andino**, una tienda en línea de cafés de especialidad con pedidos en Bogotá, Medellín y Cali. La gerente comercial quiere decidir si invierte su próximo presupuesto de marketing en la app móvil. Para eso necesita saber cuánto dinero dejan realmente los pedidos de la app.",
+  "task": "Trabajarás con la tabla `pedidos` (un pedido por fila).\n\nDefinimos el **ingreso neto** de un pedido como lo que realmente se cobra tras el descuento:\n\n$$\\text{ingreso\\_neto} = \\text{unidades} \\times \\text{precio\\_unitario} - \\text{descuento}$$\n\nDonde `unidades` es la cantidad comprada, `precio_unitario` es el precio de una unidad en \\$ y `descuento` es el monto total descontado en \\$ en ese pedido.\n\nEn las etapas 1 y 2 escribirás consultas SQL; en la etapa 3 interpretarás por escrito los resultados como indicadores (KPIs) para la gerente.",
+  "data": {
+    "engine": "duckdb",
+    "tables": [
+      {
+        "name": "pedidos",
+        "description": "Un pedido en línea por fila: tienda, canal de compra, categoría, cantidades, precios, descuento, estado y fecha.",
+        "columns": [
+          {
+            "name": "pedido_id",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "tienda",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "canal",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "categoria",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "unidades",
+            "type": "INTEGER",
+            "nullable": false
+          },
+          {
+            "name": "precio_unitario",
+            "type": "DECIMAL(10,2)",
+            "nullable": false
+          },
+          {
+            "name": "descuento",
+            "type": "DECIMAL(10,2)",
+            "nullable": false
+          },
+          {
+            "name": "estado",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "fecha_pedido",
+            "type": "DATE",
+            "nullable": false
+          }
+        ],
+        "rowCount": 12,
+        "sampleRows": [
+          [
+            1,
+            "Bogotá",
+            "app",
+            "grano",
+            2,
+            30,
+            0,
+            "entregado",
+            "2026-03-02"
+          ],
+          [
+            2,
+            "Bogotá",
+            "web",
+            "accesorios",
+            1,
+            45,
+            5,
+            "entregado",
+            "2026-03-03"
+          ],
+          [
+            3,
+            "Medellín",
+            "app",
+            "grano",
+            3,
+            28,
+            4,
+            "cancelado",
+            "2026-03-03"
+          ],
+          [
+            4,
+            "Medellín",
+            "web",
+            "grano",
+            1,
+            30,
+            0,
+            "entregado",
+            "2026-03-05"
+          ],
+          [
+            5,
+            "Cali",
+            "app",
+            "capsulas",
+            4,
+            12.5,
+            0,
+            "entregado",
+            "2026-03-06"
+          ],
+          [
+            6,
+            "Cali",
+            "telefono",
+            "grano",
+            2,
+            30,
+            3,
+            "entregado",
+            "2026-03-07"
+          ],
+          [
+            7,
+            "Bogotá",
+            "app",
+            "capsulas",
+            5,
+            12.5,
+            2.5,
+            "entregado",
+            "2026-03-08"
+          ],
+          [
+            8,
+            "Bogotá",
+            "telefono",
+            "accesorios",
+            2,
+            45,
+            0,
+            "cancelado",
+            "2026-03-09"
+          ]
+        ]
+      }
+    ],
+    "seedSql": "CREATE TABLE pedidos (pedido_id INTEGER PRIMARY KEY, tienda VARCHAR NOT NULL, canal VARCHAR NOT NULL, categoria VARCHAR NOT NULL, unidades INTEGER NOT NULL, precio_unitario DECIMAL(10,2) NOT NULL, descuento DECIMAL(10,2) NOT NULL, estado VARCHAR NOT NULL, fecha_pedido DATE NOT NULL); INSERT INTO pedidos VALUES (1, 'Bogotá', 'app', 'grano', 2, 30.00, 0.00, 'entregado', DATE '2026-03-02'), (2, 'Bogotá', 'web', 'accesorios', 1, 45.00, 5.00, 'entregado', DATE '2026-03-03'), (3, 'Medellín', 'app', 'grano', 3, 28.00, 4.00, 'cancelado', DATE '2026-03-03'), (4, 'Medellín', 'web', 'grano', 1, 30.00, 0.00, 'entregado', DATE '2026-03-05'), (5, 'Cali', 'app', 'capsulas', 4, 12.50, 0.00, 'entregado', DATE '2026-03-06'), (6, 'Cali', 'telefono', 'grano', 2, 30.00, 3.00, 'entregado', DATE '2026-03-07'), (7, 'Bogotá', 'app', 'capsulas', 5, 12.50, 2.50, 'entregado', DATE '2026-03-08'), (8, 'Bogotá', 'telefono', 'accesorios', 2, 45.00, 0.00, 'cancelado', DATE '2026-03-09'), (9, 'Medellín', 'app', 'accesorios', 1, 45.00, 0.00, 'entregado', DATE '2026-03-10'), (10, 'Cali', 'web', 'capsulas', 3, 12.50, 0.00, 'entregado', DATE '2026-03-11'), (11, 'Bogotá', 'app', 'grano', 4, 28.00, 8.00, 'entregado', DATE '2026-03-12'), (12, 'Medellín', 'telefono', 'capsulas', 2, 12.50, 0.00, 'cancelado', DATE '2026-03-13');"
+  },
+  "businessQuestions": [
+    {
+      "id": "challenge-001-bq1",
+      "text": "Según los pedidos entregados, ¿qué porcentaje del ingreso neto llega por la app y qué significa eso para decidir si se le destina más presupuesto de marketing?",
+      "reflectionGuide": "Idea cotidiana: es como mirar de qué puerta de la tienda entra más dinero. Con los datos, la app aporta \\$319 de \\$483.50 entregados, cerca del 66 %. Eso la hace el canal principal, pero con solo 12 pedidos no es una prueba firme: úsalo como señal para investigar, no como cifra definitiva."
+    },
+    {
+      "id": "challenge-001-bq2",
+      "text": "Si la tasa de cancelación de la app es de 1 de 6 pedidos, ¿cómo la compararías con la de los otros canales antes de recomendar una inversión?",
+      "reflectionGuide": "Idea cotidiana: un canal que vende mucho pero cancela mucho es como un balde con agujeros. La tasa de cancelación es cancelados dividido entre pedidos totales del canal. En la app es 1/6, cerca de 16,7 %; falta calcular la de web y teléfono para saber si es alta o baja en comparación."
+    },
+    {
+      "id": "challenge-001-bq3",
+      "text": "El pedido 11 de la app tiene un ingreso neto de \\$104, muy superior al resto. ¿Cómo cambiaría tu conclusión si ese pedido no existiera?",
+      "reflectionGuide": "Idea cotidiana: un cliente muy grande puede inflar un promedio, como una persona muy alta en un grupo pequeño. Sin el pedido 11 la app aportaría \\$215 en vez de \\$319, y la conclusión sobre su peso cambia bastante. Con tablas pequeñas conviene revisar casos extremos antes de decidir."
+    }
+  ],
+  "finalTest": [
+    {
+      "conceptId": "sql:select",
+      "bloom": 1,
+      "kind": "opcion_multiple",
+      "prompt": "La tabla `pedidos` tiene las columnas `id_pedido`, `canal`, `estado`, `precio_unitario`, `cantidad`, `descuento` y `total_neto`. Tu jefa solo quiere ver el número de cada pedido y su ingreso neto, sin las demás columnas. ¿Qué consulta lo hace?",
+      "options": [
+        "SELECT id_pedido, total_neto FROM pedidos;",
+        "SELECT * FROM pedidos;",
+        "SELECT id_pedido FROM pedidos WHERE total_neto;",
+        "FROM pedidos SELECT id_pedido, total_neto;"
+      ],
+      "correctIndex": 0,
+      "explanation": "`SELECT` elige las columnas que se muestran (proyección). Se escriben separadas por comas, justo después de `SELECT`, y `FROM` indica la tabla. `SELECT *` trae todas las columnas; `WHERE` sirve para filtrar filas, no para elegir columnas; y el orden `FROM ... SELECT` no es válido en SQL.",
+      "id": "challenge-001-t1"
+    },
+    {
+      "conceptId": "sql:select",
+      "bloom": 2,
+      "kind": "numerica",
+      "prompt": "Un pedido en línea tiene `precio_unitario` = \\$14.50, `cantidad` = 3 y `descuento` = \\$4.00 (descuento total del pedido, no por unidad). Defines el ingreso neto como $\\text{precio\\_unitario} \\times \\text{cantidad} - \\text{descuento}$. Escribes `SELECT precio_unitario * cantidad - descuento AS ingreso_neto FROM pedidos;`. ¿Qué valor, en dólares, devuelve la columna `ingreso_neto` para este pedido?",
+      "answer": 39.5,
+      "tolerance": 0.01,
+      "explanation": "Primero se multiplica: $14.50 \\times 3 = 43.50$. Luego se resta el descuento: $43.50 - 4.00 = 39.50$. En el `SELECT` se pueden calcular columnas nuevas con operaciones aritméticas y ponerles nombre con `AS`.",
+      "id": "challenge-001-t2"
+    },
+    {
+      "conceptId": "sql:where",
+      "bloom": 1,
+      "kind": "opcion_multiple",
+      "prompt": "Quieres ver solo los pedidos del canal `'web'` cuyo `total_neto` sea mayor a 30. ¿Qué condición escribes después de `WHERE`?",
+      "options": [
+        "canal = 'web' AND total_neto > 30",
+        "canal = 'web' OR total_neto > 30",
+        "canal = 'web', total_neto > 30",
+        "canal = web AND total_neto > 30"
+      ],
+      "correctIndex": 0,
+      "explanation": "`AND` exige que se cumplan las dos condiciones a la vez. `OR` dejaría pasar también pedidos de otros canales con total mayor a 30. La coma no combina condiciones en un `WHERE`. Y el texto `'web'` va entre comillas simples; sin ellas SQL lo busca como una columna llamada web.",
+      "id": "challenge-001-t3"
+    },
+    {
+      "conceptId": "sql:where",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "La tabla `pedidos` tiene 5 filas y esta columna `descuento` (en dólares): 0, 2, NULL, 5, NULL. Un `NULL` significa que el dato no se registró. Ejecutas `SELECT * FROM pedidos WHERE descuento <> 0;`. ¿Cuántas filas devuelve la consulta?",
+      "answer": 2,
+      "tolerance": 0,
+      "explanation": "`WHERE` solo conserva las filas donde la condición es verdadera. Con 2 y 5 la condición es verdadera. Con 0 es falsa. Con `NULL`, la comparación `NULL <> 0` no es verdadera ni falsa sino desconocida, así que esas filas también se descartan. Resultado: 2 filas. El error típico es contestar 4, pensando que los NULL son distintos de 0.",
+      "id": "challenge-001-t4"
+    },
+    {
+      "conceptId": "sql:where",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "Quieres los pedidos entregados de los canales `'web'` o `'app'`. Escribes: `SELECT * FROM pedidos WHERE canal = 'web' OR canal = 'app' AND estado = 'entregado';`. Esta consulta devuelve también pedidos cancelados del canal web. Explica por qué pasa y escribe la condición corregida.",
+      "rubric": "Debe explicar que AND se evalúa antes que OR, así que la consulta se lee como: canal = 'web' OR (canal = 'app' AND estado = 'entregado'); por eso todos los pedidos web pasan sin importar su estado. La corrección debe usar paréntesis: WHERE (canal = 'web' OR canal = 'app') AND estado = 'entregado' (o equivalente con IN: canal IN ('web','app') AND estado = 'entregado'). Si solo da la corrección sin explicar la precedencia, calificación parcial.",
+      "explanation": "En SQL, `AND` tiene prioridad sobre `OR`, igual que la multiplicación sobre la suma. Sin paréntesis, la condición del estado solo se aplica al canal app. Los paréntesis fuerzan a evaluar primero la elección del canal y después exigir el estado entregado.",
+      "id": "challenge-001-t5"
+    },
+    {
+      "conceptId": "business:kpis",
+      "bloom": 2,
+      "kind": "numerica",
+      "prompt": "Una cafetería tuvo 6 pedidos en línea en un día, con ingresos netos de \\$20, \\$35, \\$40, \\$25, \\$30 y \\$50. El KPI ticket promedio se define como $\\text{ticket promedio} = \\dfrac{\\text{ingresos netos totales}}{\\text{número de pedidos}}$. ¿Cuál es el ticket promedio del día, en dólares? Redondea a 2 decimales.",
+      "answer": 33.33,
+      "tolerance": 0.01,
+      "explanation": "Los ingresos netos suman $20 + 35 + 40 + 25 + 30 + 50 = 200$. Al dividir entre 6 pedidos queda $200 / 6 = 33.33$. El ticket promedio dice cuánto deja en promedio cada pedido, no cuánto se vendió en total.",
+      "id": "challenge-001-t6"
+    },
+    {
+      "conceptId": "business:kpis",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "En septiembre la tienda en línea tuvo 40 pedidos con \\$1,600 de ingresos netos. En octubre tuvo 50 pedidos con \\$1,750. Un colega dice: «Octubre fue mejor, los ingresos subieron». Calcula el ticket promedio de cada mes y explica en 2 o 3 frases si la conclusión de tu colega es completa o si hay algo que matizar para negocio.",
+      "rubric": "Debe calcular ticket promedio de septiembre = 1600/40 = \\$40 y de octubre = 1750/50 = \\$35 (cae \\$5, es decir 12.5%). Debe señalar que los ingresos sí subieron (+\\$150, unos 9.4%) pero por mayor volumen de pedidos, mientras cada pedido deja menos. Debe matizar que habría que revisar si se debe a descuentos, mezcla de productos o promociones, y que un solo KPI no basta para decir que el mes fue mejor. Calificación parcial si calcula bien pero no interpreta.",
+      "explanation": "Los ingresos totales suben, pero el ticket promedio baja de \\$40 a \\$35: el crecimiento viene de vender más pedidos, no de que cada pedido valga más. Mirar un solo KPI puede dar una conclusión incompleta; conviene leer juntos ingresos, volumen y ticket promedio.",
+      "id": "challenge-001-t7"
+    }
+  ],
+  "stages": [
+    {
+      "id": "challenge-001-s1",
+      "challengeId": "challenge-001",
+      "number": 1,
+      "title": "Calcular el ingreso neto de cada pedido",
+      "domain": "sql",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 20,
+      "mechanism": "codigo_assert",
+      "description": "Escribe **una única consulta** sobre `pedidos` que devuelva todos los pedidos con estas columnas, en este orden y con estos nombres exactos:\n\n1. `pedido_id`\n2. `tienda`\n3. `ingreso_neto` = `unidades * precio_unitario - descuento`\n\nOrdena por `pedido_id` de menor a mayor. No filtres filas: deben salir los 12 pedidos. No uses subconsultas ni agregaciones.",
+      "conceptIds": [
+        "sql:select"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Elegir columnas: pedir solo lo que necesitas",
+            "body": "**Idea cotidiana:** una tabla es como una hoja de cálculo con muchas columnas. Casi nunca necesitas todas; tomas solo las que sirven para tu pregunta.\n\n**Analogía:** es como pedir en un restaurante solo los platos que quieres, no todo el menú.\n\n**Mini ejemplo a mano:** una tabla con 3 filas y 3 columnas.\n\n| pedido_id | tienda | unidades |\n|---|---|---|\n| 1 | Bogotá | 2 |\n| 2 | Bogotá | 1 |\n| 3 | Medellín | 3 |\n\nSi solo quieres saber dónde se hizo cada pedido, te quedas con `pedido_id` y `tienda`. El resultado tiene las mismas 3 filas y solo 2 columnas.\n\n**Nombre técnico:** esto se llama *proyección*. En SQL se escribe con `SELECT columna1, columna2 FROM tabla`. `SELECT` indica qué columnas salen y `FROM` indica de qué tabla.\n\n**En este reto:** `pedidos` tiene 9 columnas, pero la gerente solo necesita `pedido_id`, `tienda` y un valor calculado. El resultado debe tener esas 3 columnas, en ese orden."
+          },
+          {
+            "title": "Columnas calculadas: crear un dato nuevo a partir de otros",
+            "body": "**Idea cotidiana:** a veces el dato que buscas no está guardado, pero se puede obtener con una cuenta sobre los datos que sí están.\n\n**Analogía:** el ticket del supermercado guarda cantidad y precio de cada producto. El total de cada línea es una cuenta que haces tú: cantidad por precio.\n\n**Mini ejemplo a mano:**\n\n| unidades | precio_unitario | descuento |\n|---|---|---|\n| 2 | 10.00 | 1.00 |\n| 3 | 5.00 | 0.00 |\n\n- Fila 1: $2 \\times 10 - 1 = 19$.\n- Fila 2: $3 \\times 5 - 0 = 15$.\n\nAntes tenías 3 columnas; después tienes 1 columna nueva con el valor ya calculado.\n\n**Nombre técnico y fórmula:** una *expresión* es una cuenta con columnas y operadores (`+`, `-`, `*`, `/`). En SQL se escribe directamente dentro del `SELECT`, por ejemplo `unidades * precio_unitario - descuento`.\n\n$$\\text{ingreso\\_neto} = \\text{unidades} \\times \\text{precio\\_unitario} - \\text{descuento}$$\n\n- `unidades`: cuántas unidades se compraron.\n- `precio_unitario`: precio de una unidad en \\$.\n- `descuento`: monto total descontado en \\$ en ese pedido.\n\nEl orden de las operaciones es el de la matemática: primero la multiplicación y luego la resta.\n\n**En este reto:** el `ingreso_neto` no existe en la tabla. Lo calculas fila por fila."
+          },
+          {
+            "title": "Alias: ponerle nombre a la columna calculada",
+            "body": "**Idea cotidiana:** una columna calculada sale sin un nombre claro, y quien lea el resultado necesita una etiqueta que le diga qué es.\n\n**Analogía:** es como escribir un rótulo en un frasco para saber qué contiene.\n\n**Mini ejemplo a mano:** `SELECT unidades * precio_unitario` devuelve una columna con un nombre automático y poco legible. Con `SELECT unidades * precio_unitario AS venta_bruta` la columna se llama `venta_bruta`.\n\n**Nombre técnico:** esto se llama *alias* y se escribe con `AS nombre`. No cambia la tabla original, solo el nombre en el resultado.\n\n**En este reto:** el orquestador compara los nombres de columna con los de la tarea. Tu tercera columna debe llamarse exactamente `ingreso_neto`.\n\nTambién importa el redondeo. Los precios tienen 2 decimales, así que usa `ROUND(expresión, 2)` para que el resultado quede con 2 decimales."
+          },
+          {
+            "title": "Ordenar y no perder filas",
+            "body": "**Idea cotidiana:** una lista sin orden es difícil de revisar. Ordenarla es como alinear las fichas de un archivo por número.\n\n**Mini ejemplo a mano:** los pedidos 3, 1, 2 ordenados de menor a mayor quedan 1, 2, 3.\n\n**Nombre técnico:** `ORDER BY columna` ordena el resultado; por defecto es de menor a mayor (`ASC`). Va al final de la consulta.\n\nEn esta etapa no filtras: sin `WHERE`, `SELECT` devuelve todas las filas de la tabla. Eso incluye los pedidos cancelados. En la etapa 2 aprenderás a quedarte solo con algunos.\n\n**En este reto:** el resultado debe tener los 12 pedidos, ordenados por `pedido_id`. Cuenta las filas al terminar: si no son 12, algo está mal."
+          }
+        ],
+        "workedExample": {
+          "domain": "Alquiler de bicicletas en una ciudad turística",
+          "body": "**Situación:** una empresa de alquiler de bicicletas quiere el total cobrado por alquiler. El total es horas por tarifa por hora, más un recargo por entrega a domicilio. (Este ejemplo no es el del reto: la fórmula, la tabla y los datos son otros.)\n\n```sql\nCREATE TABLE alquileres (alquiler_id INTEGER PRIMARY KEY, sede VARCHAR, horas INTEGER, tarifa_hora DECIMAL(10,2), recargo DECIMAL(10,2));\nINSERT INTO alquileres VALUES (1, 'Norte', 3, 8.00, 2.00), (2, 'Sur', 2, 10.00, 0.00), (3, 'Norte', 5, 8.00, 4.00);\n```\n\n**Consulta:**\n\n```sql\nSELECT alquiler_id, sede, ROUND(horas * tarifa_hora + recargo, 2) AS total_cobrado\nFROM alquileres\nORDER BY alquiler_id;\n```\n\n**Cuentas a mano:**\n- Alquiler 1: $3 \\times 8 + 2 = 26$.\n- Alquiler 2: $2 \\times 10 + 0 = 20$.\n- Alquiler 3: $5 \\times 8 + 4 = 44$.\n\n**Resultado:**\n\n| alquiler_id | sede | total_cobrado |\n|---|---|---|\n| 1 | Norte | 26.00 |\n| 2 | Sur | 20.00 |\n| 3 | Norte | 44.00 |\n\nDe 5 columnas pasamos a 3, una de ellas calculada y con alias. Las 3 filas se conservan y quedan ordenadas por id."
+        },
+        "steps": [
+          "Mira las columnas de `pedidos` y anota cuáles necesitas: `pedido_id`, `tienda` y las tres que entran en la fórmula (`unidades`, `precio_unitario`, `descuento`).",
+          "Escribe el `SELECT` con `pedido_id` y `tienda` en ese orden, y agrega `FROM pedidos`.",
+          "Agrega como tercera columna la expresión de la fórmula del ingreso neto, usando los nombres de columna de la tabla.",
+          "Envuelve la expresión en `ROUND(..., 2)` y ponle el alias exacto `ingreso_neto`.",
+          "Agrega `ORDER BY pedido_id` al final. No pongas `WHERE`, subconsultas ni agregaciones.",
+          "Ejecuta y compara: deben salir 12 filas y 3 columnas con los nombres pedidos. Revisa a mano el pedido 1 (resultado 60.00) y el pedido 11 (resultado 104.00)."
+        ],
+        "hints": [
+          "Empieza por la forma del resultado: ¿cuántas columnas tiene y en qué orden? Escríbelas antes de pensar en la cuenta.",
+          "De las 9 columnas de `pedidos`, ¿cuáles intervienen en la fórmula del enunciado? Léela despacio, símbolo por símbolo.",
+          "¿Cómo le pones nombre a una columna que no existe en la tabla? Revisa cómo se nombra un resultado calculado.",
+          "Si el resultado debe tener los 12 pedidos, ¿necesitas alguna cláusula que descarte filas?",
+          "¿En qué parte de la consulta se indica el orden de las filas?"
+        ],
+        "research": [
+          {
+            "conceptId": "sql:select",
+            "why": "Es la base de todo: elegir qué columnas salen de una tabla.",
+            "searchEs": "SQL SELECT FROM seleccionar columnas de una tabla",
+            "searchEn": "SQL SELECT FROM choose columns from a table"
+          },
+          {
+            "conceptId": "sql:select",
+            "why": "Aquí el ingreso neto no existe como columna: se calcula con una expresión.",
+            "searchEs": "SQL columnas calculadas expresiones aritméticas en SELECT",
+            "searchEn": "SQL calculated columns arithmetic expressions in SELECT"
+          },
+          {
+            "conceptId": "sql:select",
+            "why": "Los nombres exactos de las columnas y el orden de las filas son parte del entregable.",
+            "searchEs": "SQL alias AS ORDER BY ROUND",
+            "searchEn": "SQL column alias AS ORDER BY ROUND"
+          }
+        ],
+        "deliverables": [
+          "Una única consulta SQL de DuckDB sobre `pedidos`, sin subconsultas ni agregaciones.",
+          "Columnas exactas y en este orden: `pedido_id`, `tienda`, `ingreso_neto`.",
+          "`ingreso_neto` = `unidades * precio_unitario - descuento`, redondeado a 2 decimales con `ROUND`.",
+          "Ordenado por `pedido_id` de menor a mayor, con los 12 pedidos (sin filtrar, incluidos los cancelados).",
+          "Interpretación de negocio: puedes explicar con tus palabras qué significa el ingreso neto de un pedido y por qué se resta el descuento.",
+          "Terminado cuando… tu resultado tiene 12 filas, 3 columnas con los nombres exactos, y el pedido 1 da 60.00 y el pedido 11 da 104.00."
+        ],
+        "solution": {
+          "code": "SELECT pedido_id, tienda, ROUND(unidades * precio_unitario - descuento, 2) AS ingreso_neto\nFROM pedidos\nORDER BY pedido_id;",
+          "expectedResult": "12 filas y 3 columnas (pedido_id, tienda, ingreso_neto): 1 Bogotá 60.00; 2 Bogotá 40.00; 3 Medellín 80.00; 4 Medellín 30.00; 5 Cali 50.00; 6 Cali 57.00; 7 Bogotá 60.00; 8 Bogotá 90.00; 9 Medellín 45.00; 10 Cali 37.50; 11 Bogotá 104.00; 12 Medellín 25.00.",
+          "reasoning": "Se proyectan `pedido_id` y `tienda` tal como están. La tercera columna es una expresión que combina tres columnas. La multiplicación se evalúa antes que la resta, como pide la fórmula. `ROUND(..., 2)` fija 2 decimales y el alias da el nombre exacto. No hay `WHERE`, así que salen los 12 pedidos, y `ORDER BY pedido_id` fija el orden.",
+          "conceptLinks": "`sql:select`: la proyección de `pedido_id` y `tienda` y la expresión calculada con su alias van en el `SELECT`; `FROM pedidos` indica la tabla; `ORDER BY` fija el orden de salida.",
+          "businessInterpretation": "El ingreso neto es el dinero que realmente entra por cada pedido tras el descuento. Es la base para comparar canales y tiendas en las siguientes etapas. Limitación: aquí se calcula también para los pedidos cancelados (3, 8 y 12), que en la práctica no generaron ingreso real, así que esta tabla todavía no sirve para sumar dinero cobrado.",
+          "commonError": "Olvidar el descuento y calcular solo `unidades * precio_unitario` da valores inflados en los pedidos con descuento: el pedido 11 daría 112.00 en lugar de 104.00 y el pedido 3 daría 84.00 en lugar de 80.00. Otro error es restar antes de multiplicar, como `unidades * (precio_unitario - descuento)`: el pedido 11 daría $4 \\times (28 - 8) = 80.00$, también incorrecto. Un tercer error es añadir un filtro por estado: solo saldrían 9 filas en lugar de 12.",
+          "dsFlow": "Aparece al inicio de cualquier análisis, cuando se construye una métrica por fila antes de agruparla o filtrarla. Esta tabla es el insumo para filtrar y agregar después.",
+          "skill": "Seleccionar columnas, crear una columna calculada con alias y ordenar el resultado en SQL."
+        },
+        "skeleton": {
+          "language": "sql",
+          "code": "SELECT\n    TODO,  -- columna 1\n    TODO,  -- columna 2\n    ROUND(TODO, 2) AS TODO  -- fórmula del ingreso neto y su alias\nFROM TODO  -- tabla\nORDER BY TODO;  -- criterio de orden"
+        },
+        "expected": {
+          "columns": [
+            "pedido_id",
+            "tienda",
+            "ingreso_neto"
+          ],
+          "rows": [
+            [
+              1,
+              "Bogotá",
+              60
+            ],
+            [
+              2,
+              "Bogotá",
+              40
+            ],
+            [
+              3,
+              "Medellín",
+              80
+            ],
+            [
+              4,
+              "Medellín",
+              30
+            ],
+            [
+              5,
+              "Cali",
+              50
+            ],
+            [
+              6,
+              "Cali",
+              57
+            ],
+            [
+              7,
+              "Bogotá",
+              60
+            ],
+            [
+              8,
+              "Bogotá",
+              90
+            ],
+            [
+              9,
+              "Medellín",
+              45
+            ],
+            [
+              10,
+              "Cali",
+              37.5
+            ],
+            [
+              11,
+              "Bogotá",
+              104
+            ],
+            [
+              12,
+              "Medellín",
+              25
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "challenge-001-s2",
+      "challengeId": "challenge-001",
+      "number": 2,
+      "title": "Quedarte con los pedidos entregados de la app",
+      "domain": "sql",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 25,
+      "mechanism": "codigo_assert",
+      "description": "Escribe **una única consulta** sobre `pedidos` que devuelva solo los pedidos cuyo `canal` es `'app'` **y** cuyo `estado` es `'entregado'`, con las columnas, en este orden:\n\n1. `pedido_id`\n2. `tienda`\n3. `ingreso_neto` = `unidades * precio_unitario - descuento`\n\nOrdena por `pedido_id` de menor a mayor. Respeta tildes y minúsculas exactas de los valores de texto. No uses agregaciones.",
+      "conceptIds": [
+        "sql:where"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Filtrar es quedarse solo con las filas que cumplen una condición",
+            "body": "**Idea cotidiana.** Imagina una pila de 12 recibos de pedidos. Tu jefa te pide solo los que llegaron por la app. Recorres la pila y apartas únicamente esos; los demás no se tocan ni se cambian, simplemente no se muestran.\n\n**Mini ejemplo a mano.** De 4 pedidos con canal `web`, `app`, `app`, `telefono`, filtrar `canal = 'app'` deja 2 filas (las del medio). Antes: 4 filas. Después: 2 filas.\n\n**Nombre técnico.** Esto se hace con la cláusula `WHERE condición`. La condición se evalúa fila por fila; si da verdadero, la fila pasa. Va después de `FROM`: `SELECT ... FROM pedidos WHERE canal = 'app'`.\n\n**En este reto.** Tu resultado final debe tener solo los pedidos de la app, no los de web ni de teléfono."
+          },
+          {
+            "title": "Comparar texto: igualdad exacta y comillas simples",
+            "body": "**Idea cotidiana.** Para el computador, `app` y `App` son palabras distintas, igual que `entregado` y `entregado ` con un espacio al final. Hay que escribir el valor tal como está guardado.\n\n**Mini ejemplo.** Si la columna `estado` tiene los valores `entregado`, `cancelado`, `entregado`, la condición `estado = 'entregado'` deja 2 filas; `estado = 'Entregado'` (con mayúscula) dejaría 0 filas.\n\n**Nombre técnico.** El operador `=` compara igualdad. Los textos (cadenas, o *strings*) van entre comillas simples `'...'`; las comillas dobles se reservan para nombres de columnas. Respeta tildes: `'Bogotá'` no es `'Bogota'`.\n\n**En este reto.** Los valores a usar son `'app'` y `'entregado'`, en minúscula y sin tildes."
+          },
+          {
+            "title": "Combinar condiciones con AND y OR",
+            "body": "**Idea cotidiana.** Si pides \"un café que sea grande Y sin azúcar\", solo sirve el que cumple las dos cosas. Si pides \"grande O sin azúcar\", sirve el que cumple al menos una.\n\n**Mini ejemplo con 4 pedidos.**\n\n| id | canal | estado |\n|---|---|---|\n| 1 | app | entregado |\n| 2 | app | cancelado |\n| 3 | web | entregado |\n| 4 | web | cancelado |\n\n- `canal = 'app' AND estado = 'entregado'` → solo el 1 (1 fila).\n- `canal = 'app' OR estado = 'entregado'` → 1, 2 y 3 (3 filas).\n\n**Nombre técnico.** `AND` exige que ambas condiciones sean verdaderas; `OR` basta con una. `AND` deja menos filas, `OR` deja más.\n\n**En este reto.** La gerente quiere pedidos de la app **y** entregados, así que necesitas `AND`. Con `OR` entrarían pedidos web entregados que inflarían la cifra."
+          },
+          {
+            "title": "Calcular una columna nueva dentro del SELECT (proyección)",
+            "body": "**Idea cotidiana.** En una hoja de cálculo añades una columna con una fórmula, sin tocar los datos originales. En SQL haces lo mismo en la lista del `SELECT`.\n\n**Mini ejemplo.** Un pedido con 2 unidades a \\$30.00 y descuento \\$5.00 da $2 \\times 30 - 5 = 55$. Antes: columnas `unidades`, `precio_unitario`, `descuento`. Después: una columna nueva con 55.\n\n**Nombre técnico.** Una expresión en el `SELECT` se calcula por fila y se nombra con un alias: `unidades * precio_unitario - descuento AS ingreso_neto`. Cada símbolo: `*` multiplica, `-` resta, `AS` pone el nombre de la columna resultante. Para dejar los decimales claros puedes envolverla en `ROUND(expresión, 2)`.\n\n$$\\text{ingreso\\_neto} = \\text{unidades} \\times \\text{precio\\_unitario} - \\text{descuento}$$\n\n**En este reto.** El orden de las columnas importa: `pedido_id`, `tienda`, `ingreso_neto`."
+          },
+          {
+            "title": "Ordenar el resultado con ORDER BY",
+            "body": "**Idea cotidiana.** Después de apartar los recibos, los acomodas del número más bajo al más alto para leerlos en orden.\n\n**Mini ejemplo.** Los ids `7, 1, 9` quedan `1, 7, 9` con orden ascendente.\n\n**Nombre técnico.** `ORDER BY pedido_id` ordena de menor a mayor (`ASC` es el valor por defecto; `DESC` invierte). Va al final de la consulta, después de `WHERE`. Sin `ORDER BY` el orden de las filas no está garantizado.\n\n**En este reto.** El orquestador compara las filas en orden, así que `ORDER BY pedido_id` es obligatorio."
+          }
+        ],
+        "workedExample": {
+          "domain": "Academia de idiomas: clases por sede",
+          "body": "**Datos (distintos a los del reto).**\n\n```sql\nCREATE TABLE clases (clase_id INTEGER PRIMARY KEY, sede VARCHAR, modalidad VARCHAR, inscritos INTEGER, tarifa DECIMAL(10,2), beca DECIMAL(10,2), estado VARCHAR);\nINSERT INTO clases VALUES\n (1,'Norte','online',10,5.00,0.00,'activa'),\n (2,'Sur','presencial',8,6.00,4.00,'activa'),\n (3,'Norte','online',6,5.00,2.00,'cancelada'),\n (4,'Sur','online',4,7.50,0.00,'activa'),\n (5,'Norte','presencial',3,6.00,0.00,'activa');\n```\n\n**Pregunta.** Clases `online` que estén `activa`, con columnas `clase_id`, `sede` y `recaudo` = `inscritos * tarifa - beca`, ordenadas por `clase_id`.\n\n**Razonamiento a mano.** Filas online: 1, 3, 4. La 3 está cancelada, se descarta. Quedan la 1 ($10 \\times 5 - 0 = 50$) y la 4 ($4 \\times 7.5 - 0 = 30$).\n\n```sql\nSELECT clase_id, sede, ROUND(inscritos * tarifa - beca, 2) AS recaudo\nFROM clases\nWHERE modalidad = 'online' AND estado = 'activa'\nORDER BY clase_id;\n```\n\n**Resultado verificado.**\n\n| clase_id | sede | recaudo |\n|---|---|---|\n| 1 | Norte | 50.00 |\n| 4 | Sur | 30.00 |\n\nNota: si usaras solo `modalidad = 'online'` aparecería también la clase 3 (recaudo 28.00), que no se dictó."
+        },
+        "steps": [
+          "Identifica la tabla (`pedidos`) y la granularidad: una fila es un pedido.",
+          "Escribe el `SELECT` con las tres columnas en el orden pedido: `pedido_id`, `tienda` e `ingreso_neto`, que es una expresión con alias.",
+          "Construye la expresión del ingreso neto con la fórmula del enunciado y póngale el alias `ingreso_neto`.",
+          "Añade `FROM pedidos`.",
+          "Escribe el `WHERE` con las dos condiciones de texto (canal y estado) unidas por el operador lógico que exige que ambas se cumplan; usa comillas simples y los valores exactos.",
+          "Ordena con `ORDER BY pedido_id`.",
+          "Compara tu salida con la tabla esperada: revisa número de filas, orden de columnas y valores."
+        ],
+        "hints": [
+          "Primero mira cuántos valores distintos tienen `canal` y `estado` en la tabla: ¿hay pedidos de la app que no se entregaron?",
+          "Pregúntate si la gerente necesita que se cumpla una condición, la otra, o las dos a la vez, y qué operador lógico corresponde.",
+          "La columna `ingreso_neto` no existe en la tabla: tendrás que definirla tú en la lista de columnas con un alias.",
+          "Revisa que los textos coincidan exactamente con los datos (minúsculas, sin tildes en estos valores).",
+          "Cuenta a mano cuántas filas deberían salir antes de ejecutar y compara con tu resultado."
+        ],
+        "research": [
+          {
+            "conceptId": "sql:where",
+            "why": "Es la cláusula básica que deja solo las filas que cumplen una condición.",
+            "searchEs": "SQL WHERE filtrar filas condiciones",
+            "searchEn": "SQL WHERE clause filter rows"
+          },
+          {
+            "conceptId": "sql:where",
+            "why": "Comparar texto exige igualdad exacta con comillas simples, en minúsculas y con tildes tal como están guardados.",
+            "searchEs": "SQL WHERE comparar texto igualdad comillas simples",
+            "searchEn": "SQL WHERE string equality single quotes"
+          },
+          {
+            "conceptId": "sql:where",
+            "why": "Combinar condiciones con AND/OR cambia cuántas filas pasan; aquí se exigen ambas.",
+            "searchEs": "SQL operadores AND OR diferencia ejemplos",
+            "searchEn": "SQL AND vs OR operators examples"
+          }
+        ],
+        "deliverables": [
+          "Una única consulta SQL sobre `pedidos`, sin agregaciones (nada de `SUM`, `COUNT`, `GROUP BY`).",
+          "Columnas exactas y en este orden: `pedido_id`, `tienda`, `ingreso_neto`.",
+          "`ingreso_neto` = `unidades * precio_unitario - descuento`, redondeado a 2 decimales con `ROUND`.",
+          "Solo pedidos con `canal = 'app'` y `estado = 'entregado'` (5 filas esperadas).",
+          "Ordenado por `pedido_id` de menor a mayor.",
+          "Interpretación: puedes decir cuántos pedidos entregados de la app hay y cuánto suman en conjunto.",
+          "Terminado cuando tu salida coincide fila por fila con la tabla esperada."
+        ],
+        "solution": {
+          "code": "SELECT pedido_id, tienda, ROUND(unidades * precio_unitario - descuento, 2) AS ingreso_neto\nFROM pedidos\nWHERE canal = 'app' AND estado = 'entregado'\nORDER BY pedido_id;",
+          "expectedResult": "5 filas: (1, Bogotá, 60.00), (5, Cali, 50.00), (7, Bogotá, 60.00), (9, Medellín, 45.00), (11, Bogotá, 104.00). Suma = 319.00.",
+          "reasoning": "Los pedidos de la app son 1, 3, 5, 7, 9 y 11. El 3 está cancelado, así que se descarta y quedan 1, 5, 7, 9 y 11. Ingreso neto: pedido 1 = 2*30 - 0 = 60; pedido 5 = 4*12.5 - 0 = 50; pedido 7 = 5*12.5 - 2.5 = 60; pedido 9 = 1*45 - 0 = 45; pedido 11 = 4*28 - 8 = 104. Se ordena por `pedido_id`.",
+          "conceptLinks": "`sql:select`: lista de columnas y la expresión con alias `ingreso_neto`. `sql:where`: filtro con dos condiciones de texto unidas por `AND`. El `ORDER BY` fija el orden de las filas.",
+          "businessInterpretation": "Los 5 pedidos de la app entregados dejaron \\$319.00 netos, unos \\$63.80 por pedido (319 / 5). Bogotá aporta 3 de los 5 pedidos (\\$224.00). Limitación: son solo 12 pedidos de un periodo corto (marzo de 2026), así que no basta para decidir la inversión de marketing sin compararlos con web y teléfono y con más meses de datos.",
+          "commonError": "Filtrar solo por `canal = 'app'` devuelve 6 filas e incluye el pedido 3 (cancelado, 3*28 - 4 = 80.00): el total sube de 319.00 a 399.00. Usar `OR` en lugar de `AND` devuelve 10 filas (todos los de la app más los entregados de otros canales) y el total sube a 563.50. Escribir `'Entregado'` con mayúscula devuelve 0 filas.",
+          "dsFlow": "Aparece al inicio de cualquier análisis: antes de agregar o modelar, defines la población correcta (qué filas cuentan) y construyes la métrica por fila. Un filtro mal hecho contamina todo lo que viene después.",
+          "skill": "Proyectar columnas calculadas y filtrar filas con condiciones combinadas en SQL."
+        },
+        "skeleton": {
+          "language": "sql",
+          "code": "SELECT\n  TODO,  -- identificador del pedido\n  TODO,  -- tienda\n  ROUND(TODO, 2) AS ingreso_neto  -- unidades, precio_unitario y descuento según la fórmula\nFROM TODO\nWHERE TODO  -- canal y estado, ambas condiciones a la vez\nORDER BY TODO;"
+        },
+        "expected": {
+          "columns": [
+            "pedido_id",
+            "tienda",
+            "ingreso_neto"
+          ],
+          "rows": [
+            [
+              1,
+              "Bogotá",
+              60
+            ],
+            [
+              5,
+              "Cali",
+              50
+            ],
+            [
+              7,
+              "Bogotá",
+              60
+            ],
+            [
+              9,
+              "Medellín",
+              45
+            ],
+            [
+              11,
+              "Bogotá",
+              104
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "challenge-001-s3",
+      "challengeId": "challenge-001",
+      "number": 3,
+      "title": "Interpretar los indicadores para la gerente comercial",
+      "domain": "business",
+      "difficulty": 1,
+      "bloom": 4,
+      "estimatedMinutes": 25,
+      "mechanism": "rubric_claude",
+      "description": "Con los datos de `pedidos` (puedes apoyarte en tus consultas anteriores y en cálculos a mano), redacta una nota de **2–4 líneas** para la gerente que:\n\n- Calcule e interprete el **ingreso neto total** de los pedidos entregados de la app y qué porcentaje es del ingreso neto de todos los pedidos entregados.\n- Calcule el **ticket promedio** de la app: ingreso neto de entregados de la app dividido entre el número de pedidos entregados de la app.\n- Calcule la **tasa de cancelación** de la app: pedidos cancelados de la app entre pedidos totales de la app.\n- Termine con una recomendación (¿invertir más en la app?) y **una limitación** de estos datos.\n\nIncluye la fórmula y las unidades (\\$ o %) de cada KPI.",
+      "conceptIds": [
+        "business:kpis"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Qué es un KPI y por qué no basta con «un número»",
+            "body": "**Idea cotidiana:** un KPI (indicador clave de desempeño) es un número que resume cómo va algo importante para tomar una decisión. Un número suelto («vendimos 319») no dice si es mucho o poco; un KPI siempre trae una fórmula, una unidad y algo con qué compararse.\n\n**Analogía:** el tablero de un auto. No te muestra «el motor gira»; te muestra *km/h*, con unidad y con un límite de referencia.\n\n**Mini ejemplo a mano (otro negocio):** una panadería vendió \\$200 el lunes y \\$300 el martes. «Vendió \\$300» es solo un dato. «Las ventas del martes crecieron 50 % frente al lunes» ya es un KPI: $\\frac{300-200}{200}\\times 100 = 50\\,\\%$.\n\n**Nombre técnico:** KPI = *Key Performance Indicator*. Todo KPI se escribe con: (1) **numerador** (lo que cuentas o sumas), (2) **denominador** (contra qué lo comparas) y (3) **unidad** (\\$, % o pedidos).\n\n**Para este reto:** la gerente no pedirá «una tabla de pedidos»; pedirá tres KPIs claros (ingreso neto, ticket promedio y tasa de cancelación) para decidir si invierte en la app. Cada KPI de tu nota debe llevar su fórmula y su unidad."
+          },
+          {
+            "title": "Ingreso neto total y su participación (%)",
+            "body": "**Idea cotidiana:** el ingreso neto es el dinero que realmente entra por un pedido, después de restar el descuento. Y la *participación* responde: «¿qué parte del total aporta este canal?».\n\n**Analogía:** en una pizza de 8 porciones, si el canal app se come 5, su participación es 5/8.\n\n**Mini ejemplo a mano (otro negocio):** una zapatería tiene 3 ventas online entregadas con ingreso neto de \\$90, \\$60 y \\$150, y 2 ventas en tienda con \\$120 y \\$180.\n- Ingreso neto online = 90 + 60 + 150 = \\$300.\n- Ingreso neto de todo lo entregado = 300 + 120 + 180 = \\$600.\n- Participación online = 300 / 600 = 0,50 → **50 %**.\n\n**Nombre técnico y fórmulas:**\n$$\\text{ingreso\\_neto}=\\text{unidades}\\times\\text{precio\\_unitario}-\\text{descuento}$$\n$$\\text{Participación}\\,(\\%)=\\frac{\\text{ingreso neto del grupo}}{\\text{ingreso neto del total}}\\times 100$$\nEl «grupo» es lo que quieres medir (la app) y el «total» es el universo con el que lo comparas (todos los pedidos entregados). Ambos deben filtrarse igual: solo pedidos entregados.\n\n**Para este reto:** solo cuenta lo entregado, porque un pedido cancelado no dejó dinero. Aunque el cancelado aparezca en la tabla, no se suma al ingreso."
+          },
+          {
+            "title": "Ticket promedio: cuánto deja un pedido típico",
+            "body": "**Idea cotidiana:** el ticket promedio dice cuánto dinero deja, en promedio, cada pedido. Sirve para saber si un canal trae pedidos «grandes» o «pequeños».\n\n**Analogía:** al salir del supermercado, el total de tu cuenta es tu ticket; el ticket promedio es el promedio de las cuentas de todos los clientes.\n\n**Mini ejemplo a mano (otro negocio):** en la zapatería, las 3 ventas online entregadas suman \\$300. Ticket promedio = 300 / 3 = **\\$100 por pedido**. Si por error se dividiera entre 4 pedidos (incluyendo uno cancelado de \\$80 que no dejó dinero), saldría \\$75: un ticket falsamente bajo.\n\n**Nombre técnico y fórmula:**\n$$\\text{Ticket promedio}\\,(\\$/\\text{pedido})=\\frac{\\text{ingreso neto de pedidos entregados}}{\\text{número de pedidos entregados}}$$\nNumerador y denominador deben salir del **mismo** conjunto de pedidos (los entregados de la app).\n\n**Para este reto:** compara el ticket de la app con el del resto de canales o con el promedio general para saber si la app trae pedidos de más valor."
+          },
+          {
+            "title": "Tasa de cancelación: qué porcentaje se cae",
+            "body": "**Idea cotidiana:** de cada 100 pedidos que entran, ¿cuántos se cancelan? Es una medida de «fuga» antes de cobrar.\n\n**Analogía:** de 10 personas que reservan mesa en un restaurante, 2 no llegan: la tasa de «no show» es 2/10 = 20 %.\n\n**Mini ejemplo a mano (otro negocio):** en la zapatería, el canal online recibió 4 pedidos y 1 se canceló: 1 / 4 = **25 %**. Si dividieras entre los 3 entregados, saldría 33,3 %, que responde otra pregunta y exagera el problema.\n\n**Nombre técnico y fórmula:**\n$$\\text{Tasa de cancelación}\\,(\\%)=\\frac{\\text{pedidos cancelados del canal}}{\\text{pedidos totales del canal}}\\times 100$$\nEl denominador son **todos** los pedidos del canal (entregados + cancelados), no solo los entregados.\n\n**Para este reto:** un canal con buen ingreso pero muchas cancelaciones puede esconder un problema de experiencia. Por eso este KPI acompaña al ingreso y al ticket."
+          },
+          {
+            "title": "De los números a una recomendación (y una limitación)",
+            "body": "**Idea cotidiana:** a la gerente no le sirven los cálculos sueltos: le sirve saber **qué hacer** y **qué tan seguro es**. Una buena nota tiene tres partes: los KPIs, una recomendación y una advertencia honesta.\n\n**Analogía:** un médico no entrega solo los resultados del laboratorio; dice «tome esto» y «ojo, el examen no cubre X».\n\n**Mini ejemplo a mano (otro negocio):** «Online aporta 50 % del ingreso neto (\\$300 de \\$600), con ticket de \\$100 y cancelación de 25 %. Recomiendo probar una inversión pequeña en online y reducir cancelaciones. Limitación: solo hay 5 ventas, y un par de pedidos cambian mucho los porcentajes».\n\n**Nombre técnico:** *limitación* o *supuesto* es algo que los datos no pueden decir: poco volumen (muestra pequeña), un periodo corto, falta de costos o de datos de marketing. Reconocerla no resta valor: evita decidir con falsa seguridad.\n\n**Para este reto:** tu nota de 2–4 líneas debe cerrar con una recomendación clara sobre invertir o no en la app y mencionar al menos una limitación real de estos datos (por ejemplo, solo 12 pedidos de un mes, o que no hay costos ni gasto de marketing)."
+          }
+        ],
+        "workedExample": {
+          "domain": "Zapatería con ventas online y en tienda física (Paso Firme)",
+          "body": "**Situación:** la gerente de Paso Firme quiere decidir si invierte en su canal online. Tienes 6 ventas (unidades × precio − descuento ya calculado como ingreso neto):\n\n| venta | canal | estado | ingreso neto (\\$) |\n|---|---|---|---|\n| 1 | online | entregado | 90 |\n| 2 | online | entregado | 60 |\n| 3 | online | entregado | 150 |\n| 4 | online | cancelado | 80 |\n| 5 | tienda | entregado | 120 |\n| 6 | tienda | entregado | 180 |\n\n**1) Ingreso neto online (solo entregado):** 90 + 60 + 150 = **\\$300**.\n\n**2) Ingreso neto de todo lo entregado:** 300 + 120 + 180 = \\$600. Participación online = 300 / 600 × 100 = **50,0 %**.\n\n**3) Ticket promedio online:** 300 / 3 pedidos entregados = **\\$100 por pedido**.\n\n**4) Tasa de cancelación online:** 1 cancelado / 4 pedidos online totales × 100 = **25,0 %**.\n\n**Nota para la gerente (modelo de forma, no del reto):** «Online dejó \\$300 netos, el 50,0 % del ingreso entregado (\\$300 / \\$600), con ticket de \\$100/pedido (\\$300 / 3) y cancelación de 25,0 % (1 / 4). Online ya pesa la mitad del ingreso pero 1 de cada 4 pedidos se cae: recomiendo invertir con prudencia y atacar primero las cancelaciones. Limitación: solo 6 ventas, un pedido más o menos mueve mucho los porcentajes».\n\n**Verificación:** 300 + 300 = 600; 3 entregados online + 2 en tienda = 5 entregados, ticket general = 600 / 5 = \\$120, mayor que el de online solo si miramos el canal tienda (\\$150), lo cual muestra que ticket alto y participación alta no son lo mismo."
+        },
+        "steps": [
+          "Parte de lo que ya calculaste o puedes calcular a mano con la tabla `pedidos`: el ingreso neto de cada pedido es $\\text{unidades}\\times\\text{precio\\_unitario}-\\text{descuento}$. Anótalo pedido por pedido para los entregados de la app y para todos los entregados.",
+          "Suma el ingreso neto de los pedidos entregados de la app y, aparte, el de todos los pedidos entregados (cualquier canal). Divide el primero entre el segundo y multiplica por 100 para obtener la participación en %.",
+          "Cuenta cuántos pedidos entregados tiene la app y divide el ingreso neto de la app entre esa cantidad: es el ticket promedio, en \\$ por pedido.",
+          "Cuenta los pedidos totales de la app (entregados y cancelados) y cuántos están cancelados. Aplica la fórmula de la tasa de cancelación y exprésala en %.",
+          "Redacta una nota de 2 a 4 líneas para la gerente: cada KPI con su fórmula, su resultado y su unidad, más una lectura de qué significa para el negocio.",
+          "Cierra con una recomendación clara sobre si invertir más en la app y con una limitación concreta de estos datos. Revisa que los tres KPIs usen los mismos pedidos que su fórmula indica."
+        ],
+        "hints": [
+          "Antes de calcular nada, decide qué pedidos entran en cada KPI: ¿solo entregados?, ¿todos? Cada KPI puede tener un conjunto distinto.",
+          "Mira cuántos pedidos tiene la app en total y en qué estado está cada uno; con tan pocos pedidos puedes hacer los cálculos a mano y revisarlos.",
+          "Fíjate en que dos de los KPIs comparten numerador pero no denominador. Escribe el denominador de cada uno con palabras antes de dividir.",
+          "Piensa qué no pueden decirte 12 pedidos de un mes: ¿costos?, ¿clientes que repiten?, ¿estacionalidad? De ahí sale tu limitación."
+        ],
+        "research": [
+          {
+            "conceptId": "business:kpis",
+            "why": "Necesitas entender qué es un KPI y por qué lleva fórmula y unidad antes de calcular cualquiera.",
+            "searchEs": "qué es un KPI fórmula y unidad de medida ejemplos",
+            "searchEn": "what is a KPI definition formula and unit examples"
+          },
+          {
+            "conceptId": "business:kpis",
+            "why": "El ingreso neto y su participación (%) dependen de elegir bien el numerador y el total de comparación.",
+            "searchEs": "participación porcentual de ventas por canal cómo se calcula",
+            "searchEn": "revenue share by channel how to calculate percentage of total"
+          },
+          {
+            "conceptId": "business:kpis",
+            "why": "El ticket promedio y la tasa de cancelación usan denominadores distintos; confundirlos cambia la conclusión.",
+            "searchEs": "ticket promedio y tasa de cancelación de pedidos ecommerce cómo calcular",
+            "searchEn": "average order value and order cancellation rate ecommerce formula"
+          }
+        ],
+        "deliverables": [
+          "La nota tiene entre 2 y 4 líneas, está dirigida a la gerente comercial y no usa jerga sin explicar.",
+          "Ingreso neto total de los pedidos entregados de la app: \\$319,00, con la fórmula $\\text{unidades}\\times\\text{precio\\_unitario}-\\text{descuento}$ y la unidad en \\$ (acepta \\$319).",
+          "Participación de la app en el ingreso neto de todos los pedidos entregados: 66,0 % (319 / 483,5 × 100 ≈ 65,98 %), con la fórmula y la unidad en %. Se acepta 65,9 % o 66 %.",
+          "Ticket promedio de la app: \\$63,80 por pedido (319 / 5 pedidos entregados), con la fórmula y la unidad en \\$/pedido.",
+          "Tasa de cancelación de la app: 16,7 % (1 cancelado / 6 pedidos totales de la app × 100), con la fórmula y la unidad en %. El denominador son todos los pedidos de la app, no solo los entregados.",
+          "Interpreta al menos un KPI en lenguaje de negocio (por ejemplo: la app aporta cerca de dos tercios del ingreso entregado con solo un cancelado de seis pedidos).",
+          "Incluye una recomendación explícita y coherente con los números sobre si invertir más en la app (por ejemplo, invertir con cautela, apoyada en participación y ticket altos).",
+          "Menciona al menos una limitación real de los datos (por ejemplo: solo 12 pedidos y un mes, 5 entregados en la app; no hay costos ni gasto de marketing; no se sabe si los clientes repiten).",
+          "Terminado cuando: los tres KPIs aparecen con fórmula, número y unidad correctos, hay una recomendación y hay una limitación, todo en 2 a 4 líneas."
+        ],
+        "solution": {
+          "expectedResult": "Ingreso neto de entregados de la app: \\$319,00 (pedidos 1, 5, 7, 9 y 11: 60 + 50 + 60 + 45 + 104). Ingreso neto de todos los entregados: \\$483,50 (9 pedidos). Participación de la app: 319 / 483,5 × 100 ≈ 66,0 %. Ticket promedio de la app: 319 / 5 = \\$63,80 por pedido. Tasa de cancelación de la app: 1 / 6 × 100 ≈ 16,7 %.",
+          "reasoning": "Primero se calcula el ingreso neto por pedido: unidades × precio − descuento. En la app: pedido 1 = 2×30−0 = 60; pedido 3 = 3×28−4 = 80 (cancelado, no cuenta); pedido 5 = 4×12,5−0 = 50; pedido 7 = 5×12,5−2,5 = 60; pedido 9 = 45; pedido 11 = 4×28−8 = 104. Los entregados de la app suman 60+50+60+45+104 = 319 con 5 pedidos. El total entregado de otros canales: web 40+30+37,5 = 107,5 y teléfono 57; entonces 319+107,5+57 = 483,5. La app tiene 6 pedidos en total y 1 cancelado.",
+          "conceptLinks": "KPIs y métricas (`business:kpis`): el ingreso neto y su participación usan el conjunto «entregados»; el ticket promedio divide ese ingreso entre los pedidos entregados de la app; la tasa de cancelación usa como denominador todos los pedidos de la app. Cada KPI se acompaña de fórmula y unidad (\\$ o %).",
+          "businessInterpretation": "La app genera aproximadamente dos tercios del ingreso neto entregado (66,0 %), con un ticket de \\$63,80, por encima del ticket general de \\$53,72 (483,5 / 9), y una cancelación moderada de 16,7 %. Esto respalda invertir más en la app, preferiblemente de forma gradual y vigilando las cancelaciones. Limitación: son solo 12 pedidos de un mes (5 entregados en la app), así que un pedido más o menos mueve mucho los porcentajes; además no hay costos, margen ni gasto de marketing para calcular retorno.",
+          "commonError": "Calcular el ticket y el ingreso incluyendo el pedido cancelado de la app (\\$80): ingreso \\$399 y ticket 399 / 6 = \\$66,50 en vez de \\$63,80. Otro error es dividir la cancelación entre los entregados (1 / 5 = 20,0 %) en vez de entre los pedidos totales de la app (1 / 6 = 16,7 %). Un tercero es olvidar el descuento: el ingreso bruto de la app entregada sería \\$329,50 y el ticket \\$65,90.",
+          "dsFlow": "Aparece al final del trabajo analítico, en la fase de comunicación: una vez que las consultas devuelven los insumos, se traducen en KPIs con definición clara y se entregan a quien decide, junto con la recomendación y las limitaciones.",
+          "skill": "Definir y calcular KPIs con fórmula y unidad correctas, elegir el denominador adecuado e interpretar los resultados para tomar una decisión de negocio señalando las limitaciones."
+        }
+      }
+    }
+  ]
+}

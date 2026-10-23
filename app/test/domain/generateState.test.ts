@@ -58,3 +58,18 @@ describe('estado del diálogo de generación (R39)', () => {
     expect(PHASE_LABEL(undefined)).toBe('la generación');
   });
 });
+
+describe('lo que el Generador va planteando (caso y etapas)', () => {
+  const caso = { title: 'Pedidos', dataset: 'Tienda', lookingFor: 'Que practiques JOIN.', scenario: 'Eres analista…', tables: [{ name: 'pedidos', rows: 12, columns: 4 }], stages: [{ number: 1, title: 'Uno', description: 'd', minutes: 90 }, { number: 2, title: 'Dos', description: 'd', minutes: 120 }] };
+  const etapa = (number: number) => ({ number, title: `E${number}`, minutes: 90, deliverables: ['a'], checked: 'ok' });
+
+  it('guarda el caso y las etapas listas en orden, sin duplicar una etapa que se reintenta', () => {
+    const s = play([{ type: 'caso', caso }, { type: 'etapa', etapa: etapa(2) }, { type: 'etapa', etapa: etapa(1) }, { type: 'etapa', etapa: { ...etapa(2), title: 'E2 retomada' } }]);
+    expect(s.caso?.title).toBe('Pedidos');
+    expect(s.etapas.map((e) => [e.number, e.title])).toEqual([[1, 'E1'], [2, 'E2 retomada']]);
+  });
+
+  it('un estado nuevo parte sin caso ni etapas', () => {
+    expect(startedGenerate()).toMatchObject({ caso: null, etapas: [] });
+  });
+});

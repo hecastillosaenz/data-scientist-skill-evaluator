@@ -1,0 +1,42 @@
+.wrap { display: flex; flex-direction: column; gap: 20px; }
+.note, .hint, .legend, .tileSub { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.empty { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--sunk); font-size: 14px; line-height: 1.6; color: var(--muted); text-align: center; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--sunk); }
+.tile strong { font-size: 20px; line-height: 1.2; }
+.tileLabel { font-size: 12px; font-weight: 600; color: var(--muted); }
+.bar { display: block; flex: 1; min-width: 40px; height: 6px; border-radius: 999px; background: var(--sel); overflow: hidden; }
+.bar > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.next { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--sel); font-size: 14px; line-height: 1.55; }
+.h { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.chart { width: 100%; height: auto; display: block; }
+.grid { stroke: var(--edge); stroke-width: 1; stroke-dasharray: 3 4; }
+.tick { fill: var(--muted); font-size: 11px; }
+.area { fill: var(--accent); opacity: 0.12; }
+.line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.dot { fill: var(--card); stroke: var(--accent); stroke-width: 2.5; }
+.scroll { overflow-x: auto; border-radius: 12px; background: var(--sunk); padding: 6px; }
+.matrix { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+.matrix th, .matrix td { padding: 8px 10px; text-align: center; vertical-align: middle; white-space: nowrap; }
+.matrix thead th { font-size: 12px; font-weight: 600; color: var(--muted); }
+.matrix thead th a { color: inherit; }
+.matrix tbody th { text-align: left; font-weight: 500; white-space: normal; min-width: 210px; }
+.matrix tbody tr + tr > * { border-top: 1px solid transparent; }
+.concept { display: flex; align-items: center; gap: 8px; }
+.n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--card); font-size: 11px; font-weight: 600; flex: none; }
+.state { display: inline-block; margin: 4px 0 0 28px; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--card); color: var(--muted); }
+.s_dominado { background: var(--d1-bg); color: var(--d1-fg); }
+.s_con_fallos { background: var(--d3-bg); color: var(--d3-fg); }
+.s_visto { background: var(--d2-bg); color: var(--d2-fg); }
+.bloomCell { display: inline-flex; align-items: center; gap: 8px; min-width: 96px; }
+.none { color: var(--muted); }
+.cell { display: inline-block; min-width: 34px; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; background: var(--card); color: var(--muted); }
+i.cell { min-width: 12px; width: 12px; height: 12px; padding: 0; border-radius: 4px; vertical-align: -1px; }
+.c_aprobada { background: var(--d1-bg); color: var(--d1-fg); }
+.c_ayuda { background: var(--d2-bg); color: var(--d2-fg); }
+.c_parcial { background: var(--d2-bg); color: var(--d2-fg); }
+.c_fallida { background: var(--d3-bg); color: var(--d3-fg); }
+.c_sin { background: var(--card); color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
+.retos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.retos li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; background: var(--sunk); font-size: 14px; }

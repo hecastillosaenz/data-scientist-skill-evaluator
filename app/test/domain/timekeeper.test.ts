@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  GAP_THRESHOLD_MS, beat, mapTimers, parseBook, pendingGap, runningId, serializeBook, startIn, timerOf, updateTimer, detectGap, elapsedMs, formatClock, initialTimer, isRunning, lapMs, parseTimer, pause, reset, resolveGap, serializeTimer, start, takeLap, toMinutes,
+  GAP_THRESHOLD_MS, beat, mapTimers, parseBook, pendingGap, runningId, serializeBook, startIn, timerOf, updateTimer, detectGap, elapsedMs, formatClock, initialTimer, isRunning, lapMs, parseTimer, pause, reset, resolveGap, serializeTimer, start, takeLap, toMinutes, challengeStamp, reconcileTimers,
 } from '../../web/src/domain/timekeeper';
 
 const SEC = 1000;
@@ -244,5 +244,34 @@ describe('un cronómetro por challenge (AC-R20)', () => {
     });
     const book = parseBook(raw);
     expect(Object.values(book).filter((t) => t.startedAt !== null)).toHaveLength(1);
+  });
+});
+
+describe('relojes huérfanos (challenge borrado y regenerado con el mismo id)', () => {
+  const ch = (over: object = {}) => ({ id: 'challenge-001', title: 'Cafés', dataset: 'Pedidos', hasActivity: false, ...over });
+  const withTime = (): Record<string, ReturnType<typeof initialTimer>> => ({ 'challenge-001': { ...initialTimer(), accumulatedMs: 14 * MIN } });
+
+  it('un reloj sin dueño conocido y sin registros se descarta: el challenge nuevo arranca en cero', () => {
+    const r = reconcileTimers(withTime(), {}, [ch()]);
+    expect(r.changed).toBe(true);
+    expect(r.book).toEqual({});
+  });
+
+  it('si el challenge cambió de contenido con el mismo id, el reloj se descarta', () => {
+    const r = reconcileTimers(withTime(), { 'challenge-001': challengeStamp({ title: 'Otro reto', dataset: 'X' }) }, [ch({ hasActivity: true })]);
+    expect(r.book).toEqual({});
+  });
+
+  it('el reloj de un challenge que ya no existe se descarta', () => {
+    expect(reconcileTimers(withTime(), {}, []).book).toEqual({});
+  });
+
+  it('un reloj del mismo challenge se conserva, y con registros previos sin huella se adopta', () => {
+    const same = reconcileTimers(withTime(), { 'challenge-001': challengeStamp(ch()) }, [ch()]);
+    expect(same.changed).toBe(false);
+    expect(timerOf(same.book, 'challenge-001').accumulatedMs).toBe(14 * MIN);
+    const adopted = reconcileTimers(withTime(), {}, [ch({ hasActivity: true })]);
+    expect(timerOf(adopted.book, 'challenge-001').accumulatedMs).toBe(14 * MIN);
+    expect(adopted.stamps['challenge-001']).toBe(challengeStamp(ch()));
   });
 });

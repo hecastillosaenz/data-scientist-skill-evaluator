@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { GenerateEvent } from '../../shared/generate';
+import type { GenerateEvent, PropuestaReto } from '../../shared/generate';
 import type { TemaPedido } from '../../shared/objetivos';
 import type { Challenge, Concept, DomainId, TestQuestion } from '../../shared/types';
 import { recordAgent } from '../agents/registro';
@@ -13,6 +13,9 @@ import { readState } from '../persistence/state';
 import { assembleChallenge, buildNotebook, businessQuestionCount, logHeader } from './assemble';
 import { CalibrationError, loadCalibration, type CalibrationConfig } from './calibration';
 import { loadLearning } from './aprendizaje';
+import { elegirObjetivo } from './objetivo';
+import { buildPropuesta } from '../planner/propuesta';
+import { PlanInvalidError } from '../planner/apply';
 import { checkAgainstPlan, planChallenge, TemaError, type ChallengePlan } from './plan';
 import { extractJson, generatorSystem, repairMessage, skeletonMessage, stageMessage, testMessage } from './prompts';
 import { checkDataset, checkReference } from './reference';
@@ -42,6 +45,16 @@ export interface GenerateParams {
   domain?: DomainId;
   /** Tema a pedido (R43): ya resuelto a un concepto del grafo. */
   tema?: TemaPedido;
+  /** Objetivo de aprendizaje para el que se genera (R58): su siguiente concepto pendiente es el tema si no se pidió otro. */
+  focoId?: string;
+  /** Lo que el usuario escribió que quiere lograr y la propuesta del Planificador que aceptó (R61). */
+  descripcion?: string;
+  propuesta?: PropuestaReto;
+  /** Cuántas etapas (2–6) y si es un proyecto de punta a punta (R60). */
+  etapas?: number;
+  proyecto?: boolean;
+  /** Modelo del Generador (`--model`): alias o id; sin valor, el predeterminado de Claude Code. */
+  modelo?: string;
   /** Retoma el trabajo conservado desde la última fase válida en vez de empezar de cero (R39). */
   resume?: boolean;
   /** Multiplica el presupuesto por fase: 2 = «Reintentar con el doble». */
@@ -56,6 +69,22 @@ const MIN_CALL_USD = 0.05;
 const MAX_EXTRA_CONCEPTS = 3;
 
 const step = (id: string, label: string, status: 'running' | 'ok' | 'error', detail?: string, cost?: number): GenerateEvent => ({ type: 'step', id, label, status, ...(detail ? { detail } : {}), ...(cost !== undefined ? { cost: Math.round(cost * 10_000) / 10_000 } : {}) });
+/** Resumen de una etapa ya validada para el diálogo: título, tiempo, entregables y cómo se comprobó. */
+function etapaPreview(number: number, skeleton: Skeleton, content: unknown, mechanism: string): GenerateEvent {
+  const s = skeleton.stages.find((x) => x.number === number);
+  const deliverables = isObject(content) && Array.isArray(content.deliverables) ? content.deliverables.filter(isString).slice(0, 3) : [];
+  return {
+    type: 'etapa',
+    etapa: {
+      number,
+      title: s?.title ?? `Etapa ${number}`,
+      minutes: s?.estimatedMinutes ?? 0,
+      deliverables,
+      checked: mechanism === 'codigo_assert' ? 'La solución de referencia se ejecutó sobre los datos y reprodujo lo esperado.' : 'Etapa conceptual: se evalúa con una rúbrica.',
+    },
+  };
+}
+
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isString = (v: unknown): v is string => typeof v === 'string';
 
@@ -130,7 +159,29 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
     const { data } = appState;
 
     // Objetivos de aprendizaje (R44, R45): sesgan el plan y su material viaja al Generador como contexto.
-    const { focos, context: learning, materialDirs } = await loadLearning(repoRoot, data.concepts, config, now());
+    let tema = params.tema;
+    if (params.focoId) {
+      const elegido = await elegirObjetivo(repoRoot, params.focoId, data);
+      if (!elegido.ok) {
+        yield step('plan', 'Calculando el plan de calibración con tu grafo', 'error', elegido.message);
+        yield { type: 'error', code: 'objetivo', message: elegido.message };
+        return;
+      }
+      tema ??= elegido.tema;
+    }
+    let propuesta: PropuestaReto | undefined;
+    if (params.propuesta) {
+      try {
+        propuesta = buildPropuesta(params.propuesta, data.concepts, { etapas: null });
+      } catch (err) {
+        if (!(err instanceof PlanInvalidError)) throw err;
+        yield step('plan', 'Calculando el plan de calibración con tu grafo', 'error', err.message);
+        yield { type: 'error', code: 'propuesta', message: `La propuesta no es válida: ${err.message}` };
+        return;
+      }
+    }
+    const { focos, context: learning0, materialDirs } = await loadLearning(repoRoot, data.concepts, config, now(), params.focoId ? { focoId: params.focoId } : undefined);
+    const learning = params.descripcion?.trim() ? { ...learning0, intencion: { texto: params.descripcion.trim().slice(0, 800), meta: propuesta?.meta ?? '' } } : learning0;
 
     // ¿Se retoma lo conservado o se empieza de cero?
     const existing = await readGenerationState(repoRoot);
@@ -150,7 +201,10 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
           config,
           now: now(),
           ...(params.domain ? { domain: params.domain } : {}),
-          ...(params.tema ? { tema: params.tema } : {}),
+          ...(tema ? { tema } : {}),
+          ...(params.etapas ? { etapas: params.etapas } : {}),
+          ...(params.proyecto ? { proyecto: true } : {}),
+          ...(propuesta ? { propuesta } : {}),
           focos,
         });
       } catch (err) {
@@ -198,6 +252,17 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       yield step('esqueleto', 'Diseñando el caso y los datos', 'ok', 'Retomado: ya estaba validado');
     }
     const skeleton = ctx.state.skeleton!;
+    yield {
+      type: 'caso',
+      caso: {
+        title: skeleton.title,
+        dataset: skeleton.dataset,
+        lookingFor: skeleton.objectives.lookingFor,
+        scenario: skeleton.scenario.length > 420 ? `${skeleton.scenario.slice(0, 420).trimEnd()}…` : skeleton.scenario,
+        tables: skeleton.data.tables.map((t) => ({ name: t.name, rows: t.rowCount, columns: t.columns.length })),
+        stages: skeleton.stages.map((s) => ({ number: s.number, title: s.title, description: s.description.length > 200 ? `${s.description.slice(0, 200).trimEnd()}…` : s.description, minutes: s.estimatedMinutes })),
+      },
+    };
 
     // ── Fase 2: una etapa por llamada ──────────────────────────────────────
     for (const planned of plan.stages) {
@@ -206,6 +271,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       const label = `Escribiendo la Etapa ${planned.number}: ${title}`;
       if (ctx.state.completed.includes(id) && ctx.state.stages[String(planned.number)]) {
         yield step(id, label, 'ok', 'Retomado: ya estaba validado');
+        yield etapaPreview(planned.number, skeleton, ctx.state.stages[String(planned.number)], planned.mechanism);
         continue;
       }
       const proposed = skeleton.stages.find((s) => s.number === planned.number);
@@ -214,6 +280,7 @@ export async function* generateChallenge(params: GenerateParams): AsyncGenerator
       if (!content) return;
       ctx.state.stages[String(planned.number)] = content;
       await done(id);
+      yield etapaPreview(planned.number, skeleton, content, planned.mechanism);
     }
 
     // ── Fase 3: test final ────────────────────────────────────────────────
@@ -287,6 +354,7 @@ async function* runPhase<T>(
       const result = await recordAgent(params.repoRoot, 'generador', deps.runAgent, { challengeId: ctx.state.plan.id, fase: id }, deps.now)({
         message: attempt === 0 ? message : repairMessage(message, previous, errors),
         system: generatorSystem(),
+        ...(params.modelo ? { model: params.modelo } : {}),
         addDirs: [path.join(configDir(params.repoRoot), 'plantillas'), ...ctx.materialDirs],
         maxUsd: Math.round(remaining * 100) / 100,
         ...(params.signal ? { signal: params.signal } : {}),

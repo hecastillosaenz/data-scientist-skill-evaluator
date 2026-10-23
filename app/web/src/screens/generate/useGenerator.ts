@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GenerateEvent, PendingGeneration } from '../../../../shared/generate';
+import type { GenerateEvent, PendingGeneration, PropuestaReto } from '../../../../shared/generate';
 import type { TemaPedido } from '../../../../shared/objetivos';
 import type { DomainId } from '../../../../shared/types';
 import type { ChallengePlan } from '../../../../server/generator/plan';
@@ -10,6 +10,16 @@ export interface GenerateRequest {
   dominio?: DomainId;
   /** Tema a pedido ya resuelto a un concepto (R43). */
   tema?: TemaPedido;
+  /** Lo que la persona quiere lograr y la propuesta del Planificador que aceptó (R61). */
+  descripcion?: string;
+  propuesta?: PropuestaReto;
+  /** Etapas (2–6) y si es un proyecto de punta a punta (R60). */
+  etapas?: number;
+  proyecto?: boolean;
+  /** Objetivo para el que se genera (R58). */
+  focoId?: string;
+  /** Modelo del Generador: alias o id; sin valor, el predeterminado. */
+  modelo?: string;
   /** Retoma el trabajo conservado desde la última fase válida (R39). */
   resume?: boolean;
   /** 2 = «Reintentar con el doble de presupuesto». */
@@ -85,7 +95,7 @@ export function useGenerator(onResult: () => void) {
 }
 
 /** Vista previa del plan (R38) y trabajo conservado (R39) para el diálogo; ambos son de solo lectura. */
-export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: TemaPedido | null = null) {
+export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: TemaPedido | null = null, focoId: string | null = null, forma: { etapas: number | null; proyecto: boolean } = { etapas: null, proyecto: false }) {
   const [plan, setPlan] = useState<ChallengePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingGeneration | null>(null);
@@ -101,6 +111,9 @@ export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: Te
       query.set('concepto', tema.conceptId);
       query.set('tema', tema.texto);
     }
+    if (focoId) query.set('foco', focoId);
+    if (forma.etapas) query.set('etapas', String(forma.etapas));
+    if (forma.proyecto) query.set('proyecto', '1');
     fetch(`/api/plan${query.size > 0 ? `?${query}` : ''}`)
       .then(async (res) => {
         const body = (await res.json()) as ChallengePlan & { message?: string };
@@ -112,7 +125,7 @@ export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: Te
     return () => {
       cancelled = true;
     };
-  }, [open, dominio, tema]);
+  }, [open, dominio, tema, focoId, forma.etapas, forma.proyecto]);
 
   useEffect(() => {
     if (!open) return;
@@ -127,4 +140,15 @@ export function usePlanPreview(open: boolean, dominio: DomainId | null, tema: Te
   }, [open]);
 
   return { plan, error, pending };
+}
+
+/** Pide al Planificador que aterrice lo que quieres lograr en conceptos, Bloom y número de etapas (R61). Tarda unos segundos. */
+export async function proponerReto(
+  body: { descripcion?: string; tema?: TemaPedido; focoId?: string; dominio?: DomainId; etapas: number | null; proyecto: boolean | null },
+  signal?: AbortSignal,
+): Promise<{ propuesta: PropuestaReto; cost: number }> {
+  const res = await fetch('/api/generate/propuesta', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), ...(signal ? { signal } : {}) });
+  const data = (await res.json().catch(() => ({}))) as { propuesta?: PropuestaReto; cost?: number; message?: string };
+  if (!res.ok || !data.propuesta) throw new Error(data.message ?? `El orquestador respondió con un error (${res.status}).`);
+  return { propuesta: data.propuesta, cost: data.cost ?? 0 };
 }

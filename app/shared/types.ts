@@ -1,6 +1,6 @@
 /** Contrato de datos compartido entre el frontend y (más adelante) el orquestador. */
 
-export type DomainId = 'sql' | 'python' | 'math' | 'ml' | 'cleaning' | 'business';
+export type DomainId = 'sql' | 'python' | 'math' | 'ml' | 'features' | 'training' | 'cleaning' | 'business';
 
 export type Apoyo = 'guiado' | 'pistas' | 'autonomo';
 export type Bloom = 1 | 2 | 3 | 4 | 5 | 6;

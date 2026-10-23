@@ -2011,6 +2011,230 @@
         "business:risk",
         "sql:cte"
       ]
+    },
+    {
+      "id": "math:quiero-poder-comprender-el-concepto-y-ut",
+      "name": "Quiero poder comprender el concepto y utilidad de los EigenValues y Eigenbases",
+      "domain": "math",
+      "prerequisites": [],
+      "origin": "usuario",
+      "since": "2026-10-19T14:48:12.249Z"
+    },
+    {
+      "id": "features:numeric-transforms",
+      "name": "Transformaciones numéricas (log, raíz, Box-Cox)",
+      "domain": "features",
+      "prerequisites": [
+        "ml:scaling",
+        "math:exp-log"
+      ]
+    },
+    {
+      "id": "features:binning",
+      "name": "Discretización y binning",
+      "domain": "features",
+      "prerequisites": [
+        "math:percentiles",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "features:target-encoding",
+      "name": "Target encoding y frecuencia",
+      "domain": "features",
+      "prerequisites": [
+        "ml:encoding",
+        "ml:leakage"
+      ]
+    },
+    {
+      "id": "features:interactions",
+      "name": "Interacciones y polinomios",
+      "domain": "features",
+      "prerequisites": [
+        "ml:feature-eng",
+        "math:algebra"
+      ]
+    },
+    {
+      "id": "features:datetime-features",
+      "name": "Variables de fecha y estacionalidad",
+      "domain": "features",
+      "prerequisites": [
+        "python:pandas-datetime",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "features:text-features",
+      "name": "Variables desde texto (TF-IDF, conteos)",
+      "domain": "features",
+      "prerequisites": [
+        "cleaning:text-clean",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "features:aggregations",
+      "name": "Agregaciones por entidad (ventanas, recencia, frecuencia)",
+      "domain": "features",
+      "prerequisites": [
+        "python:pandas-groupby",
+        "ml:features"
+      ]
+    },
+    {
+      "id": "features:missing-indicators",
+      "name": "Indicadores de faltantes y imputación en el modelo",
+      "domain": "features",
+      "prerequisites": [
+        "cleaning:impute-simple",
+        "ml:pipelines"
+      ]
+    },
+    {
+      "id": "features:selection-filter",
+      "name": "Selección por filtro (correlación, información mutua)",
+      "domain": "features",
+      "prerequisites": [
+        "ml:feature-selection",
+        "math:correlation"
+      ]
+    },
+    {
+      "id": "features:selection-wrapper",
+      "name": "Selección por wrapper y embebida (RFE, L1)",
+      "domain": "features",
+      "prerequisites": [
+        "features:selection-filter",
+        "ml:regularization"
+      ]
+    },
+    {
+      "id": "features:dim-reduction",
+      "name": "Reducción de dimensión como feature (PCA en pipeline)",
+      "domain": "features",
+      "prerequisites": [
+        "ml:pca",
+        "ml:pipelines"
+      ]
+    },
+    {
+      "id": "features:leakage-features",
+      "name": "Fuga de datos al construir variables",
+      "domain": "features",
+      "prerequisites": [
+        "ml:leakage",
+        "features:aggregations"
+      ]
+    },
+    {
+      "id": "training:baseline",
+      "name": "Modelo base y línea de referencia",
+      "domain": "training",
+      "prerequisites": [
+        "ml:split",
+        "ml:metrics-reg"
+      ]
+    },
+    {
+      "id": "training:loss-selection",
+      "name": "Elegir la función de pérdida y la métrica",
+      "domain": "training",
+      "prerequisites": [
+        "ml:cost",
+        "ml:metrics-clf"
+      ]
+    },
+    {
+      "id": "training:training-loop",
+      "name": "Ciclo de entrenamiento (epochs, batches, convergencia)",
+      "domain": "training",
+      "prerequisites": [
+        "ml:gd",
+        "python:loops"
+      ]
+    },
+    {
+      "id": "training:learning-curves",
+      "name": "Curvas de aprendizaje y diagnóstico",
+      "domain": "training",
+      "prerequisites": [
+        "ml:overfit",
+        "ml:bias-var"
+      ]
+    },
+    {
+      "id": "training:early-stopping",
+      "name": "Early stopping y regularización al entrenar",
+      "domain": "training",
+      "prerequisites": [
+        "training:learning-curves",
+        "ml:regularization"
+      ]
+    },
+    {
+      "id": "training:cv-strategies",
+      "name": "Estrategias de validación (estratificada, por grupos, temporal)",
+      "domain": "training",
+      "prerequisites": [
+        "ml:cv",
+        "ml:timeseries-ml"
+      ]
+    },
+    {
+      "id": "training:hyperparam-search",
+      "name": "Búsqueda de hiperparámetros (grid, random, bayesiana)",
+      "domain": "training",
+      "prerequisites": [
+        "ml:hyperparams",
+        "training:cv-strategies"
+      ]
+    },
+    {
+      "id": "training:imbalance-training",
+      "name": "Entrenar con clases desbalanceadas (pesos, remuestreo)",
+      "domain": "training",
+      "prerequisites": [
+        "ml:imbalance",
+        "training:loss-selection"
+      ]
+    },
+    {
+      "id": "training:ensembles",
+      "name": "Ensambles: bagging, boosting y stacking",
+      "domain": "training",
+      "prerequisites": [
+        "ml:random-forest",
+        "ml:boosting"
+      ]
+    },
+    {
+      "id": "training:model-comparison",
+      "name": "Comparar modelos con rigor estadístico",
+      "domain": "training",
+      "prerequisites": [
+        "training:cv-strategies",
+        "math:hypothesis"
+      ]
+    },
+    {
+      "id": "training:threshold-tuning",
+      "name": "Ajustar umbral según costo de negocio",
+      "domain": "training",
+      "prerequisites": [
+        "ml:threshold",
+        "training:loss-selection"
+      ]
+    },
+    {
+      "id": "training:reproducibility",
+      "name": "Reproducibilidad: semillas, versiones y pipelines",
+      "domain": "training",
+      "prerequisites": [
+        "ml:pipelines",
+        "python:venv"
+      ]
     }
   ]
 }

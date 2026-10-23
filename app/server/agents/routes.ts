@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { AGENT_ROLES, type AgentesPayload, type AgentStatus } from '../../shared/agentes';
 import { CalibrationError, loadCalibration } from '../generator/calibration';
 import { GraphError, readGraph } from '../persistence/graph-store';
+import { readObjetivos } from '../persistence/objetivos-store';
 import { purgeRuns, readRun, readRuns, summarize, type RunRecord } from './registro';
 
 const LIMIT = 200;
@@ -73,10 +74,34 @@ export function registerAgentRoutes(app: FastifyInstance, opts: AgentRoutesOptio
       if (!(err instanceof GraphError)) throw err;
     }
 
+    // Lo que el Planificador dijo sobre tus objetivos. Un objetivos.json ilegible no debe esconder el monitoreo.
+    let revisiones: AgentesPayload['revisiones'] = [];
+    try {
+      const graph = await readGraph(opts.repoRoot);
+      const objetivos = await readObjetivos(opts.repoRoot, { conceptIds: new Set(graph.concepts.map((c) => c.id)), focosActivosMax: Number.MAX_SAFE_INTEGER });
+      const plannerRuns = runs.filter((r) => r.rol === 'planificador');
+      revisiones = objetivos.focos
+        .flatMap((f) => (f.conversacion ?? []).filter((m) => m.rol === 'planificador').map((m) => ({
+          focoId: f.id,
+          titulo: f.titulo,
+          at: m.at,
+          tipo: m.tipo,
+          texto: m.texto,
+          planCambiado: m.planCambiado === true,
+          // La ejecución que produjo la respuesta: la del Planificador para este objetivo más cercana en el tiempo.
+          runId: plannerRuns.filter((r) => r.focoId === f.id && r.startedAt <= m.at).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0]?.id ?? null,
+        })))
+        .sort((a, b) => b.at.localeCompare(a.at))
+        .slice(0, 8);
+    } catch {
+      // sin objetivos legibles, la sección queda vacía
+    }
+
     return {
       agentes,
       ejecuciones: runs.slice(0, LIMIT).map(summarize),
       analisis,
+      revisiones,
       conceptosCreados,
       errores: runs.filter((r) => FAILED.has(r.outcome)).slice(0, 10).map(summarize),
       retencionDias: days,

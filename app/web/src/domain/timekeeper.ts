@@ -211,3 +211,53 @@ export function parseBook(raw: string | null | undefined): TimerBook {
 }
 
 export const serializeBook = (book: TimerBook): string => JSON.stringify(book);
+
+/** Claves de las «huellas» de challenge guardadas junto al libro: qué challenge era el dueño de cada reloj. */
+export const STAMPS_KEY = 'dsc-timer-stamps-v1';
+export type TimerStamps = Readonly<Record<string, string>>;
+
+/** Huella de un challenge: cambia si se borra y se genera otro con el mismo id (`challenge-001`). */
+export const challengeStamp = (c: { title: string; dataset: string }): string => `${c.title}|${c.dataset}`;
+
+export function parseStamps(raw: string | null | undefined): TimerStamps {
+  try {
+    const v = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    return Object.fromEntries(Object.entries(v as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string'));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Descarta los relojes huérfanos: el de un challenge que ya no existe, el de otro challenge que heredó su id al borrar y
+ * regenerar (huella distinta) y el de uno sin huella ni registros (nunca se pudo atribuir a este challenge). Así un
+ * challenge nuevo nunca arranca con el tiempo de uno anterior.
+ */
+export function reconcileTimers(
+  book: TimerBook,
+  stamps: TimerStamps,
+  challenges: { id: string; title: string; dataset: string; hasActivity: boolean }[],
+): { book: TimerBook; stamps: TimerStamps; changed: boolean } {
+  const byId = new Map(challenges.map((c) => [c.id, c]));
+  const nextBook: Record<string, TimerState> = {};
+  const nextStamps: Record<string, string> = {};
+  let changed = false;
+  for (const [id, t] of Object.entries(book)) {
+    const c = byId.get(id);
+    if (!c) {
+      changed = true; // el challenge ya no existe
+      continue;
+    }
+    const stamp = challengeStamp(c);
+    const known = stamps[id];
+    if ((known !== undefined && known !== stamp) || (known === undefined && !c.hasActivity)) {
+      changed = true; // otro challenge con el mismo id, o un reloj sin dueño conocido
+      continue;
+    }
+    nextBook[id] = t;
+    nextStamps[id] = stamp;
+    if (known !== stamp) changed = true;
+  }
+  return { book: changed ? nextBook : book, stamps: nextStamps, changed };
+}

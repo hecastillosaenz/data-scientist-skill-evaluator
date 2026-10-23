@@ -5,7 +5,8 @@ import { readAttempt } from '../attempts/attempt-store';
 import { scanChallenges, type LoadedChallenge } from '../challenges/challenge-fs';
 import { CalibrationError, loadCalibration } from '../generator/calibration';
 import { loadLearning } from '../generator/aprendizaje';
-import { planChallenge, TemaError } from '../generator/plan';
+import { elegirObjetivo } from '../generator/objetivo';
+import { ETAPAS_MAX, ETAPAS_MIN, planChallenge, TemaError } from '../generator/plan';
 import { newConceptId, resolveTema } from '../generator/tema';
 import { withGraphLock } from '../analyst/analyst-service';
 import { scanMaterial } from '../generator/material';
@@ -76,15 +77,22 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
    * Plan de calibración del próximo challenge (R38): qué practicar según el grafo y la evidencia. `?dominio=` es la
    * elección manual opcional; por defecto lo recomienda el grafo. Es de solo lectura: no genera nada.
    */
-  app.get<{ Querystring: { dominio?: string; concepto?: string; tema?: string } }>('/api/plan', async (req, reply) => {
+  app.get<{ Querystring: { dominio?: string; concepto?: string; tema?: string; foco?: string; etapas?: string; proyecto?: string } }>('/api/plan', async (req, reply) => {
     const wanted = req.query.dominio;
     if (wanted !== undefined && !DOMAINS.some((d) => d.id === wanted)) {
       return invalid(reply, [`«dominio» debe ser uno de ${DOMAINS.map((d) => d.id).join(', ')}.`]);
     }
     try {
       const [state, config] = await Promise.all([gatherState(), loadCalibration(opts.repoRoot)]);
-      const { focos } = await loadLearning(opts.repoRoot, state.data.concepts, config, now());
-      const tema = req.query.concepto ? { conceptId: req.query.concepto, texto: (req.query.tema ?? '').slice(0, 120) || req.query.concepto } : undefined;
+      const { focos } = await loadLearning(opts.repoRoot, state.data.concepts, config, now(), req.query.foco ? { focoId: req.query.foco } : undefined);
+      const etapas = req.query.etapas === undefined ? undefined : Number(req.query.etapas);
+      if (etapas !== undefined && (!Number.isInteger(etapas) || etapas < ETAPAS_MIN || etapas > ETAPAS_MAX)) return invalid(reply, [`«etapas» debe ser un entero de ${ETAPAS_MIN} a ${ETAPAS_MAX}.`]);
+      let tema = req.query.concepto ? { conceptId: req.query.concepto, texto: (req.query.tema ?? '').slice(0, 120) || req.query.concepto } : undefined;
+      if (req.query.foco) {
+        const elegido = await elegirObjetivo(opts.repoRoot, req.query.foco, state.data);
+        if (!elegido.ok) return invalid(reply, [elegido.message]);
+        tema ??= elegido.tema;
+      }
       return planChallenge({
         concepts: state.data.concepts,
         challenges: state.data.challenges,
@@ -94,6 +102,8 @@ export function registerStateRoutes(app: FastifyInstance, opts: StateRoutesOptio
         now: now(),
         ...(wanted ? { domain: wanted as DomainId } : {}),
         ...(tema ? { tema } : {}),
+        ...(etapas ? { etapas } : {}),
+        ...(req.query.proyecto === '1' ? { proyecto: true } : {}),
         focos,
       });
     } catch (err) {

@@ -10,7 +10,7 @@ import type { StatePayload } from '../shared/state';
 import type { Challenge } from '../shared/types';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
-const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
+const challenge = JSON.parse(readFileSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'challenge.json'), 'utf8')) as Challenge;
 const stage1 = challenge.stages[0]!;
 let tmp: string;
 let dir: string;

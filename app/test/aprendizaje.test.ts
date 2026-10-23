@@ -79,9 +79,9 @@ describe('objetivos.json (R44)', () => {
     const read = await readObjetivos(tmp, ctx);
     expect(read.focos[0]!.conceptIds).toEqual(['ml:gd']);
   });
-  it('AC-R45d: pausados, logrados y fuera de fechas no influyen', () => {
+  it('AC-R45d: pausados y logrados no influyen; las fechas son solo una referencia (R56)', () => {
     const o = objetivos([foco({ id: 'a' }), foco({ id: 'b', estado: 'pausado' }), foco({ id: 'c', estado: 'logrado' }), foco({ id: 'd', hasta: '2026-01-01' }), foco({ id: 'e', desde: '2027-01-01' })]);
-    expect(focosVigentes(o, NOW).map((f) => f.id)).toEqual(['a']);
+    expect(focosVigentes(o, NOW).map((f) => f.id)).toEqual(['a', 'd', 'e']);
   });
   it('AC-R45c: el material se recorta al máximo configurado, repartido entre focos', () => {
     const ctxGen = contextoGenerador([foco({ material: 'x'.repeat(5000) }), foco({ id: 'b', titulo: 'B', material: 'corto' })], 1000);
@@ -157,7 +157,7 @@ describe('API de tema, conceptos y objetivos', () => {
     expect(readFileSync(objetivosPath(tmp), 'utf8')).toBe(before);
     const get = (await app.inject('/api/objetivos')).json() as { objetivos: Objetivos; limites: { focosActivosMax: number } };
     expect(get.objetivos.focos[0]!.titulo).toBe('Certificación DL');
-    expect(get.limites.focosActivosMax).toBe(3);
+    expect(get.limites.focosActivosMax).toBe(5);
     const plan = (await app.inject('/api/plan')).json() as { focos: string[] };
     expect(plan.focos).toEqual(['Certificación DL']);
   });

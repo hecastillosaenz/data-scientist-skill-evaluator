@@ -1,3 +1,4 @@
+import { formatMinutes } from '../charts/format';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ChevronDown, Sparkles } from 'lucide-react';
@@ -244,7 +245,7 @@ function StageDetail({ stage }: { stage: Stage }) {
       <dl>
         <div><dt>Dominio</dt><dd>{DOMAIN_BY_ID[stage.domain].name}</dd></div>
         <div><dt>Dificultad</dt><dd>{DIFFICULTY_LABEL[stage.difficulty]}</dd></div>
-        <div><dt>Tiempo</dt><dd className="mono">{stage.estimatedMinutes} min</dd></div>
+        <div><dt>Tiempo</dt><dd className="mono">{formatMinutes(stage.estimatedMinutes)}</dd></div>
         <div><dt>Tipo</dt><dd>{MECHANISM_LABEL[stage.mechanism]}</dd></div>
       </dl>
       <p className={styles.conceptsLabel}>Conceptos</p>

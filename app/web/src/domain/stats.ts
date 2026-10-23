@@ -99,6 +99,22 @@ export function weeklyByDomain(evidence: Evidence[], challenges: Challenge[], no
   return days;
 }
 
+/** Actividad de los últimos `days` días (el último es hoy): intentos por dominio y minutos registrados. */
+export function dailyActivity(evidence: Evidence[], challenges: Challenge[], now: Date, days: number): (DayDomainCounts & { minutes: number })[] {
+  const index = stageIndex(challenges);
+  const list = Array.from({ length: days }, (_, i) => ({ day: addDays(now, i - (days - 1)), counts: emptyCounts(), total: 0, minutes: 0 }));
+  const byKey = new Map(list.map((d) => [dayKey(d.day), d]));
+  for (const e of evidence) {
+    const bucket = byKey.get(dayKey(new Date(e.at)));
+    const ref = index.get(e.stageId);
+    if (!bucket || !ref) continue;
+    bucket.counts[ref.stage.domain] += 1;
+    bucket.total += 1;
+    bucket.minutes += e.actualMinutes;
+  }
+  return list;
+}
+
 /** Etapas distintas aprobadas durante la semana de `now`. */
 export function stagesCompletedThisWeek(evidence: Evidence[], now: Date): number {
   const from = startOfWeek(now).getTime();

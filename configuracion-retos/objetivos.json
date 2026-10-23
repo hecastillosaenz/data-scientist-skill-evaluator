@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "rol": "Data Scientist",
+  "focos": [
+    {
+      "id": "certificacion-calculo-para-dat",
+      "titulo": "Certificación Calculo para Data Scientist",
+      "estado": "activo",
+      "conceptIds": [],
+      "material": "Analytically optimize different types of functions commonly used in machine learning using properties of derivatives and gradients \n\nApproximately optimize different types of functions commonly used in machine learning\n\nVisually interpret differentiation of different types of functions commonly used in machine learning\n\nPerform gradient descent in neural networks with different activation and cost functions",
+      "plan": {
+        "estado": "aceptado",
+        "creadoAt": "2026-10-19T23:30:52.514Z",
+        "resumen": "La ruta parte de funciones, exponenciales y derivadas, y pasa por la regla de la cadena, el gradiente y la optimización analítica. Después aplica esas ideas a funciones de costo y al descenso por gradiente, con regresión logística (sigmoide) como puente hacia redes neuronales. Al terminar sabrás optimizar funciones de forma analítica y aproximada, interpretar derivadas en gráficas y ejecutar descenso por gradiente con distintas activaciones y funciones de costo.",
+        "pasos": [
+          {
+            "conceptId": "math:functions-m",
+            "bloom": 2,
+            "porque": "Para leer derivadas en una gráfica primero hay que entender cómo se ven y se comportan las funciones habituales en ML."
+          },
+          {
+            "conceptId": "math:exp-log",
+            "bloom": 2,
+            "porque": "La sigmoide, la entropía cruzada y muchas activaciones se construyen con exponenciales y logaritmos, así que conviene dominar sus propiedades antes de derivarlas."
+          },
+          {
+            "conceptId": "math:derivatives",
+            "bloom": 4,
+            "porque": "Es la base de todo el objetivo: analizar qué significa la pendiente y cómo cambia según el tipo de función permite interpretarla visualmente y usarla para optimizar."
+          },
+          {
+            "conceptId": "math:chain-rule",
+            "bloom": 3,
+            "porque": "Una red neuronal es una composición de funciones, y la regla de la cadena es lo que permite derivarla capa por capa en la retropropagación."
+          },
+          {
+            "conceptId": "math:vectors",
+            "bloom": 2,
+            "porque": "El gradiente y los pesos de una red son vectores, así que hay que manejarlos con soltura antes de pasar a varias variables."
+          },
+          {
+            "conceptId": "math:partial",
+            "bloom": 4,
+            "porque": "Con muchos parámetros hay que calcular el gradiente e interpretar hacia dónde apunta, que es la dirección de máximo crecimiento de la función."
+          },
+          {
+            "conceptId": "math:optimization",
+            "bloom": 5,
+            "porque": "Aquí se encuentran y se evalúan mínimos analíticamente con derivadas y gradientes, y se juzga cuándo ese camino no es viable y hay que aproximar."
+          },
+          {
+            "conceptId": "ml:linreg",
+            "bloom": 2,
+            "porque": "Es el modelo más simple con parámetros que ajustar, y sirve de ejemplo concreto para las funciones de costo y el descenso por gradiente."
+          },
+          {
+            "conceptId": "ml:cost",
+            "bloom": 3,
+            "porque": "Se aplican derivadas parciales al error cuadrático medio para obtener el gradiente de una función de costo real."
+          },
+          {
+            "conceptId": "ml:gd",
+            "bloom": 6,
+            "porque": "Es la aproximación iterativa al mínimo: aquí construyes tu propio descenso por gradiente y compruebas cómo influyen el paso y la convergencia."
+          },
+          {
+            "conceptId": "ml:logreg",
+            "bloom": 3,
+            "porque": "Introduce la sigmoide y la entropía cruzada, y derivarlas con la regla de la cadena es el paso directo hacia una neurona con activación no lineal."
+          },
+          {
+            "conceptId": "training:loss-selection",
+            "bloom": 5,
+            "porque": "Permite comparar funciones de costo (MSE frente a entropía cruzada) y activaciones, y decidir cuál conviene según el problema y las propiedades de su gradiente."
+          },
+          {
+            "conceptId": "training:training-loop",
+            "bloom": 3,
+            "porque": "Cierra la ruta aplicando el descenso por gradiente en un ciclo completo de entrenamiento con épocas, lotes y convergencia, como se hace en una red neuronal."
+          }
+        ]
+      },
+      "carpeta": "material/Calculus For Data Science Deeplearning",
+      "desde": "2026-10-19",
+      "hasta": "2026-11-30"
+    }
+  ]
+}

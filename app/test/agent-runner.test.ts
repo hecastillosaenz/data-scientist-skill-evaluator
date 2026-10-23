@@ -140,3 +140,27 @@ process.stdin.resume(); process.stdin.on('end', () => {
     await expect(runAgent({ message: 'x', bin: '/no/existe/claude' })).rejects.toMatchObject({ code: 'no_claude' });
   });
 });
+
+describe('modelo de la suscripción', () => {
+  it('`model` o CLAUDE_MODEL añaden --model; sin ninguno, se deja el predeterminado de Claude Code', () => {
+    const prev = process.env.CLAUDE_MODEL;
+    delete process.env.CLAUDE_MODEL;
+    try {
+      expect(buildArgs({})).not.toContain('--model');
+      expect(buildArgs({ model: 'opus' }).slice(buildArgs({ model: 'opus' }).indexOf('--model'))[1]).toBe('opus');
+      process.env.CLAUDE_MODEL = 'sonnet';
+      const args = buildArgs({});
+      expect(args[args.indexOf('--model') + 1]).toBe('sonnet');
+    } finally {
+      if (prev === undefined) delete process.env.CLAUDE_MODEL;
+      else process.env.CLAUDE_MODEL = prev;
+    }
+  });
+});
+
+describe('razonamiento del agente', () => {
+  it('parseStreamLine conserva los bloques thinking como eventos aparte del texto', () => {
+    const line = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'thinking', thinking: ' Primero reviso las derivadas. ' }, { type: 'text', text: 'Listo.' }, { type: 'tool_use', name: 'Read', input: { file_path: '/x.pdf' } }] } });
+    expect(parseStreamLine(line)!.events).toEqual([{ type: 'thinking', text: 'Primero reviso las derivadas.' }, { type: 'text', text: 'Listo.' }, { type: 'tool', text: 'Read /x.pdf' }]);
+  });
+});

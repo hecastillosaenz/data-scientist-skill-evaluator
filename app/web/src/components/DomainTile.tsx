@@ -1,4 +1,4 @@
-import { ChartColumn, Sigma } from 'lucide-react';
+import { ChartColumn, Dumbbell, Sigma, Wrench } from 'lucide-react';
 import { siPandas, siPostgresql, siPython, siScikitlearn } from 'simple-icons';
 import type { DomainId } from '../../../shared/types';
 import { DOMAIN_BY_ID } from '../../../shared/domains';
@@ -27,7 +27,7 @@ export function DomainIcon({ domain, color, size = 18 }: { domain: DomainId; col
       </svg>
     );
   }
-  const Glyph = domain === 'math' ? Sigma : ChartColumn;
+  const Glyph = domain === 'math' ? Sigma : domain === 'features' ? Wrench : domain === 'training' ? Dumbbell : ChartColumn;
   return <Glyph size={size} strokeWidth={1.5} aria-hidden="true" color={color ? 'var(--accent)' : 'currentColor'} />;
 }
 

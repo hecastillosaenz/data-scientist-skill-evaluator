@@ -218,6 +218,28 @@ misleading: Gráficos engañosos < viz-principles
 eda: Análisis exploratorio completo < hist, box, scatter, missing
 pipelines-clean: Pipelines de limpieza reproducibles < eda, python:functions
 `,
+  features: `
+numeric-transforms: Transformaciones numéricas (log, raíz, Box-Cox) < ml:scaling, math:exp-log
+binning: Discretización y binning < math:percentiles
+target-encoding: Target encoding y frecuencia < ml:encoding, ml:leakage
+interactions: Interacciones y polinomios < ml:feature-eng
+datetime-features: Variables de fecha y estacionalidad < python:pandas-datetime
+aggregations: Agregaciones por entidad < python:pandas-groupby
+selection-filter: Selección por filtro < ml:feature-selection, math:correlation
+selection-wrapper: Selección por wrapper y embebida < selection-filter, ml:regularization
+leakage-features: Fuga de datos al construir variables < ml:leakage, aggregations
+`,
+  training: `
+baseline: Modelo base y línea de referencia < ml:split, ml:metrics-reg
+loss-selection: Elegir la función de pérdida y la métrica < ml:cost, ml:metrics-clf
+training-loop: Ciclo de entrenamiento < ml:gd, python:loops
+learning-curves: Curvas de aprendizaje < ml:overfit, ml:bias-var
+early-stopping: Early stopping < learning-curves, ml:regularization
+cv-strategies: Estrategias de validación < ml:cv, ml:timeseries-ml
+hyperparam-search: Búsqueda de hiperparámetros < ml:hyperparams, cv-strategies
+ensembles: Ensambles: bagging, boosting y stacking < ml:random-forest, ml:boosting
+model-comparison: Comparar modelos con rigor < cv-strategies, math:hypothesis
+`,
   business: `
 kpis: KPIs y métricas
 funnel: Embudos de conversión < kpis

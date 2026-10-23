@@ -1,0 +1,908 @@
+{
+  "id": "challenge-002",
+  "number": 2,
+  "title": "Cursos en línea: cómo cambia la probabilidad de compra al mover el precio",
+  "dataset": "Cursos en línea y modelo de compra",
+  "difficulty": 1,
+  "recommended": false,
+  "objectives": {
+    "lookingFor": "Que aprendas a leer la derivada como la sensibilidad de la predicción de un modelo: cuánto y en qué dirección cambia la probabilidad de compra cuando mueves una entrada, y qué significa ese número para una decisión.",
+    "outcomes": [
+      "Estimar una pendiente (cambio de la salida por cada unidad de la entrada) con datos reales de una prueba de precios y explicar su signo y su tamaño",
+      "Calcular las derivadas parciales de un modelo con varias entradas y decir qué variable mueve más la predicción",
+      "Aplicar la regla de la cadena a una combinación lineal seguida de una sigmoide para obtener la sensibilidad de la probabilidad respecto del precio",
+      "Calcular con SQL la probabilidad predicha y su sensibilidad al precio para cada curso del catálogo",
+      "Traducir la sensibilidad a una elasticidad de precio y recomendar, con una limitación explícita, si conviene bajar o subir un precio"
+    ],
+    "skills": [
+      "Derivadas",
+      "Derivadas parciales",
+      "Regla de la cadena",
+      "Regresión logística",
+      "Elasticidad de precios",
+      "SQL con funciones numéricas"
+    ]
+  },
+  "scenario": "Eres analista de datos en **AulaDatos**, una plataforma que vende cursos en línea de forma individual. El equipo comercial tiene un modelo de regresión logística que predice la probabilidad de que una persona que visita la página de un curso lo compre. Debes explicar al equipo qué le pasa a esa probabilidad cuando se mueve el precio, los minutos de vista previa o la valoración, para decidir en qué cursos conviene bajar el precio y en cuáles no vale la pena.",
+  "task": "Trabajas con tres tablas: el catálogo de cursos (`cursos`), los coeficientes del modelo ya entrenado (`coeficientes_modelo`) y una prueba de precios de un curso (`pruebas_precio`).\n\n**Cómo funciona el modelo.** Para un curso, primero se calcula una puntuación $z$ (se llama *logit*) sumando el intercepto y cada variable multiplicada por su coeficiente:\n\n$$z = \\beta_0 + \\beta_{precio}\\cdot precio + \\beta_{min}\\cdot minutos + \\beta_{val}\\cdot valoracion$$\n\nLuego la puntuación se convierte en probabilidad con la función sigmoide:\n\n$$p = \\frac{1}{1+e^{-z}}$$\n\ndonde $p$ es la probabilidad de compra (entre 0 y 1), $e$ es la constante de Euler (≈ 2,718) y $\\beta$ son los coeficientes de la tabla `coeficientes_modelo`.\n\n**Qué debes responder, en cinco etapas:**\n\n1. Con la prueba de precios, ¿cuánto cambian las compras por cada dólar que sube el precio?\n2. En el modelo, ¿cuánto cambia la puntuación $z$ por cada unidad de cada variable, manteniendo las demás fijas?\n3. ¿Cuánto cambia la probabilidad $p$ por cada dólar, combinando la sigmoide con la puntuación?\n4. ¿Cuánto vale esa sensibilidad en cada curso del catálogo y por qué no es la misma en todos?\n5. ¿Qué dice la elasticidad de precio, $E = \\frac{dp}{d\\,precio}\\cdot\\frac{precio}{p}$, sobre dónde conviene mover precios?",
+  "data": {
+    "engine": "duckdb",
+    "tables": [
+      {
+        "name": "cursos",
+        "description": "Catálogo de cursos con el precio vigente y las variables que usa el modelo.",
+        "columns": [
+          {
+            "name": "curso_id",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "nombre",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "categoria",
+            "type": "VARCHAR",
+            "nullable": false
+          },
+          {
+            "name": "precio_usd",
+            "type": "DOUBLE",
+            "nullable": false
+          },
+          {
+            "name": "minutos_vista_previa",
+            "type": "DOUBLE",
+            "nullable": false
+          },
+          {
+            "name": "valoracion",
+            "type": "DOUBLE",
+            "nullable": false
+          }
+        ],
+        "rowCount": 10,
+        "sampleRows": [
+          [
+            1,
+            "Python para análisis",
+            "Programación",
+            30,
+            6,
+            4.5
+          ],
+          [
+            2,
+            "SQL desde cero",
+            "Datos",
+            25,
+            5,
+            4.6
+          ],
+          [
+            3,
+            "Estadística aplicada",
+            "Datos",
+            40,
+            4,
+            4.2
+          ],
+          [
+            4,
+            "Excel avanzado",
+            "Oficina",
+            20,
+            8,
+            4.3
+          ],
+          [
+            5,
+            "Machine Learning inicial",
+            "Datos",
+            55,
+            7,
+            4.7
+          ],
+          [
+            6,
+            "Visualización con Tableau",
+            "Datos",
+            35,
+            5,
+            4
+          ],
+          [
+            7,
+            "Power BI esencial",
+            "Oficina",
+            28,
+            6,
+            4.4
+          ],
+          [
+            8,
+            "Cálculo para ciencia de datos",
+            "Matemáticas",
+            45,
+            3,
+            4.1
+          ]
+        ]
+      },
+      {
+        "name": "coeficientes_modelo",
+        "description": "Coeficientes de la regresión logística ya entrenada: un renglón por término.",
+        "columns": [
+          {
+            "name": "termino",
+            "type": "VARCHAR",
+            "pk": true
+          },
+          {
+            "name": "coeficiente",
+            "type": "DOUBLE",
+            "nullable": false
+          }
+        ],
+        "rowCount": 4,
+        "sampleRows": [
+          [
+            "intercepto",
+            -1
+          ],
+          [
+            "precio_usd",
+            -0.08
+          ],
+          [
+            "minutos_vista_previa",
+            0.05
+          ],
+          [
+            "valoracion",
+            0.6
+          ]
+        ]
+      },
+      {
+        "name": "pruebas_precio",
+        "description": "Prueba de precios del curso 1: cada precio se mostró a 1000 visitas y se contaron las compras.",
+        "columns": [
+          {
+            "name": "prueba_id",
+            "type": "INTEGER",
+            "pk": true
+          },
+          {
+            "name": "curso_id",
+            "type": "INTEGER",
+            "fk": {
+              "table": "cursos",
+              "column": "curso_id"
+            },
+            "nullable": false
+          },
+          {
+            "name": "precio_usd",
+            "type": "DOUBLE",
+            "nullable": false
+          },
+          {
+            "name": "visitas",
+            "type": "INTEGER",
+            "nullable": false
+          },
+          {
+            "name": "compras",
+            "type": "INTEGER",
+            "nullable": false
+          }
+        ],
+        "rowCount": 8,
+        "sampleRows": [
+          [
+            1,
+            1,
+            20,
+            1000,
+            310
+          ],
+          [
+            2,
+            1,
+            25,
+            1000,
+            262
+          ],
+          [
+            3,
+            1,
+            30,
+            1000,
+            218
+          ],
+          [
+            4,
+            1,
+            35,
+            1000,
+            180
+          ],
+          [
+            5,
+            1,
+            40,
+            1000,
+            147
+          ],
+          [
+            6,
+            1,
+            45,
+            1000,
+            119
+          ],
+          [
+            7,
+            1,
+            50,
+            1000,
+            96
+          ],
+          [
+            8,
+            1,
+            55,
+            1000,
+            77
+          ]
+        ]
+      }
+    ],
+    "seedSql": "CREATE TABLE cursos (curso_id INTEGER PRIMARY KEY, nombre VARCHAR NOT NULL, categoria VARCHAR NOT NULL, precio_usd DOUBLE NOT NULL, minutos_vista_previa DOUBLE NOT NULL, valoracion DOUBLE NOT NULL);\nINSERT INTO cursos VALUES (1, 'Python para análisis', 'Programación', 30.0, 6.0, 4.5), (2, 'SQL desde cero', 'Datos', 25.0, 5.0, 4.6), (3, 'Estadística aplicada', 'Datos', 40.0, 4.0, 4.2), (4, 'Excel avanzado', 'Oficina', 20.0, 8.0, 4.3), (5, 'Machine Learning inicial', 'Datos', 55.0, 7.0, 4.7), (6, 'Visualización con Tableau', 'Datos', 35.0, 5.0, 4.0), (7, 'Power BI esencial', 'Oficina', 28.0, 6.0, 4.4), (8, 'Cálculo para ciencia de datos', 'Matemáticas', 45.0, 3.0, 4.1), (9, 'Álgebra lineal práctica', 'Matemáticas', 38.0, 4.0, 3.9), (10, 'Storytelling con datos', 'Oficina', 22.0, 9.0, 4.8);\nCREATE TABLE coeficientes_modelo (termino VARCHAR PRIMARY KEY, coeficiente DOUBLE NOT NULL);\nINSERT INTO coeficientes_modelo VALUES ('intercepto', -1.0), ('precio_usd', -0.08), ('minutos_vista_previa', 0.05), ('valoracion', 0.6);\nCREATE TABLE pruebas_precio (prueba_id INTEGER PRIMARY KEY, curso_id INTEGER NOT NULL REFERENCES cursos(curso_id), precio_usd DOUBLE NOT NULL, visitas INTEGER NOT NULL, compras INTEGER NOT NULL);\nINSERT INTO pruebas_precio VALUES (1, 1, 20.0, 1000, 310), (2, 1, 25.0, 1000, 262), (3, 1, 30.0, 1000, 218), (4, 1, 35.0, 1000, 180), (5, 1, 40.0, 1000, 147), (6, 1, 45.0, 1000, 119), (7, 1, 50.0, 1000, 96), (8, 1, 55.0, 1000, 77);"
+  },
+  "businessQuestions": [
+    {
+      "id": "challenge-002-bq1",
+      "text": "La prueba de precios del curso 1 muestra que cada dólar adicional resta compras, pero la pérdida por dólar no es igual en todos los tramos. ¿Qué le dirías al equipo comercial sobre dónde subir o bajar el precio de ese curso y qué dato adicional pedirías antes de decidir?",
+      "reflectionGuide": "Parte de la idea cotidiana: una pendiente es «cuánto pierdo por cada dólar que subo». Compara los tramos baratos con los caros y pregúntate si la pérdida por dólar se achica o crece. Un buen cierre menciona que la prueba cubre solo un curso y un rango de precios, que no mide ingresos (precio por compras) ni margen, y que pedirías el costo por venta o el ingreso total por tramo."
+    },
+    {
+      "id": "challenge-002-bq2",
+      "text": "El modelo dice que la valoración tiene un coeficiente mucho mayor que el de los minutos de vista previa, pero la valoración es difícil de cambiar. ¿Qué variable recomendarías mover primero para subir las compras y cómo justificarías que 'mayor coeficiente' no siempre significa 'mejor palanca'?",
+      "reflectionGuide": "Piensa en la palanca de una balanza: importa cuánto efecto tiene mover una unidad y también cuánto cuesta moverla y qué rango es realista. Una unidad de valoración es un salto enorme (de 4,0 a 5,0) frente a un minuto más de vista previa. Menciona el costo de cada cambio, el rango realista de cada variable y que el efecto en probabilidad depende del punto donde está el curso."
+    },
+    {
+      "id": "challenge-002-bq3",
+      "text": "Con la elasticidad calculada por curso, ¿en qué cursos bajarías el precio para vender más y en cuáles lo dejarías o subirías? Explica la recomendación a una persona no técnica e incluye una limitación del modelo.",
+      "reflectionGuide": "Traduce la elasticidad a una frase como «si subo el precio 1 %, la probabilidad de compra baja aproximadamente X %». Si ese porcentaje es grande, los compradores son sensibles al precio y bajar el precio puede compensar; si es pequeño, subir el precio casi no espanta compradores. Limitaciones posibles: el modelo es correlacional (no prueba causalidad), la elasticidad es local (solo vale para cambios pequeños cerca del precio actual), y no se considera el margen ni la cantidad de visitas."
+    }
+  ],
+  "finalTest": [
+    {
+      "conceptId": "math:derivatives",
+      "bloom": 2,
+      "kind": "numerica",
+      "prompt": "Un curso en línea vende cada semana $N(p) = 600 - 0{,}5\\,p^2$ inscripciones cuando su precio es $p$ dólares.\n\nCalcula la derivada $N'(p)$ en $p = 20$ (\\$20). Responde con el número, en inscripciones por cada dólar adicional.",
+      "answer": -20,
+      "tolerance": 0.01,
+      "explanation": "La derivada de $600 - 0{,}5p^2$ es $-p$. En $p = 20$ vale $-20$. Cerca de \\$20, cada dólar extra de precio hace perder unas 20 inscripciones por semana. El error típico es olvidar el exponente al derivar (dar $-0{,}5\\cdot 20 = -10$) o evaluar la función en lugar de su derivada.",
+      "id": "challenge-002-t1"
+    },
+    {
+      "conceptId": "math:partial",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "Un modelo de un curso en línea calcula la puntuación $z = 2 - 0{,}05\\,\\text{precio} + 0{,}4\\,\\text{lecciones\\_gratis}$. El precio está en dólares y `lecciones_gratis` es el número de lecciones de prueba. Su gradiente es $\\nabla z = (-0{,}05,\\; 0{,}4)$.\n\n¿Cuál es la lectura correcta de las derivadas parciales?",
+      "options": [
+        "Si subes el precio en \\$1 y dejas fija la cantidad de lecciones gratis, $z$ baja 0,05; si agregas una lección gratis y dejas fijo el precio, $z$ sube 0,4.",
+        "Subir el precio en \\$1 hace que la probabilidad de compra baje exactamente 5 puntos porcentuales.",
+        "El precio no importa, porque su coeficiente (0,05) es menor que el de las lecciones gratis.",
+        "Las dos derivadas se suman: $-0{,}05 + 0{,}4 = 0{,}35$ es el efecto total de mover ambas variables a la vez, sea cual sea el cambio."
+      ],
+      "correctIndex": 0,
+      "explanation": "Una derivada parcial mide el efecto de una variable manteniendo las demás fijas. Esto aplica a $z$, la puntuación, no a la probabilidad. La segunda opción confunde $z$ con la probabilidad. En la tercera, un coeficiente pequeño no equivale a efecto nulo: depende de cuánto se mueva el precio. En la cuarta, sumar las parciales solo tiene sentido si ambas variables suben exactamente 1 unidad.",
+      "id": "challenge-002-t2"
+    },
+    {
+      "conceptId": "math:chain-rule",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "La probabilidad de compra es $p = \\sigma(z)$, con $\\sigma(z) = \\dfrac{1}{1 + e^{-z}}$, y $z = 2 - 0{,}1\\,\\text{precio}$.\n\nCuando el precio es \\$20, calcula $\\dfrac{dp}{d\\,\\text{precio}}$ con la regla de la cadena. Dato útil: $\\sigma'(z) = \\sigma(z)\\,(1 - \\sigma(z))$.",
+      "answer": -0.025,
+      "tolerance": 0.0005,
+      "explanation": "Con precio 20, $z = 2 - 2 = 0$, así que $\\sigma(0) = 0{,}5$ y $\\sigma'(0) = 0{,}5\\cdot 0{,}5 = 0{,}25$. Además $dz/d\\,\\text{precio} = -0{,}1$. Por la regla de la cadena, $dp/d\\,\\text{precio} = \\sigma'(z)\\cdot(-0{,}1) = 0{,}25\\cdot(-0{,}1) = -0{,}025$. Cada dólar extra baja la probabilidad unos 2,5 puntos porcentuales. El error típico es dar solo $-0{,}1$, que olvida multiplicar por la derivada de la sigmoide.",
+      "id": "challenge-002-t3"
+    },
+    {
+      "conceptId": "ml:logreg",
+      "bloom": 2,
+      "kind": "opcion_multiple",
+      "prompt": "Con el modelo logístico $p = \\sigma(2 - 0{,}1\\,\\text{precio})$, la pendiente de la probabilidad respecto al precio es $-0{,}1\\cdot p(1-p)$. Vale $-0{,}025$ en precio \\$20, donde $p = 0{,}5$. En precio \\$50, donde $z = -3$ y $p \\approx 0{,}047$, vale aproximadamente $-0{,}0045$.\n\n¿Qué conclusión es correcta?",
+      "options": [
+        "La probabilidad es más sensible al precio cerca de \\$20, donde $p = 0{,}5$ y $p(1-p)$ es máxima; en \\$50 la curva ya está casi plana.",
+        "El efecto del precio es el mismo en cualquier punto, porque el coeficiente $-0{,}1$ es constante.",
+        "En \\$50 el precio importa más, porque ahí la probabilidad es más baja y tiene más margen para caer.",
+        "La pendiente cambia de signo entre \\$20 y \\$50, por lo que a precios altos subir el precio aumenta la compra."
+      ],
+      "correctIndex": 0,
+      "explanation": "El coeficiente es constante en la escala de $z$, pero no en la de la probabilidad: la pendiente es $-0{,}1\\cdot p(1-p)$, que depende del punto donde estés. Es máxima en valor absoluto cuando $p = 0{,}5$. En \\$50 la probabilidad ya es casi 0 y apenas puede bajar más. El signo no cambia nunca, porque $p(1-p)>0$ siempre.",
+      "id": "challenge-002-t4"
+    },
+    {
+      "conceptId": "business:pricing",
+      "bloom": 3,
+      "kind": "numerica",
+      "prompt": "La demanda semanal de un curso es $q(p) = 1000 - 20\\,p$, con $p$ en dólares.\n\nCalcula la elasticidad precio $E = \\dfrac{dq}{dp}\\cdot\\dfrac{p}{q}$ en $p = 30$ (\\$30).",
+      "answer": -1.5,
+      "tolerance": 0.01,
+      "explanation": "En $p = 30$, $q = 1000 - 600 = 400$. La derivada es $dq/dp = -20$. Entonces $E = -20\\cdot 30/400 = -1{,}5$. Un 1 % más de precio reduce la demanda cerca de 1,5 %. Como $|E| > 1$, la demanda es elástica y subir el precio reduciría los ingresos. El error típico es responder $-20$, que es la derivada en unidades absolutas, no la elasticidad.",
+      "id": "challenge-002-t5"
+    },
+    {
+      "conceptId": "business:pricing",
+      "bloom": 3,
+      "kind": "texto",
+      "prompt": "Tu modelo de compra de cursos da, en el precio actual de \\$20, una pendiente de $-0{,}025$ de probabilidad por dólar, con probabilidad de compra del 50 %. La gerencia pregunta: «¿Subimos el precio a \\$25?».\n\nExplica en 3 a 5 frases qué significa ese $-0{,}025$, cómo lo usarías para estimar el efecto de la subida y qué cuidado debes tener con esa estimación.",
+      "rubric": "Una buena respuesta incluye: (1) interpretar la derivada como el cambio aproximado de la probabilidad por cada dólar adicional (unos 2,5 puntos porcentuales menos por dólar); (2) una estimación lineal razonable de la subida, de unos 5 dólares por -0,025, que da -0,125, es decir, de 50 % a alrededor de 37,5 %; (3) la advertencia de que la derivada es local: la pendiente cambia con el precio (la sigmoide se aplana), así que en un salto de \\$5 la estimación es aproximada y conviene recalcular con el modelo o evaluar en puntos intermedios; (4) opcionalmente, mencionar que la decisión debe considerar el ingreso por compra y no solo la probabilidad. Se penaliza confundir puntos porcentuales con porcentaje relativo o afirmar que el efecto es exacto o constante.",
+      "explanation": "La derivada es una pendiente local: dice cuánto cambia la probabilidad por unidad de precio justo en el punto \\$20. Para un cambio pequeño sirve como aproximación ($\\Delta p \\approx -0{,}025\\cdot 5 = -0{,}125$). Para un cambio grande la pendiente cambia, por eso hay que verificar con el modelo completo.",
+      "id": "challenge-002-t6"
+    }
+  ],
+  "stages": [
+    {
+      "id": "challenge-002-s1",
+      "challengeId": "challenge-002",
+      "number": 1,
+      "title": "La pendiente: cuánto cambian las compras por dólar",
+      "domain": "math",
+      "difficulty": 1,
+      "bloom": 4,
+      "estimatedMinutes": 90,
+      "mechanism": "rubric_claude",
+      "description": "Con la tabla `pruebas_precio` calcula, para cada tramo entre dos precios consecutivos, la **pendiente**: el cambio en las compras dividido entre el cambio en el precio (compras por dólar). Esa pendiente es la versión numérica de la derivada. Explica por escrito qué significa su signo, qué significa su tamaño y si la pérdida por dólar es la misma en todos los tramos.",
+      "conceptIds": [
+        "math:derivatives"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "1. Cuánto cambia algo por cada unidad que mueves otra cosa",
+            "body": "**La idea cotidiana.** Mucha gente quiere saber algo así: «si subo esto un poco, ¿cuánto se mueve aquello?». La respuesta es un número con unidades: *cuánto cambia el resultado por cada unidad que cambia la entrada*.\n\n**Analogía.** Un taxi cobra por kilómetro. Si recorres 2 km pagas \\$6 y si recorres 5 km pagas \\$15, entonces cada km adicional cuesta \\$(15 − 6) / (5 − 2) = \\$3. Ese «\\$3 por km» es la velocidad a la que sube la cuenta al mover la distancia.\n\n**Mini ejemplo a mano (otro contexto).** Una panadería vende 120 panes a \\$1,00 y 100 panes a \\$1,50.\n\n| Antes | Después | Cambio |\n|---|---|---|\n| precio 1,00 | precio 1,50 | +0,50 |\n| panes 120 | panes 100 | −20 |\n\nPor cada dólar de aumento se pierden $-20 / 0{,}5 = -40$ panes.\n\n**Nombre técnico.** Se llama **tasa de cambio** (o cambio por unidad):\n\n$$\\text{tasa} = \\frac{\\Delta y}{\\Delta x}$$\n\ndonde $x$ es la entrada (aquí el precio), $y$ es la salida (aquí las compras) y $\\Delta$ («delta») significa «valor final menos valor inicial».\n\n**Para este reto.** Tu tabla `pruebas_precio` te da, para un mismo curso, las compras a precios distintos. La tasa de cambio dice cuántas compras se pierden por cada dólar que subes el precio."
+          },
+          {
+            "title": "2. De la pendiente entre dos puntos a la derivada",
+            "body": "**La idea cotidiana.** Si dibujas las compras contra el precio y unes dos puntos vecinos con una regla, la inclinación de esa regla es la pendiente de ese tramo. Si los dos puntos se acercan tanto que casi se tocan, la pendiente describe cómo cambia la curva justo en ese lugar.\n\n**Analogía.** El velocímetro de un coche no mide el promedio de todo el viaje: mide qué tan rápido vas *ahora*. Se parece a medir la distancia recorrida en un intervalo cada vez más corto.\n\n**Mini ejemplo a mano.** Sea $f(x)=x^2$ y miramos cerca de $x=3$:\n\n| tramo | $\\Delta y / \\Delta x$ |\n|---|---|\n| de 3 a 4 | $(16-9)/(4-3)=7$ |\n| de 3 a 3,5 | $(12{,}25-9)/0{,}5=6{,}5$ |\n| de 3 a 3,1 | $(9{,}61-9)/0{,}1=6{,}1$ |\n\nAl acortar el tramo el valor se acerca a 6, que es la derivada de $x^2$ en $x=3$ (porque $f'(x)=2x$).\n\n**Nombre técnico.** La **derivada** es el límite de la pendiente cuando el tramo se encoge:\n\n$$f'(x)=\\lim_{h\\to 0}\\frac{f(x+h)-f(x)}{h}$$\n\ndonde $f$ es la función, $x$ el punto donde miras y $h$ el tamaño (muy pequeño) del tramo. Con datos reales no puedes hacer $h\\to 0$: solo tienes precios separados por \\$5. La pendiente entre dos precios consecutivos es una **aproximación numérica** de la derivada.\n\n**Para este reto.** En la etapa 1 calcularás esa aproximación entre precios consecutivos. En las etapas siguientes, el modelo te dará la derivada exacta con fórmulas."
+          },
+          {
+            "title": "3. Qué dicen el signo y el tamaño de la pendiente",
+            "body": "**La idea cotidiana.** El **signo** responde «¿sube o baja?» y el **tamaño** (el valor sin signo) responde «¿qué tan rápido?».\n\n**Analogía.** Subir una cuesta es pendiente positiva y bajarla es negativa. Una rampa suave y una pared vertical tienen el mismo signo pero distinto tamaño.\n\n**Mini ejemplo a mano.** Tres tramos de otra tienda, todos medidos en unidades vendidas por dólar:\n\n| tramo | pendiente | lectura |\n|---|---|---|\n| A | $-12$ | sube el precio $\\Rightarrow$ bajan 12 ventas por dólar |\n| B | $-3$ | bajan solo 3 ventas por dólar |\n| C | $+2$ | suben 2 ventas por dólar |\n\nA y B tienen el mismo signo y A es 4 veces más sensible que B. C indicaría algo raro: que la demanda *sube* al subir el precio.\n\n**Nombre técnico.** Pendiente negativa = función **decreciente**; positiva = **creciente**; cercana a 0 = casi **plana**. La magnitud $|\\Delta y/\\Delta x|$ es la **sensibilidad**.\n\n**Trampa típica.** El orden de la resta importa. Si restas «anterior − actual» en el numerador pero «actual − anterior» en el denominador, el signo se invierte y lees al revés que subir el precio aumenta las compras. Usa siempre el mismo orden en ambos.\n\n**Para este reto.** Debes explicar por escrito, con unidades («compras por dólar»), qué significa que la pendiente sea negativa y qué significa que un tramo sea más grande en magnitud que otro."
+          },
+          {
+            "title": "4. Cuando la curva no es una recta, la pendiente cambia de tramo en tramo",
+            "body": "**La idea cotidiana.** En una recta, cada dólar adicional cuesta lo mismo en cualquier parte. En una curva no: la pendiente depende de dónde estés.\n\n**Analogía.** Un tobogán es muy empinado al inicio y casi plano al final. Si usas un solo número («bajada promedio») para describirlo, te equivocas en ambos extremos.\n\n**Mini ejemplo a mano.** Un curso distinto, con visitas fijas y compras así:\n\n| precio | compras | pendiente del tramo |\n|---|---|---|\n| 10 | 200 | — |\n| 20 | 120 | $(120-200)/10=-8$ |\n| 30 | 90 | $(90-120)/10=-3$ |\n| 40 | 80 | $(80-90)/10=-1$ |\n\nLa pendiente global (de 10 a 40) es $(80-200)/30=-4$, pero ningún tramo individual vale $-4$: el primero pierde 8 por dólar y el último solo 1.\n\n**Nombre técnico.** Cuando la derivada no es constante, la función es **no lineal**. La pendiente global entre los extremos se llama **tasa de cambio promedio**; la de cada tramo (o la derivada) es la **tasa de cambio local**.\n\n**Para este reto.** Esto es lo que debes comprobar con la tabla de precios: ¿la pérdida de compras por dólar es la misma en todos los tramos? La respuesta anticipa por qué, más adelante, el efecto del precio sobre la probabilidad de compra depende del curso y del punto en que esté."
+          }
+        ],
+        "workedExample": {
+          "domain": "Reparto a domicilio: tarifa de envío y pedidos",
+          "body": "Una app de reparto probó cuatro tarifas de envío en una misma zona, con el mismo número de visitas por prueba:\n\n| tarifa de envío (USD) | pedidos |\n|---|---|\n| 1 | 400 |\n| 2 | 340 |\n| 3 | 295 |\n| 4 | 265 |\n\n**Paso 1 · Cambios entre tramos consecutivos.** Se resta siempre «actual − anterior», tanto en pedidos como en tarifa.\n\n| tramo | $\\Delta$ pedidos | $\\Delta$ tarifa | pendiente |\n|---|---|---|---|\n| 1 → 2 | $340-400=-60$ | $1$ | $-60$ |\n| 2 → 3 | $295-340=-45$ | $1$ | $-45$ |\n| 3 → 4 | $265-295=-30$ | $1$ | $-30$ |\n\n**Paso 2 · Pendiente global.** $(265-400)/(4-1)=-135/3=-45$ pedidos por dólar.\n\n**Paso 3 · Lectura.**\n- *Signo negativo*: subir la tarifa reduce los pedidos.\n- *Tamaño*: entre 1 y 2 USD cada dólar extra cuesta 60 pedidos; entre 3 y 4 USD solo 30.\n- *¿Igual en todos los tramos?* No. La pendiente global ($-45$) coincide con la del tramo del medio, pero oculta que el primer tramo es mucho más sensible y el último mucho menos.\n\n**Verificación:** el promedio de las tres pendientes es $(-60-45-30)/3=-45$, igual a la pendiente global porque los tramos miden lo mismo (1 USD). La decisión práctica sería no subir la tarifa en la zona de tarifas bajas, donde se pierde más."
+        },
+        "steps": [
+          "Mira la tabla `pruebas_precio` y quédate solo con las filas del curso de la prueba, ordenadas de menor a mayor precio. Anota cuántos precios hay y cuántos tramos consecutivos saldrán.",
+          "Para cada fila, trae el precio y las compras de la fila anterior (en SQL, una función de ventana que mire hacia atrás una fila; en papel, una segunda columna desplazada).",
+          "Calcula en cada tramo el cambio de compras y el cambio de precio, restando siempre «fila actual − fila anterior» en los dos.",
+          "Divide el cambio de compras entre el cambio de precio para obtener la pendiente del tramo, en compras por dólar. Excluye la primera fila, que no tiene tramo previo.",
+          "Calcula también una sola pendiente entre el primer y el último precio para compararla con las de los tramos.",
+          "Escribe la interpretación: qué significa el signo, qué significa el tamaño con sus unidades, y si la pérdida por dólar es igual en todos los tramos (con los valores que lo muestren).",
+          "Revisa unidades y orden de las restas, y comprueba que el número de pendientes coincide con el número de tramos."
+        ],
+        "hints": [
+          "Antes de calcular, adivina: si subes el precio de un curso, ¿esperas más o menos compras? Eso te dice qué signo debería salir.",
+          "Fíjate que los precios están separados por una cantidad constante. ¿Qué te dice eso sobre cómo comparar los tramos entre sí?",
+          "Para tener «el valor de la fila de antes» al lado del valor actual, piensa en cómo traer una columna desplazada una posición, respetando el orden por precio.",
+          "Piensa qué pasa con la primera fila, que no tiene fila anterior: ¿debería aparecer un tramo para ella?",
+          "Después de tener todas las pendientes, mira cómo evolucionan de arriba hacia abajo: ¿se mantienen, crecen o se achican en tamaño?",
+          "Al interpretar, di siempre las unidades del número y piensa qué le dirías a alguien del equipo comercial que quiere subir el precio en un solo punto de la tabla."
+        ],
+        "research": [
+          {
+            "conceptId": "math:derivatives",
+            "why": "Entender la derivada como «cuánto cambia la salida por unidad de entrada» es la base de toda la lectura del reto.",
+            "searchEs": "tasa de cambio y pendiente entre dos puntos explicación sencilla",
+            "searchEn": "average rate of change slope between two points explained"
+          },
+          {
+            "conceptId": "math:derivatives",
+            "why": "Te muestra cómo la pendiente entre dos puntos se convierte en la derivada al acercar los puntos.",
+            "searchEs": "derivada como límite del cociente incremental recta secante y tangente",
+            "searchEn": "derivative as limit of difference quotient secant and tangent line"
+          },
+          {
+            "conceptId": "math:derivatives",
+            "why": "Te ayuda a interpretar signo y magnitud de la derivada, que es lo que debes explicar en esta etapa.",
+            "searchEs": "interpretar el signo de la derivada función creciente y decreciente",
+            "searchEn": "interpreting sign and magnitude of the derivative increasing decreasing function"
+          },
+          {
+            "conceptId": "math:derivatives",
+            "why": "Cuando los datos son una tabla y no una fórmula, la derivada se aproxima con diferencias entre filas vecinas, como en tu prueba de precios.",
+            "searchEs": "derivada numérica diferencias finitas con datos tabulados",
+            "searchEn": "numerical derivative finite differences from tabulated data"
+          }
+        ],
+        "deliverables": [
+          "Una tabla (o lista) con las 7 pendientes de los tramos consecutivos del curso, ordenadas por precio creciente, cada una identificada por su tramo (por ejemplo «de 20 a 25») y expresada en compras por dólar con 1 decimal.",
+          "Las pendientes calculadas son: 20→25: −9,6; 25→30: −8,8; 30→35: −7,6; 35→40: −6,6; 40→45: −5,6; 45→50: −4,6; 50→55: −3,8 (la primera fila, a 20 USD, no tiene tramo previo).",
+          "Se calcula con el mismo orden de resta en numerador y denominador (actual − anterior), de modo que todas las pendientes son negativas.",
+          "Interpretación del signo: negativo significa que al subir el precio bajan las compras (relación inversa); se escribe con unidades, por ejemplo «−9,6 compras por dólar de aumento» sobre 1000 visitas.",
+          "Interpretación del tamaño: un valor más grande en magnitud significa mayor sensibilidad; el tramo de 20 a 25 USD (−9,6) es unas 2,5 veces más sensible que el de 50 a 55 USD (−3,8).",
+          "Conclusión explícita de que la pérdida por dólar NO es la misma en todos los tramos: es mayor en precios bajos y se va reduciendo al subir el precio, es decir, la relación es una curva y no una recta.",
+          "Menciona la pendiente global entre 20 y 55 USD (≈ −6,66 compras por dólar) y explica por qué no describe bien ningún tramo concreto (sobreestima la pérdida en precios altos y la subestima en precios bajos).",
+          "Conecta con la derivada: indica que cada pendiente es una aproximación numérica de la derivada en ese tramo, y que la derivada también cambia de un punto a otro.",
+          "Terminado cuando: tienes las 7 pendientes con unidades, has explicado signo, tamaño y variación entre tramos, y has dicho en una frase qué implica para decidir si conviene subir o bajar el precio en distintos rangos."
+        ],
+        "solution": {
+          "expectedResult": "Para el curso 1 (1000 visitas en cada prueba) hay 8 precios y por tanto 7 tramos. Pendiente = (compras actuales − compras previas) / (precio actual − precio previo):\n\n| tramo | Δ compras | Δ precio | pendiente (compras por USD) |\n|---|---|---|---|\n| 20 → 25 | 262 − 310 = −48 | 5 | −9,6 |\n| 25 → 30 | 218 − 262 = −44 | 5 | −8,8 |\n| 30 → 35 | 180 − 218 = −38 | 5 | −7,6 |\n| 35 → 40 | 147 − 180 = −33 | 5 | −6,6 |\n| 40 → 45 | 119 − 147 = −28 | 5 | −5,6 |\n| 45 → 50 | 96 − 119 = −23 | 5 | −4,6 |\n| 50 → 55 | 77 − 96 = −19 | 5 | −3,8 |\n\nPendiente global de 20 a 55: (77 − 310) / 35 = −233/35 ≈ −6,66 compras por USD.",
+          "reasoning": "1) Se ordenan las pruebas del curso 1 por precio. 2) Para cada fila se trae el precio y las compras de la fila previa. 3) Se resta «actual − previa» en ambas variables y se divide: $m=\\Delta \\text{compras}/\\Delta \\text{precio}$. 4) Como todos los tramos miden 5 USD, la comparación es directa. 5) Las pendientes pasan de −9,6 a −3,8: son todas negativas y su valor absoluto decrece de forma sostenida (cada tramo pierde unos 0,8 a 1,2 menos que el anterior: 0,8; 1,2; 1,0; 1,0; 1,0; 0,8). Por eso la curva de compras es decreciente y convexa (se aplana a medida que sube el precio). 6) La pendiente global −6,66 es solo un promedio: el primer tramo pierde 2,94 compras por dólar más que ese promedio y el último pierde 2,86 menos.",
+          "conceptLinks": "Derivadas (math:derivatives): la pendiente de cada tramo es la aproximación numérica de la derivada de «compras» respecto del «precio». Signo = dirección del efecto; magnitud = sensibilidad; variación entre tramos = la derivada no es constante porque la función no es una recta. Funciones (prerrequisito): la relación precio → compras se lee como una función $f(\\text{precio})$.",
+          "businessInterpretation": "En precios bajos (20–30 USD) cada dólar de aumento hace perder entre 8,8 y 9,6 compras de cada 1000 visitas; en precios altos (45–55 USD) solo 3,8 a 4,6. Subir el precio duele más donde ya es barato y la demanda es más sensible. Como referencia, el ingreso (precio × compras) es de 6200 USD a 20, 6550 a 25, 6540 a 30 y 6300 a 35, así que perder compras no siempre significa perder ingresos. Limitación: son datos de una sola prueba de un solo curso (con 1000 visitas por precio y sin medir el ruido aleatorio), y las pendientes solo valen dentro del rango probado de 20 a 55 USD; no se pueden extrapolar a otros cursos ni a precios fuera del rango.",
+          "commonError": "Usar una sola pendiente para todo: dividir (77 − 310)/(55 − 20) = −6,66 y concluir «cada dólar cuesta 6,7 compras» en cualquier precio. Eso subestima la pérdida real a 20–25 USD (−9,6) en unas 2,9 compras por dólar y la sobreestima a 50–55 USD (−3,8) en unas 2,9. Otro error es invertir una de las dos restas (precio previo − precio actual), lo que da +9,6, +8,8, … y lleva a la conclusión falsa de que subir el precio aumenta las compras. Un tercero es dividir al revés (Δprecio/Δcompras): da −0,10 USD por compra, que no son compras por dólar.",
+          "dsFlow": "Aparece al inicio de un análisis de sensibilidad: antes de usar un modelo, se mira con datos crudos cómo responde la variable de interés a un cambio en una entrada controlable (precio, descuento, anuncios). Es la versión «a mano» de lo que luego harán derivadas parciales, la regla de la cadena y el gradiente del modelo.",
+          "skill": "Calcular e interpretar una tasa de cambio local como aproximación de la derivada, explicando signo, magnitud, unidades y por qué una pendiente promedio puede engañar cuando la relación no es lineal."
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s2",
+      "challengeId": "challenge-002",
+      "number": 2,
+      "title": "Varias entradas: derivadas parciales y gradiente del modelo",
+      "domain": "math",
+      "difficulty": 1,
+      "bloom": 4,
+      "estimatedMinutes": 90,
+      "mechanism": "rubric_claude",
+      "description": "Usa la tabla `coeficientes_modelo`. Escribe la puntuación $z$ del modelo y calcula la derivada parcial de $z$ respecto de cada variable (precio, minutos de vista previa y valoración): cuánto cambia $z$ si mueves **solo** esa variable una unidad y dejas las otras fijas. Arma el gradiente (la lista de las tres derivadas parciales) y explica cuál variable mueve más la puntuación por unidad y por qué una unidad no significa lo mismo en cada variable.",
+      "conceptIds": [
+        "math:partial"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Mover una sola perilla: la derivada parcial",
+            "body": "**Idea cotidiana.** Un modelo con varias entradas es como una consola de sonido con varias perillas. Si quieres saber qué hace la perilla de los graves, la giras sola y dejas las demás quietas. Lo que cambia el sonido es solo esa perilla.\n\n**Mini ejemplo a mano.** Una tienda calcula una puntuación $s = 10 - 2\\cdot precio + 3\\cdot estrellas$. Con precio 4 y 5 estrellas: $s = 10 - 8 + 15 = 17$.\n\n| Situación | precio | estrellas | $s$ |\n|---|---|---|---|\n| Antes | 4 | 5 | 17 |\n| Sube el precio 1 (estrellas fijas) | 5 | 5 | 15 |\n| Sube 1 estrella (precio fijo) | 4 | 6 | 20 |\n\nMover solo el precio una unidad cambió $s$ en $-2$. Mover solo las estrellas una unidad lo cambió en $+3$.\n\n**Nombre técnico.** Esa tasa de cambio, con las demás variables congeladas, es la **derivada parcial**. Se escribe $\\frac{\\partial s}{\\partial precio} = -2$. El símbolo $\\partial$ (una \"d\" curva) avisa de que hay más de una entrada y de que solo se mueve la que aparece abajo. El signo indica la dirección (sube o baja) y el valor indica cuánto cambia por unidad.\n\n**Para este reto.** La puntuación $z$ de AulaDatos es una suma de términos. Cada derivada parcial te dirá cuánto cambia $z$ al mover solo el precio, solo los minutos de vista previa o solo la valoración."
+          },
+          {
+            "title": "En una suma lineal, la derivada parcial es el coeficiente",
+            "body": "**Idea cotidiana.** Si una factura es una cuota fija más una tarifa por cada kilo, el cambio por kilo adicional es la tarifa. La cuota fija no importa para esa pregunta.\n\n**Mini ejemplo a mano.** $s = 10 - 2\\cdot precio + 3\\cdot estrellas$.\n\n- Tomo $precio = 4$ y $precio = 5$ con estrellas fijas en 5. El cambio es $15 - 17 = -2$.\n- Tomo $precio = 10$ y $precio = 11$ con estrellas fijas en 5. El cambio es $-2$ otra vez, aunque el punto de partida sea otro.\n- Si cambio el 10 inicial por 500, el cambio por unidad sigue siendo $-2$. El término constante no aporta.\n\n**Nombre técnico.** Para $z = \\beta_0 + \\beta_1 x_1 + \\beta_2 x_2 + \\beta_3 x_3$ se cumple\n\n$$\\frac{\\partial z}{\\partial x_1} = \\beta_1,\\quad \\frac{\\partial z}{\\partial x_2} = \\beta_2,\\quad \\frac{\\partial z}{\\partial x_3} = \\beta_3$$\n\ndonde $\\beta_0$ es el intercepto (la constante), $\\beta_i$ es el coeficiente de la variable $x_i$ y $x_i$ es la variable que se mueve. La derivada del intercepto es 0 porque no depende de ninguna variable. Una función lineal tiene la misma pendiente en todos los puntos.\n\n**Para este reto.** Los coeficientes de `coeficientes_modelo` te dan las tres derivadas de $z$ sin cálculo extra. Debes tener claro **por qué** coinciden con los coeficientes y por qué el intercepto no aparece."
+          },
+          {
+            "title": "El gradiente: todas las derivadas parciales en una lista",
+            "body": "**Idea cotidiana.** Un mapa de senderos indica, para cada dirección que puedes tomar (norte, este, subir), cuánto cambia la altura por paso. Juntar esos números en una sola lista da el resumen de cómo responde el terreno.\n\n**Mini ejemplo a mano.** Con $s = 10 - 2\\cdot precio + 3\\cdot estrellas$, las dos derivadas parciales son $-2$ y $+3$. Se juntan en un vector (una lista ordenada de números):\n\n$$\\nabla s = \\left(\\frac{\\partial s}{\\partial precio},\\ \\frac{\\partial s}{\\partial estrellas}\\right) = (-2,\\ 3)$$\n\n**Nombre técnico.** Esa lista se llama **gradiente** y se escribe con el símbolo $\\nabla$ (\"nabla\"). Cada posición corresponde a una variable y el orden importa. Si se mueven varias variables a la vez en cantidades pequeñas $\\Delta x_i$, el cambio aproximado de la puntuación es\n\n$$\\Delta z \\approx \\sum_i \\frac{\\partial z}{\\partial x_i}\\,\\Delta x_i$$\n\nPor ejemplo, precio $+1$ y estrellas $+1$ da $-2\\cdot 1 + 3\\cdot 1 = +1$.\n\n**Para este reto.** Debes entregar $\\nabla z$ para AulaDatos con tres componentes, en el orden precio, minutos, valoración. Es la base para las etapas siguientes, donde la sigmoide convertirá $z$ en probabilidad."
+          },
+          {
+            "title": "Una unidad no pesa lo mismo en cada variable",
+            "body": "**Idea cotidiana.** Un euro y un kilómetro no se pueden comparar uno a uno. Un cambio de \"1\" es enorme en una variable que va de 1 a 5 y minúsculo en una que va de 0 a 1 000.\n\n**Mini ejemplo a mano.** En la tienda anterior, $\\frac{\\partial s}{\\partial estrellas} = 3$ pesa más que $\\frac{\\partial s}{\\partial precio} = -2$ por unidad. Pero las estrellas solo se mueven entre 1 y 5, mientras que el precio puede subir 10 de golpe:\n\n| Movimiento realista | Efecto en $s$ |\n|---|---|\n| Precio $+10$ | $-2\\cdot 10 = -20$ |\n| Estrellas $+1$ | $+3\\cdot 1 = +3$ |\n\nPor unidad gana la estrella. Con movimientos realistas, el precio domina.\n\n**Nombre técnico.** Comparar derivadas parciales mide la **sensibilidad por unidad**. Para comparar el impacto real hay que multiplicar cada derivada por el cambio típico de esa variable: $\\frac{\\partial z}{\\partial x_i}\\cdot\\Delta x_i$. Esto es lo que justifica estandarizar variables cuando se quiere comparar coeficientes.\n\n**Para este reto.** Debes decir cuál variable mueve más $z$ por unidad y explicar que esa respuesta depende de la escala. Un dólar, un minuto y un punto de valoración son magnitudes distintas."
+          }
+        ],
+        "workedExample": {
+          "domain": "Supermercado: ventas diarias previstas de un producto",
+          "body": "Una cadena de supermercados estima las ventas diarias de leche (en unidades) con el modelo lineal\n\n$$V = 100 - 4\\cdot p + 0{,}5\\cdot a + 10\\cdot c$$\n\ndonde $p$ es el precio en \\$, $a$ es la inversión en publicidad en \\$ y $c$ es la calificación de la marca (de 1 a 5).\n\n**Punto de partida.** $p = 3$, $a = 20$, $c = 4$:\n\n$V = 100 - 12 + 10 + 40 = 138$ unidades.\n\n**Derivadas parciales (cada una con las demás fijas).**\n\n- $\\frac{\\partial V}{\\partial p} = -4$ (la constante 100 y los otros términos no dependen de $p$).\n- $\\frac{\\partial V}{\\partial a} = 0{,}5$.\n- $\\frac{\\partial V}{\\partial c} = 10$.\n\nGradiente: $\\nabla V = (-4,\\ 0{,}5,\\ 10)$.\n\n**Comprobación a mano.** Subo solo el precio de 3 a 4: $V = 100 - 16 + 10 + 40 = 134$. Cambio: $134 - 138 = -4$, igual que la derivada. Subo solo la publicidad de 20 a 21: $V = 138{,}5$. Cambio: $+0{,}5$. Subo solo la calificación de 4 a 5: $V = 148$. Cambio: $+10$.\n\n**Lectura.** Por unidad, la calificación es la variable que más mueve las ventas (10) y la publicidad la que menos (0,5). Pero ese es un resultado por unidad. Con movimientos típicos de $+1$ en precio, $+20$ en publicidad y $+0{,}5$ en calificación, los cambios son $-4$, $+10$ y $+5$. Con esos movimientos, la publicidad es la que más pesa. El orden por unidad no coincide con el orden por movimiento realista, que depende de la escala de cada variable."
+        },
+        "steps": [
+          "Consulta la tabla `coeficientes_modelo` y anota los cuatro valores: intercepto, precio, minutos de vista previa y valoración.",
+          "Escribe la puntuación $z$ del modelo sustituyendo esos valores en la fórmula $z = \\beta_0 + \\beta_{precio}\\cdot precio + \\beta_{min}\\cdot minutos + \\beta_{val}\\cdot valoracion$.",
+          "Para cada variable, imagina que subes **solo** esa una unidad y dejas las otras fijas. Calcula cuánto cambia $z$. Comprueba tu resultado con un ejemplo numérico, por ejemplo con el curso 1 del catálogo.",
+          "Escribe el resultado como derivada parcial de cada variable e indica qué pasa con el intercepto y por qué.",
+          "Arma el gradiente $\\nabla z$ como lista de tres componentes, en el orden precio, minutos, valoración.",
+          "Compara los valores absolutos de las tres derivadas y decide cuál variable mueve más $z$ por unidad. Interpreta también el signo de cada una.",
+          "Explica por qué \"una unidad\" no significa lo mismo en dólares, minutos y puntos de valoración. Apóyate en un movimiento realista de cada variable para ver si el orden cambia."
+        ],
+        "hints": [
+          "Mira primero la fórmula de $z$ y pregúntate qué términos cambian cuando mueves solo el precio.",
+          "Prueba con el curso 1: calcula $z$, súbele una unidad al precio dejando lo demás igual, y vuelve a calcular. Observa cuánto cambió.",
+          "Repite la misma prueba con los minutos y con la valoración. ¿Ves un patrón con los números de `coeficientes_modelo`?",
+          "Pregúntate qué pasa con el intercepto cuando haces ese tipo de prueba.",
+          "Antes de comparar variables, mira los rangos en la tabla `cursos`: ¿entre qué valores se mueve cada una? ¿Una unidad es un cambio pequeño o grande en cada caso?"
+        ],
+        "research": [
+          {
+            "conceptId": "math:partial",
+            "why": "Punto de partida: entender qué significa mover una sola variable dejando fijas las demás y cómo se mide el cambio por unidad.",
+            "searchEs": "qué es una derivada parcial explicación intuitiva",
+            "searchEn": "partial derivative intuition hold other variables fixed"
+          },
+          {
+            "conceptId": "math:partial",
+            "why": "El gradiente reúne las derivadas parciales en una lista ordenada (un vector) donde cada posición corresponde a una variable.",
+            "searchEs": "gradiente como vector de derivadas parciales",
+            "searchEn": "gradient as a vector of partial derivatives"
+          },
+          {
+            "conceptId": "math:partial",
+            "why": "Es lo más cercano al problema: derivadas parciales de una puntuación lineal, donde cada una coincide con su coeficiente.",
+            "searchEs": "derivadas parciales de una función lineal de varias variables",
+            "searchEn": "partial derivatives of a linear function logistic regression coefficients"
+          }
+        ],
+        "deliverables": [
+          "Escribe la puntuación del modelo con los valores de `coeficientes_modelo` sustituidos: $z = -1 - 0{,}08\\cdot precio + 0{,}05\\cdot minutos + 0{,}6\\cdot valoracion$.",
+          "Da las tres derivadas parciales: $\\frac{\\partial z}{\\partial precio} = -0{,}08$, $\\frac{\\partial z}{\\partial minutos} = 0{,}05$ y $\\frac{\\partial z}{\\partial valoracion} = 0{,}6$.",
+          "Explica con tus palabras que cada derivada parcial es el cambio de $z$ al mover solo esa variable una unidad y dejar las demás fijas.",
+          "Explica que el intercepto $-1$ no aparece en ninguna derivada porque no depende de ninguna variable.",
+          "Escribe el gradiente como lista de tres componentes en el orden precio, minutos, valoración: $\\nabla z = (-0{,}08;\\ 0{,}05;\\ 0{,}6)$.",
+          "Interpreta los signos: subir el precio baja $z$; más minutos de vista previa y mejor valoración suben $z$.",
+          "Indica que la valoración es la variable que más mueve $z$ por unidad (0,6, frente a 0,08 del precio y 0,05 de los minutos).",
+          "Explica por qué una unidad no es comparable entre variables: un dólar, un minuto y un punto de valoración (que va de 1 a 5) tienen escalas distintas. Ilustra con un movimiento realista, por ejemplo $+10$ dólares da $-0{,}8$ en $z$, mientras que $+0{,}5$ puntos de valoración da $+0{,}3$.",
+          "Aclara que estos números son cambios en la puntuación $z$, no en la probabilidad $p$; el paso a $p$ se hace en la etapa siguiente.",
+          "Terminado cuando: aparecen la fórmula de $z$, las tres derivadas parciales con su signo, el gradiente, la variable dominante por unidad y la explicación de escalas distintas."
+        ],
+        "solution": {
+          "expectedResult": "$z = -1 - 0{,}08\\cdot precio + 0{,}05\\cdot minutos + 0{,}6\\cdot valoracion$. Derivadas parciales: $\\frac{\\partial z}{\\partial precio} = -0{,}08$, $\\frac{\\partial z}{\\partial minutos} = 0{,}05$, $\\frac{\\partial z}{\\partial valoracion} = 0{,}6$. Gradiente: $\\nabla z = (-0{,}08;\\ 0{,}05;\\ 0{,}6)$. Por unidad, la valoración es la variable que más mueve $z$.",
+          "reasoning": "1) Se leen los coeficientes: intercepto $-1{,}0$, precio $-0{,}08$, minutos $0{,}05$, valoración $0{,}6$.\n2) Se sustituyen en la fórmula: $z = -1 - 0{,}08\\cdot precio + 0{,}05\\cdot minutos + 0{,}6\\cdot valoracion$.\n3) Como $z$ es una suma de términos y cada variable aparece en un solo término, al mover solo una variable una unidad cambia únicamente su término: la derivada parcial es su coeficiente. El intercepto no depende de ninguna variable, así que no aporta.\n4) Comprobación con el curso 1 (precio 30, minutos 6, valoración 4,5): $z = -1 - 2{,}4 + 0{,}3 + 2{,}7 = -0{,}4$. Con precio 31: $z = -0{,}48$ (cambio $-0{,}08$). Con minutos 7: $z = -0{,}35$ (cambio $+0{,}05$). Con valoración 5,5: $z = 0{,}2$ (cambio $+0{,}6$).\n5) Gradiente: $\\nabla z = (-0{,}08;\\ 0{,}05;\\ 0{,}6)$. En valor absoluto, $0{,}6 > 0{,}08 > 0{,}05$, así que la valoración domina por unidad.\n6) La comparación por unidad depende de la escala: en el catálogo el precio va de 20 a 55 (35 dólares de rango), los minutos de 3 a 9 y la valoración de 3,9 a 4,8 (0,9 puntos). Un movimiento de $+10$ dólares da $-0{,}8$ en $z$, mientras que $+0{,}5$ de valoración da $+0{,}3$. Con rangos reales, el precio puede pesar más que la valoración.",
+          "conceptLinks": "`math:partial`: en los pasos 3 y 4, mover una sola variable con las demás fijas y obtener su derivada parcial; en el paso 5, reunir las tres en el gradiente $\\nabla z$. La idea de derivada como pendiente (cambio por unidad) sostiene todo el cálculo, y el gradiente es un vector con un componente por variable, en orden fijo.",
+          "businessInterpretation": "Con el modelo de AulaDatos, subir un dólar el precio baja la puntuación $z$ en 0,08, y mejorar un punto la valoración la sube en 0,6. Esto indica que la calidad percibida pesa mucho por unidad y que el precio actúa de forma gradual, pero con subidas de decenas de dólares su efecto acumulado es grande. Limitación: son cambios en $z$ (el logit), no en la probabilidad de compra; el efecto en $p$ depende del punto de partida y se calcula en la etapa siguiente. Además, el modelo lineal en $z$ supone efectos constantes y no prueba causalidad: el coeficiente describe asociación en los datos de entrenamiento.",
+          "commonError": "Error 1: leer $-0{,}08$ como \"cada dólar baja la probabilidad de compra 8 puntos\". En realidad es el cambio en $z$; en el curso 1, con $z=-0{,}4$ y $p \\approx 0{,}401$, un dólar más cambia $p$ solo unos $-0{,}019$ (cerca de $-1{,}9$ puntos porcentuales). Error 2: concluir que la valoración \"importa 7,5 veces más que el precio\" por $0{,}6/0{,}08 = 7{,}5$. Eso solo vale por unidad: con $+10$ dólares ($-0{,}8$) frente a $+0{,}5$ de valoración ($+0{,}3$), el precio mueve más $z$. Error 3: incluir el intercepto $-1$ como una derivada más, dando un gradiente de cuatro componentes.",
+          "dsFlow": "Aparece en la fase de interpretación del modelo, después de entrenar y antes de proponer cambios de precio: se inspecciona la sensibilidad del modelo a cada entrada para explicar sus predicciones a negocio y, más adelante, para decidir qué palancas mover.",
+          "skill": "Calcular e interpretar derivadas parciales y el gradiente de una función de varias variables, distinguiendo sensibilidad por unidad de impacto con movimientos realistas."
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s3",
+      "challengeId": "challenge-002",
+      "number": 3,
+      "title": "Regla de la cadena: de la puntuación a la probabilidad",
+      "domain": "math",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 90,
+      "mechanism": "rubric_claude",
+      "description": "La probabilidad $p=\\sigma(z)$ es una función encadenada: el precio mueve $z$ y $z$ mueve $p$ a través de la sigmoide. Aplica la regla de la cadena para obtener $\\frac{dp}{d\\,precio}$ y muestra que se puede escribir como $\\beta_{precio}\\cdot p\\,(1-p)$. Calcula a mano ese valor para el curso 1 y explica por qué el mismo cambio de un dólar mueve la probabilidad distinto según el punto en que está el curso.",
+      "conceptIds": [
+        "math:chain-rule"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "Función dentro de otra función: el efecto llega por una cadena",
+            "body": "**Idea cotidiana.** A veces una cosa no mueve directamente a la que te interesa: mueve a una intermedia, y esa mueve a la final. El efecto total es el efecto del primer eslabón multiplicado por el del segundo.\n\n**Analogía.** Una bicicleta con dos engranes. Si el pedal da 1 vuelta y el primer engrane da 3 vueltas por cada vuelta del pedal, y la rueda da 2 vueltas por cada vuelta de ese engrane, la rueda da $3\\times 2=6$ vueltas por vuelta del pedal. Las razones de cambio se multiplican.\n\n**Mini ejemplo a mano.** Una tienda tiene: ingreso = 5 \\$ por unidad vendida, y unidades vendidas = 10 por cada \\$1 de descuento. Con \\$1 más de descuento se venden 10 unidades más (eslabón 1) y cada unidad deja 5 \\$ (eslabón 2): el ingreso cambia $10\\times 5 = 50$ \\$ por dólar de descuento.\n\n**Nombre técnico.** Es la *regla de la cadena*. Si $y=f(u)$ y $u=g(x)$, entonces\n\n$$\\frac{dy}{dx}=\\frac{dy}{du}\\cdot\\frac{du}{dx}$$\n\n- $\\frac{dy}{dx}$: cuánto cambia la salida final $y$ por cada unidad que cambia la entrada $x$.\n- $\\frac{du}{dx}$: cuánto cambia la variable intermedia $u$ por unidad de $x$.\n- $\\frac{dy}{du}$: cuánto cambia $y$ por unidad de $u$.\n\n**Para este reto.** El precio no toca la probabilidad directamente: mueve la puntuación $z$, y $z$ mueve $p$ a través de la sigmoide. Son dos eslabones y hay que multiplicar sus derivadas."
+          },
+          {
+            "title": "Primer eslabón: cuánto mueve el precio a la puntuación z",
+            "body": "**Idea cotidiana.** La puntuación $z$ es una suma de aportes. Cada variable aporta \"su coeficiente por su valor\". Si solo cambia una variable, solo cambia su aporte.\n\n**Mini ejemplo a mano.** Sea $z=-1+(-0{,}08)\\cdot precio+0{,}05\\cdot minutos$. Con precio 30 y minutos 6: $z=-1-2{,}4+0{,}3=-3{,}1$. Con precio 31 y los mismos minutos: $z=-1-2{,}48+0{,}3=-3{,}18$. Antes $-3{,}1$, después $-3{,}18$: cambió $-0{,}08$, que es justo el coeficiente.\n\n**Nombre técnico.** Como $z$ es lineal en el precio, su derivada es constante:\n\n$$\\frac{dz}{d\\,precio}=\\beta_{precio}$$\n\n- $\\beta_{precio}$: coeficiente del precio en la tabla `coeficientes_modelo`.\n- Es el mismo número en cualquier curso: no depende de dónde estés.\n\n**Para este reto.** Este eslabón es la parte \"fácil y constante\". Lo que hace que el efecto final varíe entre cursos es el segundo eslabón."
+          },
+          {
+            "title": "Segundo eslabón: la sigmoide y su derivada p(1 − p)",
+            "body": "**Idea cotidiana.** La sigmoide convierte cualquier puntuación en una probabilidad entre 0 y 1. Tiene forma de S: en el centro sube rápido y en los extremos casi se aplana.\n\n**Analogía.** Una persona que casi seguro compra (o casi seguro no compra) ya está \"decidida\": un pequeño empujón no la mueve. Una persona indecisa, con 50 %, reacciona más a cualquier empujón.\n\n**Mini ejemplo a mano.** Con $p=\\frac{1}{1+e^{-z}}$:\n\n| $z$ | $p$ | $p(1-p)$ |\n|---|---|---|\n| $-4$ | 0,018 | 0,018 |\n| $0$ | 0,500 | 0,250 |\n| $2$ | 0,881 | 0,105 |\n\nLa pendiente es máxima en $z=0$ y se achica hacia los lados.\n\n**Nombre técnico.** Derivando $p=(1+e^{-z})^{-1}$:\n\n$$\\frac{dp}{dz}=\\frac{e^{-z}}{(1+e^{-z})^{2}}=\\frac{1}{1+e^{-z}}\\cdot\\frac{e^{-z}}{1+e^{-z}}=p\\,(1-p)$$\n\n- $p$: probabilidad de compra; $1-p$: probabilidad de no compra.\n- El máximo es $0{,}25$ (cuando $p=0{,}5$); siempre está entre 0 y 0,25.\n\n**Para este reto.** Este factor es el que cambia de curso a curso, porque cada curso tiene su propio $p$."
+          },
+          {
+            "title": "Juntar los eslabones: dp/d(precio) = β_precio · p(1 − p)",
+            "body": "**Idea cotidiana.** Se multiplica lo que el precio mueve a $z$ por lo que $z$ mueve a $p$.\n\n**Mini ejemplo a mano (otro modelo).** Si $\\beta=-0{,}5$ y el curso está en $p=0{,}5$: $-0{,}5\\times 0{,}25=-0{,}125$. Si estuviera en $p=0{,}1$: $-0{,}5\\times 0{,}09=-0{,}045$. Mismo coeficiente, efecto casi tres veces menor.\n\n**Nombre técnico.** Con $z=\\beta_0+\\beta_{precio}\\cdot precio+\\dots$ y $p=\\sigma(z)$:\n\n$$\\frac{dp}{d\\,precio}=\\frac{dp}{dz}\\cdot\\frac{dz}{d\\,precio}=p(1-p)\\cdot\\beta_{precio}$$\n\n- Signo: lo marca $\\beta_{precio}$ (negativo: subir el precio baja la probabilidad).\n- Tamaño: lo marca $p(1-p)$, que depende del punto actual.\n- Es una tasa **instantánea**: para un cambio de \\$1 es una aproximación, buena si el cambio es pequeño.\n\n**Trampas típicas.** (1) Decir que el precio mueve la probabilidad $\\beta_{precio}$ puntos, olvidando la sigmoide. (2) Usar $p$ en lugar de $p(1-p)$. (3) Confundir puntos de probabilidad con puntos de $z$.\n\n**Para este reto.** Es el número que permite decir \"en este curso, bajar \\$1 sube la compra X puntos porcentuales\" y por qué en otro curso es distinto."
+          }
+        ],
+        "workedExample": {
+          "domain": "Comida a domicilio (costo de envío y probabilidad de terminar el pedido)",
+          "body": "Una app de comida a domicilio modela la probabilidad de que alguien termine su pedido así:\n\n$$z=2{,}0-0{,}5\\cdot envio,\\qquad p=\\frac{1}{1+e^{-z}}$$\n\ndonde `envio` es el costo de envío en dólares.\n\n**Paso 1 · eslabón de la puntuación.** $\\frac{dz}{d\\,envio}=-0{,}5$ en cualquier punto.\n\n**Paso 2 · eslabón de la sigmoide.** $\\frac{dp}{dz}=p(1-p)$.\n\n**Paso 3 · cadena.** $\\frac{dp}{d\\,envio}=-0{,}5\\cdot p(1-p)$.\n\n**Caso A: envío de \\$4.** $z=2-0{,}5\\cdot 4=0$, $p=0{,}5$, $p(1-p)=0{,}25$. Derivada $=-0{,}5\\cdot 0{,}25=-0{,}125$: un dólar más de envío resta unos 12,5 puntos porcentuales.\n\n**Caso B: envío de \\$8.** $z=2-4=-2$; $e^{2}\\approx 7{,}389$, $p=\\frac{1}{8{,}389}\\approx 0{,}1192$, $p(1-p)\\approx 0{,}1050$. Derivada $=-0{,}5\\cdot 0{,}1050\\approx -0{,}0525$: unos 5,3 puntos por dólar.\n\n**Comprobación.** De \\$8 a \\$9: $z=-2{,}5$, $p\\approx 0{,}0759$; la caída real es $0{,}1192-0{,}0759=0{,}0433$, del mismo orden que $0{,}0525$ (la diferencia viene de que la curva sigue aplanándose).\n\n**Lectura.** El coeficiente es el mismo ($-0{,}5$), pero el efecto en probabilidad pasa de $-0{,}125$ a $-0{,}0525$ porque en B la persona ya está lejos del 50 %."
+        },
+        "steps": [
+          "Anota la cadena: precio → puntuación $z$ → probabilidad $p$. Escribe qué función une cada par de eslabones.",
+          "Calcula (a mano o con una calculadora) la derivada del primer eslabón: cuánto cambia $z$ por cada dólar de precio, leyendo el coeficiente correcto en `coeficientes_modelo`.",
+          "Deriva la sigmoide $p=(1+e^{-z})^{-1}$ respecto de $z$ y simplifica hasta expresarla usando $p$ y $1-p$.",
+          "Multiplica los dos eslabones y escribe la expresión final de $\\frac{dp}{d\\,precio}$ en función de $\\beta_{precio}$ y $p$.",
+          "Para el curso 1 (precio 30, 6 minutos, valoración 4,5): calcula $z$ con los tres coeficientes y el intercepto, luego $p$, luego $p(1-p)$ y por último la derivada, con 4 decimales.",
+          "Comprueba tu resultado: calcula $p$ con el precio en 31 y compara la diferencia con tu derivada.",
+          "Redacta la explicación: por qué el mismo cambio de \\$1 mueve distinto la probabilidad según el punto en que está el curso."
+        ],
+        "hints": [
+          "Antes de calcular nada, dibuja la cadena con flechas: ¿qué variable cambia primero cuando mueves el precio y cuál después?",
+          "Mira qué parte del efecto es igual para todos los cursos y qué parte depende del curso concreto.",
+          "Al derivar la sigmoide, escribe $1/(1+e^{-z})$ como una potencia y fíjate si puedes reconocer $p$ y $1-p$ en el resultado.",
+          "Calcula $z$ del curso 1 sumando cada aporte por separado (intercepto, precio, minutos, valoración) antes de pasar a la probabilidad.",
+          "Para validar, cambia el precio en un dólar, recalcula $p$ y pregúntate si la diferencia se parece a tu derivada y por qué no es idéntica.",
+          "Piensa en una persona casi segura de comprar y otra indecisa: ¿a cuál le cambia más la decisión un descuento pequeño?"
+        ],
+        "research": [
+          {
+            "conceptId": "math:chain-rule",
+            "why": "Antes de aplicarla, conviene entender la idea básica: cuando una cantidad depende de otra a través de un intermediario, las razones de cambio se multiplican.",
+            "searchEs": "regla de la cadena explicación intuitiva razón de cambio ejemplos",
+            "searchEn": "chain rule intuition rates of change multiply"
+          },
+          {
+            "conceptId": "math:chain-rule",
+            "why": "Es la regla que permite multiplicar las derivadas de funciones compuestas, como precio → z → p.",
+            "searchEs": "regla de la cadena funciones compuestas paso a paso",
+            "searchEn": "chain rule composite functions step by step"
+          },
+          {
+            "conceptId": "math:chain-rule",
+            "why": "Aplicada a la sigmoide, da el factor p(1 − p) que explica por qué el efecto cambia de punto a punto.",
+            "searchEs": "derivada de la función sigmoide p(1-p) regla de la cadena",
+            "searchEn": "derivative of sigmoid function chain rule logistic regression"
+          }
+        ],
+        "deliverables": [
+          "Parte (a): identifica la cadena precio → $z$ → $p$ y escribe $\\frac{dz}{d\\,precio}=\\beta_{precio}=-0{,}08$ (leído de `coeficientes_modelo`).",
+          "Parte (b): muestra la derivación $\\frac{dp}{dz}=\\frac{e^{-z}}{(1+e^{-z})^2}=p(1-p)$ con al menos un paso intermedio.",
+          "Parte (c): escribe la fórmula final $\\frac{dp}{d\\,precio}=\\beta_{precio}\\cdot p(1-p)$ indicando qué eslabón aporta cada factor.",
+          "Parte (d): cálculo a mano para el curso 1: $z=-0{,}4$, $p\\approx 0{,}4013$, $p(1-p)\\approx 0{,}2403$ y $\\frac{dp}{d\\,precio}\\approx -0{,}0192$ (4 decimales).",
+          "Interpreta el resultado en palabras de negocio: unos 1,9 puntos porcentuales menos de probabilidad de compra por cada dólar que sube el precio, en torno al precio actual de \\$30.",
+          "Explica por qué el mismo cambio de \\$1 mueve distinto la probabilidad según el curso: $p(1-p)$ es máximo (0,25) cerca de $p=0{,}5$ y se achica cuando $p$ se acerca a 0 o a 1.",
+          "Incluye una comprobación numérica (por ejemplo, la caída real de $p$ al pasar de \\$30 a \\$31) y menciona que la derivada es una aproximación para cambios pequeños.",
+          "Terminado cuando: están las cuatro partes, los números del curso 1 coinciden con los indicados (tolerancia de redondeo en el 4.º decimal) y la explicación de negocio no confunde puntos de probabilidad con unidades de $z$."
+        ],
+        "solution": {
+          "expectedResult": "Cadena: $\\frac{dz}{d\\,precio}=-0{,}08$; $\\frac{dp}{dz}=p(1-p)$; por tanto $\\frac{dp}{d\\,precio}=-0{,}08\\cdot p(1-p)$. Curso 1: $z=-0{,}4$, $p\\approx 0{,}4013$, $p(1-p)\\approx 0{,}2403$, $\\frac{dp}{d\\,precio}\\approx -0{,}0192$ (unos $-1{,}92$ puntos porcentuales por dólar).",
+          "reasoning": "1) Datos del curso 1: precio 30, minutos 6, valoración 4,5. Puntuación: $z=-1+(-0{,}08)(30)+(0{,}05)(6)+(0{,}6)(4{,}5)=-1-2{,}4+0{,}3+2{,}7=-0{,}4$.\n2) Probabilidad: $p=\\frac{1}{1+e^{0{,}4}}=\\frac{1}{1+1{,}4918}=\\frac{1}{2{,}4918}\\approx 0{,}4013$.\n3) Primer eslabón: $\\frac{dz}{d\\,precio}=\\beta_{precio}=-0{,}08$.\n4) Segundo eslabón: $p=(1+e^{-z})^{-1}$, así que $\\frac{dp}{dz}=-(1+e^{-z})^{-2}\\cdot(-e^{-z})=\\frac{e^{-z}}{(1+e^{-z})^2}=p\\cdot(1-p)$, porque $1-p=\\frac{e^{-z}}{1+e^{-z}}$.\n5) Cadena: $\\frac{dp}{d\\,precio}=p(1-p)\\cdot\\beta_{precio}$.\n6) Valor: $p(1-p)=0{,}4013\\times 0{,}5987\\approx 0{,}2403$; $\\frac{dp}{d\\,precio}=-0{,}08\\times 0{,}2403\\approx -0{,}0192$.\n7) Comprobación: con precio 31, $z=-0{,}48$, $p=\\frac{1}{1+e^{0{,}48}}\\approx 0{,}3822$; la caída real es $0{,}4013-0{,}3822\\approx 0{,}0191$, casi igual a la derivada (la pequeña diferencia viene de que la derivada es la pendiente en \\$30 y la curva se curva un poco).\n8) Por qué varía: como $-0{,}08$ es constante, toda la variación viene de $p(1-p)$. En el curso 1, $p\\approx 0{,}40$ está cerca del centro de la S y el factor es 0,2403 (el máximo posible es 0,25, con efecto $-0{,}02$). En un curso con $p\\approx 0{,}10$ el factor es $0{,}09$ y el efecto baja a unos $-0{,}0072$, cerca de tres veces menos.",
+          "conceptLinks": "Paso 3 usa derivadas de funciones lineales: el coeficiente es la pendiente de $z$ respecto del precio. Paso 4 deriva la sigmoide como potencia compuesta (regla de la cadena interna con $u=1+e^{-z}$). Paso 5 es la regla de la cadena principal: $\\frac{dp}{d\\,precio}=\\frac{dp}{dz}\\cdot\\frac{dz}{d\\,precio}$. Paso 7 contrasta la derivada (cambio instantáneo) con un cambio finito de \\$1.",
+          "businessInterpretation": "En el curso 1, subir el precio de \\$30 a \\$31 reduce la probabilidad de compra en unos 1,9 puntos porcentuales; bajarlo \\$1 la sube en una cantidad parecida. El efecto de un mismo cambio de precio es mayor en cursos con probabilidad cercana al 50 % y menor en cursos casi seguros de vender o casi seguros de no vender, así que los descuentos rinden más en los primeros. Limitación: la derivada vale solo cerca del precio actual y supone que las demás variables no cambian; para saltos grandes de precio hay que recalcular $p$ en el nuevo punto, y el modelo refleja asociaciones observadas, no garantiza el efecto causal de un descuento.",
+          "commonError": "Quedarse con el eslabón $\\beta_{precio}$ y olvidar la sigmoide: se diría que \\$1 más baja la probabilidad $0{,}08$ (8 puntos porcentuales), cuando lo correcto es $0{,}0192$ (1,92 puntos): una sobreestimación de más de 4 veces. Otro error es usar $p$ en lugar de $p(1-p)$: daría $-0{,}08\\times 0{,}4013=-0{,}0321$ (3,2 puntos), también demasiado alto.",
+          "dsFlow": "Aparece al interpretar un modelo ya entrenado (fase de análisis de sensibilidad y explicación): antes de recomendar una acción de negocio se calcula cuánto cambia la predicción al mover una entrada, y se valida comparando la derivada con el cambio real al recalcular la predicción. La misma regla de la cadena sustenta el cálculo del gradiente al entrenar modelos y redes neuronales.",
+          "skill": "Aplicar la regla de la cadena a una función compuesta (lineal + sigmoide), derivar la sigmoide, calcular e interpretar una sensibilidad en un punto concreto y explicar por qué depende de dónde se evalúa."
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s4",
+      "challengeId": "challenge-002",
+      "number": 4,
+      "title": "Regresión logística: probabilidad y sensibilidad por curso",
+      "domain": "ml",
+      "difficulty": 1,
+      "bloom": 3,
+      "estimatedMinutes": 90,
+      "mechanism": "codigo_assert",
+      "description": "Con SQL (DuckDB) une `cursos` con `coeficientes_modelo` y calcula para cada curso la puntuación $z$, la probabilidad $p$ y la sensibilidad $\\frac{dp}{d\\,precio}=\\beta_{precio}\\cdot p\\,(1-p)$. Entrega una tabla con una fila por curso y las columnas `curso_id`, `probabilidad_compra` y `sensibilidad_precio`, redondeadas a 4 decimales y ordenadas por `curso_id`. Verifica además que los valores de sensibilidad son negativos y explica por qué cambian de un curso a otro.",
+      "conceptIds": [
+        "ml:logreg"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "La derivada como \"cuánto se mueve la salida por cada paso de la entrada\"",
+            "body": "**Idea cotidiana.** Si subes el precio de un curso un dólar, ¿cuánto cambia la probabilidad de que lo compren? Esa tasa de cambio es lo que mide una derivada.\n\n**Analogía.** Es como la inclinación de una cuesta: si por cada metro que avanzas subes 0,05 m, la cuesta tiene pendiente 0,05. Cuanto más empinada, más sensible es la altura a tu avance.\n\n**Mini ejemplo a mano.** Una función $f(x)=3x$ pasa de $6$ a $9$ cuando $x$ va de $2$ a $3$. El cambio es $+3$ por cada $+1$ de $x$. Aquí la pendiente es la misma en todas partes.\n\n**Nombre técnico.** $\\frac{df}{dx}$ es la derivada de $f$ respecto a $x$: $f$ es la salida (aquí, la probabilidad), $x$ es la entrada (el precio) y la fracción mide cuánto cambia $f$ por unidad de $x$. Si es negativa, al subir $x$ baja $f$.\n\n**Para este reto.** Queremos la derivada de la probabilidad de compra respecto al precio, $\\frac{dp}{d\\,precio}$. Su signo dice la dirección y su tamaño dice cuánta probabilidad se pierde por cada dólar."
+          },
+          {
+            "title": "Puntuación $z$ y sigmoide: dos funciones encadenadas",
+            "body": "**Idea cotidiana.** El modelo hace dos pasos: primero suma puntos a favor y en contra de comprar (la puntuación $z$) y luego convierte esa puntuación en un número entre 0 y 1 (la probabilidad).\n\n**Analogía.** Es como una nota de examen (puntos sueltos) que luego se convierte en porcentaje de aprobación con una tabla de equivalencias.\n\n**Mini ejemplo a mano.** Con $z=0$ la probabilidad es $0{,}5$ (50 %). Con $z=2$ es $\\frac{1}{1+e^{-2}}\\approx 0{,}881$. Con $z=-2$ es $\\approx 0{,}119$. Un $z$ muy alto o muy bajo casi no mueve la probabilidad.\n\n**Nombre técnico.** $$z=\\beta_0+\\beta_{precio}\\cdot precio+\\beta_{min}\\cdot minutos+\\beta_{val}\\cdot valoracion$$ $$p=\\sigma(z)=\\frac{1}{1+e^{-z}}$$ Aquí $\\beta_0$ es el intercepto (el punto de partida), cada $\\beta$ es el peso de su variable y $e\\approx 2{,}718$. La función $e^{-z}$ es una exponencial, y $z$ se llama *logit*.\n\n**Para este reto.** Cada coeficiente $\\beta$ es la derivada parcial de $z$ respecto a su variable (manteniendo las demás fijas): $\\beta_{precio}=-0{,}08$ significa que $z$ baja $0{,}08$ por cada dólar. Pero $z$ no es la probabilidad; hace falta pasar por la sigmoide."
+          },
+          {
+            "title": "Regla de la cadena: sensibilidad de $p$ respecto al precio",
+            "body": "**Idea cotidiana.** Si el efecto de A sobre B y el de B sobre C se multiplican, el efecto de A sobre C es el producto de ambos.\n\n**Analogía.** Una bicicleta con dos engranajes: si el pedal gira el primer engranaje 2 veces y este gira la rueda 3 veces, el pedal mueve la rueda $2\\times 3=6$ veces.\n\n**Mini ejemplo a mano.** Si $z$ baja $0{,}08$ por dólar y en ese punto un cambio de $1$ en $z$ mueve $p$ en $0{,}24$, entonces un dólar mueve $p$ en $-0{,}08\\times 0{,}24=-0{,}0192$.\n\n**Nombre técnico.** Para $p=\\sigma(z)$ y $z$ función del precio: $$\\frac{dp}{d\\,precio}=\\frac{dp}{dz}\\cdot\\frac{dz}{d\\,precio}=p\\,(1-p)\\cdot\\beta_{precio}$$ donde $p(1-p)$ es la derivada de la sigmoide (es máxima, $0{,}25$, cuando $p=0{,}5$, y se acerca a 0 cuando $p$ está cerca de 0 o de 1) y $\\beta_{precio}$ es la derivada de $z$ respecto al precio.\n\n**Para este reto.** Como $p(1-p)$ depende de cada curso, la sensibilidad cambia de un curso a otro aunque $\\beta_{precio}$ sea el mismo. Siempre es negativa porque $p(1-p)>0$ y $\\beta_{precio}<0$."
+          },
+          {
+            "title": "Hacerlo en SQL: coeficientes en columnas y una fila por curso",
+            "body": "**Idea cotidiana.** La tabla de coeficientes tiene una fila por término, pero para calcular necesitas los cuatro valores a la vez, junto a cada curso.\n\n**Mini ejemplo a mano.** Si la tabla tiene filas (a, 2) y (b, 5), un `MAX(CASE WHEN termino='a' THEN coeficiente END)` devuelve 2 y el equivalente para `b` devuelve 5: una sola fila con dos columnas, `a=2` y `b=5`.\n\n**Nombre técnico.** Es una *agregación condicional* (pivotar filas a columnas). Luego un `CROSS JOIN` pega esa única fila a cada curso (cada curso queda con su copia de los coeficientes sin duplicar cursos). En DuckDB, `EXP(x)` calcula $e^x$ y `ROUND(x, 4)` redondea a 4 decimales.\n\n**Para este reto.** Con los coeficientes en columnas puedes escribir $z$ y $p$ con expresiones normales y obtener exactamente 10 filas, una por curso."
+          }
+        ],
+        "workedExample": {
+          "domain": "Suscripciones mensuales de una app de gimnasio (otro dominio)",
+          "body": "Un modelo logístico predice si una persona se suscribe a la app. Para un plan: $z = 2 - 0{,}1\\cdot precio$ (el precio es mensual, en dólares). Queremos saber cómo cambia la probabilidad con el precio.\n\n**Paso 1 · derivada de $z$.** $\\frac{dz}{d\\,precio}=-0{,}1$: cada dólar resta $0{,}1$ a la puntuación.\n\n**Paso 2 · dos puntos.**\n\n| precio | $z$ | $p=\\frac{1}{1+e^{-z}}$ | $p(1-p)$ |\n|---|---|---|---|\n| 20 | $2-2=0$ | $0{,}5000$ | $0{,}2500$ |\n| 40 | $2-4=-2$ | $0{,}1192$ | $0{,}1050$ |\n\n**Paso 3 · regla de la cadena.** $\\frac{dp}{d\\,precio}=-0{,}1\\cdot p(1-p)$:\n\n- Con precio 20: $-0{,}1\\times 0{,}25=-0{,}0250$ (se pierden unos 2,5 puntos porcentuales por dólar).\n- Con precio 40: $-0{,}1\\times 0{,}1050\\approx -0{,}0105$ (solo 1,05 puntos porcentuales por dólar).\n\n**Verificación a mano.** Con precio 21, $z=-0{,}1$ y $p=0{,}4750$, es decir $-0{,}0250$ respecto de $0{,}5000$. Coincide con la derivada.\n\n**Lectura.** El mismo coeficiente $-0{,}1$ produce efectos distintos: la probabilidad es más sensible cuando está cerca de 50 % y casi no reacciona cuando ya es baja."
+        },
+        "steps": [
+          "Mira las tres tablas y localiza dónde están los precios, los minutos y la valoración (`cursos`) y los cuatro coeficientes (`coeficientes_modelo`). Solo usarás esas dos.",
+          "Convierte `coeficientes_modelo` en UNA sola fila con una columna por coeficiente (intercepto, precio, minutos, valoración) usando agregación condicional.",
+          "Une esa fila con cada curso (sin multiplicar los cursos) y calcula la puntuación $z$ con la fórmula del enunciado.",
+          "Convierte $z$ en probabilidad $p$ con la sigmoide, usando `EXP`.",
+          "Calcula la sensibilidad con la regla de la cadena: coeficiente de precio por $p(1-p)$.",
+          "Selecciona `curso_id`, `probabilidad_compra` y `sensibilidad_precio` con `ROUND(..., 4)` y ordena por `curso_id`.",
+          "Revisa que todas las sensibilidades sean negativas y compara el curso de mayor y menor valor absoluto para explicar por qué difieren."
+        ],
+        "hints": [
+          "Antes de calcular nada, mira cuántas filas tiene `coeficientes_modelo` y cuántas debería tener tu resultado. ¿Qué pasaría si unes las tablas sin más?",
+          "Piensa en cómo dejar los coeficientes lado a lado en una sola fila para poder usarlos en una expresión junto a cada curso.",
+          "Calcula primero la puntuación, comprueba un curso a mano y recién después transforma a probabilidad; dividir el cálculo en pasos pequeños evita errores.",
+          "La sensibilidad depende de dos cosas: el peso del precio en la puntuación y qué tan \"inclinada\" está la sigmoide en el punto donde está cada curso.",
+          "Si todos tus valores de sensibilidad salen iguales, revisa qué estás multiplicando; deben variar según la probabilidad de cada curso.",
+          "Aplica el redondeo y el orden solo al final, en el `SELECT` de salida."
+        ],
+        "research": [
+          {
+            "conceptId": "ml:logreg",
+            "why": "Es la base del reto: el modelo suma una puntuación $z$ con pesos (coeficientes) y la convierte en una probabilidad entre 0 y 1.",
+            "searchEs": "regresión logística qué es y cómo interpretar los coeficientes",
+            "searchEn": "logistic regression explained coefficients interpretation"
+          },
+          {
+            "conceptId": "ml:logreg",
+            "why": "La sigmoide usa la exponencial $e^{-z}$ y explica por qué $p$ queda entre 0 y 1 y por qué el efecto de una variable cambia según el punto.",
+            "searchEs": "función sigmoide logística y logit",
+            "searchEn": "sigmoid function logit log-odds"
+          },
+          {
+            "conceptId": "ml:logreg",
+            "why": "Es lo más cercano al problema: la derivada de la probabilidad respecto a una variable es $\\beta\\,p(1-p)$ y depende del curso.",
+            "searchEs": "regresión logística derivada de la sigmoide efecto marginal",
+            "searchEn": "logistic regression sigmoid derivative marginal effect"
+          }
+        ],
+        "deliverables": [
+          "Una consulta SQL (DuckDB) que une `cursos` con `coeficientes_modelo` sin duplicar cursos y deja `resultado` como DataFrame.",
+          "Columnas exactas y en este orden: `curso_id`, `probabilidad_compra`, `sensibilidad_precio`.",
+          "10 filas, una por curso, ordenadas por `curso_id` ascendente.",
+          "`probabilidad_compra` y `sensibilidad_precio` redondeadas a 4 decimales con `ROUND`.",
+          "`sensibilidad_precio` calculada como $\\beta_{precio}\\cdot p\\,(1-p)$, usando el coeficiente de la tabla (no escrito a mano).",
+          "Verificación: todos los valores de `sensibilidad_precio` son negativos.",
+          "Interpretación de negocio: explica en 2–3 frases por qué la sensibilidad cambia entre cursos y en cuáles un descuento mueve más la probabilidad.",
+          "Terminado cuando tu tabla coincide fila por fila con la esperada y puedes explicar qué significa un valor como $-0{,}0192$ en términos de probabilidad por dólar."
+        ],
+        "solution": {
+          "code": "resultado = con.sql(\"\"\"\nWITH c AS (\n    SELECT\n        MAX(CASE WHEN termino = 'intercepto' THEN coeficiente END) AS b0,\n        MAX(CASE WHEN termino = 'precio_usd' THEN coeficiente END) AS b_precio,\n        MAX(CASE WHEN termino = 'minutos_vista_previa' THEN coeficiente END) AS b_min,\n        MAX(CASE WHEN termino = 'valoracion' THEN coeficiente END) AS b_val\n    FROM coeficientes_modelo\n),\nz AS (\n    SELECT\n        cu.curso_id,\n        c.b_precio,\n        c.b0 + c.b_precio * cu.precio_usd + c.b_min * cu.minutos_vista_previa + c.b_val * cu.valoracion AS z\n    FROM cursos cu\n    CROSS JOIN c\n),\np AS (\n    SELECT curso_id, b_precio, 1.0 / (1.0 + EXP(-z)) AS p\n    FROM z\n)\nSELECT\n    curso_id,\n    ROUND(p, 4) AS probabilidad_compra,\n    ROUND(b_precio * p * (1 - p), 4) AS sensibilidad_precio\nFROM p\nORDER BY curso_id\n\"\"\").df()",
+          "expectedResult": "Tabla de 10 filas: curso 1 → p=0,4013 y sensibilidad -0,0192; curso 2 → 0,5025 y -0,0200; curso 3 → 0,1854 y -0,0121; curso 4 → 0,5939 y -0,0193; curso 5 → 0,0971 y -0,0070; curso 6 → 0,2405 y -0,0146; curso 7 → 0,4256 y -0,0196; curso 8 → 0,1203 y -0,0085; curso 9 → 0,1824 y -0,0119; curso 10 → 0,6388 y -0,0185.",
+          "reasoning": "Se pivotan los coeficientes a una fila, se cruza con los 10 cursos, se calcula $z=\\beta_0+\\beta_{precio}\\cdot precio+\\beta_{min}\\cdot minutos+\\beta_{val}\\cdot valoracion$, luego $p=1/(1+e^{-z})$ y finalmente $\\frac{dp}{d\\,precio}=\\beta_{precio}\\,p(1-p)$. Ejemplo del curso 1: $z=-1-2{,}4+0{,}3+2{,}7=-0{,}4$, $p=0{,}4013$, $p(1-p)=0{,}2403$, sensibilidad $=-0{,}08\\times 0{,}2403=-0{,}0192$.",
+          "conceptLinks": "Regresión logística (`ml:logreg`): la puntuación $z$ como combinación lineal con intercepto y pesos (pasos 2–3), la sigmoide con `EXP` para obtener $p$ (paso 4) y la derivada de $p$ respecto al precio con la regla de la cadena (paso 5).",
+          "businessInterpretation": "La sensibilidad es la variación aproximada de la probabilidad de compra por cada dólar. Es mayor en valor absoluto en los cursos con probabilidad cercana a 50 % (curso 2: -0,0200, es decir unos 2 puntos porcentuales por dólar) y menor en los de probabilidad baja (curso 5, precio 55: -0,0070). Por eso un descuento rinde más en cursos como SQL desde cero o Power BI esencial que en Machine Learning inicial. Limitación: la derivada es una aproximación local; sirve para cambios pequeños de precio, no para saltos grandes, y asume que el modelo y sus coeficientes son correctos y que las demás variables no cambian.",
+          "commonError": "Usar directamente $\\beta_{precio}=-0{,}08$ como efecto del precio sobre la probabilidad: daría -0,0800 en todos los cursos, unas 4 veces más que el valor real del curso 1 (-0,0192), porque $-0{,}08$ es el efecto sobre $z$, no sobre $p$. Otro error frecuente es olvidar el factor $(1-p)$ y usar $\\beta\\cdot p$: en el curso 1 daría $-0{,}08\\times 0{,}4013=-0{,}0321$ en vez de -0,0192.",
+          "dsFlow": "Aparece en la fase de interpretación y explicación del modelo, después de entrenarlo: se toman los coeficientes ya ajustados y se calcula, para cada caso, cómo reacciona la predicción a una entrada controlable antes de presentar una recomendación de precios al equipo comercial.",
+          "skill": "Calcular e interpretar la derivada de una probabilidad logística respecto a una entrada (regla de la cadena) y llevarla a SQL con una sola consulta, explicando por qué el efecto depende del punto del modelo."
+        },
+        "skeleton": {
+          "language": "python",
+          "code": "resultado = con.sql(\"\"\"\nWITH c AS (\n    -- TODO: convierte coeficientes_modelo en UNA fila con una columna por coeficiente\n    -- (agregación condicional con MAX(CASE WHEN ...))\n    SELECT 1\n),\nz AS (\n    -- TODO: une cada curso con la fila de coeficientes y calcula la puntuación z\n    SELECT 1\n),\np AS (\n    -- TODO: convierte z en probabilidad con la sigmoide (usa EXP)\n    SELECT 1\n)\n-- TODO: selecciona curso_id, probabilidad_compra y sensibilidad_precio\n-- redondeadas a 4 decimales y ordenadas por curso_id\nSELECT 1\n\"\"\").df()"
+        },
+        "expected": {
+          "columns": [
+            "curso_id",
+            "probabilidad_compra",
+            "sensibilidad_precio"
+          ],
+          "rows": [
+            [
+              1,
+              0.4013,
+              -0.0192
+            ],
+            [
+              2,
+              0.5025,
+              -0.02
+            ],
+            [
+              3,
+              0.1854,
+              -0.0121
+            ],
+            [
+              4,
+              0.5939,
+              -0.0193
+            ],
+            [
+              5,
+              0.0971,
+              -0.007
+            ],
+            [
+              6,
+              0.2405,
+              -0.0146
+            ],
+            [
+              7,
+              0.4256,
+              -0.0196
+            ],
+            [
+              8,
+              0.1203,
+              -0.0085
+            ],
+            [
+              9,
+              0.1824,
+              -0.0119
+            ],
+            [
+              10,
+              0.6388,
+              -0.0185
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "challenge-002-s5",
+      "challengeId": "challenge-002",
+      "number": 5,
+      "title": "Elasticidad de precio: la derivada convertida en decisión",
+      "domain": "business",
+      "difficulty": 1,
+      "bloom": 4,
+      "estimatedMinutes": 90,
+      "mechanism": "rubric_claude",
+      "description": "Convierte la sensibilidad en **elasticidad** de precio: $E=\\frac{dp}{d\\,precio}\\cdot\\frac{precio}{p}$, que indica en cuántos por ciento cambia la probabilidad de compra si el precio sube 1 %. Con los resultados de la etapa anterior, escribe una nota de 6 a 10 líneas para el equipo comercial que indique en qué cursos conviene bajar el precio y en cuáles no, explique la elasticidad con palabras cotidianas e incluya al menos una limitación. Esta etapa es una interpretación escrita, no código.",
+      "conceptIds": [
+        "business:pricing"
+      ],
+      "apoyo": "guiado",
+      "content": {
+        "theory": [
+          {
+            "title": "De la pendiente a un porcentaje: qué es la elasticidad",
+            "body": "**Idea cotidiana.** Decir «si subo el precio \\$1, la probabilidad de compra baja 0.02» no es lo mismo para un curso de \\$20 que para uno de \\$55. Subir \\$1 un curso de \\$20 es un golpe del 5 %; en uno de \\$55 es un 1.8 %. La elasticidad mide el efecto en porcentajes: «si el precio sube 1 %, ¿en qué porcentaje cambia la probabilidad de compra?».\n\n**Analogía.** Es como comparar una subida de \\$1 en un café (que se nota) con una subida de \\$1 en un coche (que nadie nota). Lo que importa es el cambio *relativo*.\n\n**Mini ejemplo a mano.** Un curso cuesta \\$40 y su probabilidad de compra es 0.20. La pendiente (derivada) es -0.01 por dólar.\n- Precio +1 % = +\\$0.40 → la probabilidad baja $0.01 \\times 0.40 = 0.004$.\n- 0.004 sobre 0.20 es un 2 % de caída.\n- Resultado: subir el precio 1 % baja la probabilidad 2 %.\n\n**Nombre técnico y fórmula.**\n\n$$E=\\frac{dp}{d\\,precio}\\cdot\\frac{precio}{p}$$\n\n- $E$: elasticidad (número sin unidades; en el ejemplo, -2).\n- $\\frac{dp}{d\\,precio}$: la derivada, cuánto cambia la probabilidad por cada dólar (etapa 4).\n- $precio$ y $p$: el precio y la probabilidad del curso, en el punto donde evalúas.\n- El factor $\\frac{precio}{p}$ convierte «por dólar» en «por ciento».\n\n**Para este reto.** Calcularás $E$ para cada curso con los resultados de la etapa 4. Así podrás comparar cursos de precios y probabilidades muy distintos con una misma regla."
+          },
+          {
+            "title": "Cómo leer el número: elástico, inelástico y el umbral de 1",
+            "body": "**Idea cotidiana.** Hay productos donde un 10 % más caro espanta a mucha gente (la gente es «sensible» al precio) y otros donde casi nadie lo nota. El valor de $E$ clasifica a cada curso en uno de esos dos grupos.\n\n**Mini ejemplo a mano.** Un curso cuesta \\$10 y vende con probabilidad 0.50, así que cada visitante aporta en promedio \\$5.\n- Caso A, $E=-0.5$: subir el precio 10 % baja la probabilidad 5 %. Aporte por visitante: $11 \\times 0.475 = 5.225$. Ingreso **sube** (de 5 a 5.225).\n- Caso B, $E=-2$: subir 10 % baja la probabilidad 20 %. Aporte: $11 \\times 0.40 = 4.40$. Ingreso **baja**.\n\n**Nombre técnico.**\n- $|E|<1$: demanda **inelástica**. La probabilidad cae proporcionalmente menos de lo que sube el precio; subir el precio aumenta el ingreso por visitante.\n- $|E|>1$: demanda **elástica**. La probabilidad cae más de lo que sube el precio; bajar el precio *aumenta* el ingreso por visitante.\n- $|E|\\approx 1$: punto neutro.\n\nRelación exacta: el ingreso por visitante es $precio\\cdot p$ y su cambio por dólar es $p\\,(1+E)$. Por eso el umbral es $E=-1$.\n\n**Para este reto.** Tu nota debe separar los cursos con $|E|>1$ (candidatos a bajar precio) de los de $|E|<1$ (donde bajar precio regala margen sin ganar compras suficientes)."
+          },
+          {
+            "title": "Pendiente absoluta vs. elasticidad: dos rankings distintos",
+            "body": "**Idea cotidiana.** Un curso puede ser el que más probabilidad pierde *por dólar* y, aun así, no ser el más sensible *en porcentaje*. Son dos preguntas diferentes: «¿cuánto cae en puntos?» y «¿cuánto cae en proporción?».\n\n**Mini ejemplo a mano.**\n\n| Curso | Precio | $p$ | $dp/d\\,precio$ | $E$ |\n|---|---|---|---|---|\n| A | \\$10 | 0.50 | -0.020 | -0.40 |\n| B | \\$50 | 0.10 | -0.010 | -5.00 |\n\nA pierde el doble de probabilidad por dólar, pero B reacciona mucho más en porcentaje, porque parte de un precio alto y de una probabilidad baja.\n\n**Nombre técnico.** Pendiente = efecto *absoluto* (puntos de probabilidad por dólar). Elasticidad = efecto *relativo* (% sobre %).\n\n**Para este reto.** Compara el orden de los cursos según $dp/d\\,precio$ (etapa 4) y según $E$. Si los rankings difieren, explícalo: es justo la razón de usar elasticidad para decidir."
+          },
+          {
+            "title": "Qué NO dice la elasticidad: limitaciones",
+            "body": "**Idea cotidiana.** La elasticidad es una foto local: vale para cambios pequeños alrededor del precio actual, no para rebajas del 50 %.\n\n**Analogía.** Es como la pendiente de una cuesta en un punto: sirve para el siguiente paso, no para predecir toda la bajada.\n\n**Limitaciones típicas.**\n- Es **local**: $E$ cambia cuando cambia el precio (la sigmoide se curva).\n- Es tan buena como el modelo. Si el modelo calcula probabilidades distintas de lo observado, $E$ hereda ese sesgo.\n- Describe **probabilidad de compra**, no ganancia: faltan costos, reembolsos o efectos en otros cursos.\n- El modelo es una asociación observada; sin una prueba de precios para ese curso, no es una prueba causal.\n\n**Para este reto.** Tu nota debe incluir al menos una de estas limitaciones, dicha en palabras que entienda alguien de comercial y aplicada a este caso (por ejemplo, comparar con la prueba de precios del curso 1)."
+          }
+        ],
+        "workedExample": {
+          "domain": "Membresías de un gimnasio (probabilidad de renovar según la cuota mensual)",
+          "body": "**Situación.** Un gimnasio tiene un modelo logístico de renovación con $z = 2.0 - 0.05\\cdot cuota$ y $p = \\frac{1}{1+e^{-z}}$. Evaluamos dos cuotas.\n\n**Cuota de \\$30.**\n- $z = 2.0 - 0.05\\cdot 30 = 0.5$ → $p = 0.6225$ y $1-p = 0.3775$.\n- Pendiente: $dp/d\\,cuota = -0.05 \\cdot 0.6225 \\cdot 0.3775 = -0.01175$ por dólar.\n- Elasticidad: $E = -0.01175 \\cdot \\frac{30}{0.6225} = -0.566$.\n\n**Cuota de \\$60.**\n- $z = 2.0 - 3.0 = -1.0$ → $p = 0.2689$ y $1-p = 0.7311$.\n- Pendiente: $-0.05 \\cdot 0.2689 \\cdot 0.7311 = -0.00983$ por dólar.\n- Elasticidad: $E = -0.00983 \\cdot \\frac{60}{0.2689} = -2.193$.\n\n**Comprobación a mano con ingreso por persona ($cuota \\cdot p$).**\n- \\$30 → $30\\cdot 0.6225 = 18.67$; con \\$31 ($z=0.45$, $p=0.6106$) → $31\\cdot 0.6106 = 18.93$. **Sube**, coherente con $|E|<1$.\n- \\$60 → $60\\cdot 0.2689 = 16.14$; con \\$61 ($z=-1.05$, $p=0.2592$) → $61\\cdot 0.2592 = 15.81$. **Baja**, coherente con $|E|>1$.\n- La caída de $p$ al pasar de \\$30 a \\$31 es 1.9 %, y $-0.566\\times 3.33\\% \\approx -1.9\\%$, que coincide.\n\n**Lectura para negocio.** En la cuota de \\$30 la gente casi no reacciona: no conviene rebajar. En \\$60 la gente es muy sensible: una rebaja pequeña podría traer más ingreso por persona. Limitación: los costos del gimnasio no están en el modelo, así que «más ingreso» no es todavía «más ganancia»."
+        },
+        "steps": [
+          "Reúne los resultados de la etapa 4: para cada uno de los 10 cursos necesitas el precio, la probabilidad $p$ del modelo y la pendiente $dp/d\\,precio$.",
+          "Calcula la elasticidad $E$ de cada curso con la fórmula de la etapa y redondea a 2 decimales. Revisa el signo: ¿es el esperado para un precio?",
+          "Ordena los cursos por $E$ y marca cuáles quedan por encima y cuáles por debajo del umbral de -1. Anota los que quedan cerca del umbral.",
+          "Compara el ranking por elasticidad con el ranking por pendiente absoluta. Anota los cursos que cambian de lugar y explica por qué.",
+          "Redacta la nota de 6 a 10 líneas para el equipo comercial: qué cursos bajar y cuáles no, con palabras cotidianas y sin jerga sin explicar.",
+          "Incluye al menos una limitación aplicada a este caso y una acción de seguimiento (por ejemplo, validar con una prueba de precios).",
+          "Relee la nota con la pregunta: ¿alguien de comercial entendería qué hacer sin saber derivadas?"
+        ],
+        "hints": [
+          "Antes de calcular, revisa qué dos cantidades de cada curso necesitas además de la pendiente que ya calculaste en la etapa 4.",
+          "Fíjate en el signo de los resultados y pregunta qué significa un valor negativo para un precio.",
+          "Ordena los cursos de más a menos sensible en porcentaje y compara ese orden con el de la pendiente por dólar: ¿coinciden?",
+          "Piensa qué pasa con el ingreso por visitante cuando la probabilidad cae más (o menos) que el aumento del precio, y dónde cambia la respuesta.",
+          "Al escribir la nota, explica el número con una frase del tipo «si subes el precio 1 %, la probabilidad de compra baja ...» y no solo lo muestres.",
+          "Piensa en qué ignora el modelo (costos, otros cursos, el rango de precios probado) y compara con lo que viste en la prueba de precios del curso 1."
+        ],
+        "research": [
+          {
+            "conceptId": "business:pricing",
+            "why": "Es la idea base: medir en porcentajes cuánto reacciona la demanda cuando cambia el precio.",
+            "searchEs": "elasticidad precio de la demanda explicación sencilla",
+            "searchEn": "price elasticity of demand explained"
+          },
+          {
+            "conceptId": "business:pricing",
+            "why": "Te dice cuándo bajar el precio aumenta el ingreso (demanda elástica) y cuándo no (inelástica).",
+            "searchEs": "demanda elástica e inelástica ingreso total",
+            "searchEn": "elastic vs inelastic demand total revenue"
+          },
+          {
+            "conceptId": "business:pricing",
+            "why": "Conecta con tu caso: la elasticidad calculada desde un modelo logístico y sus límites como foto local.",
+            "searchEs": "elasticidad de precio con regresión logística probabilidad de compra",
+            "searchEn": "price elasticity logistic regression purchase probability"
+          }
+        ],
+        "deliverables": [
+          "Una tabla con los 10 cursos y las columnas: nombre del curso, precio, probabilidad $p$, pendiente $dp/d\\,precio$ y elasticidad $E$ (2 decimales), ordenados de la más negativa a la menos negativa.",
+          "Todos los valores de $E$ deben ser negativos y coherentes con la fórmula $E=\\frac{dp}{d\\,precio}\\cdot\\frac{precio}{p}$ aplicada con los resultados de la etapa 4.",
+          "Una nota de 6 a 10 líneas dirigida al equipo comercial (no un informe técnico) que nombre explícitamente los cursos donde conviene bajar el precio y los cursos donde no.",
+          "La decisión debe usar el umbral $|E|=1$ y justificarlo con palabras cotidianas, por ejemplo: «si el precio sube 1 %, la probabilidad de compra baja más/menos de 1 %».",
+          "La nota explica la elasticidad sin jerga no definida y da al menos un ejemplo con números concretos de un curso.",
+          "La nota distingue entre sensibilidad por dólar (pendiente) y sensibilidad en porcentaje (elasticidad), o aclara por qué el ranking cambia.",
+          "Incluye al menos una limitación concreta (por ejemplo: es una foto local, el modelo no es la prueba de precios, faltan costos) y una acción de seguimiento.",
+          "Terminado cuando: la tabla está completa, la nota cumple 6 a 10 líneas, hay una recomendación por curso (bajar / no bajar) y una limitación, y una persona de comercial podría actuar sin preguntar qué es una derivada."
+        ],
+        "solution": {
+          "expectedResult": "Con $z=-1-0.08\\cdot precio+0.05\\cdot minutos+0.6\\cdot valoracion$, $p=1/(1+e^{-z})$, $dp/d\\,precio=-0.08\\,p(1-p)$ y $E=-0.08\\cdot precio\\cdot(1-p)$ (se obtiene al simplificar $p$ en la fórmula):\n\n| Curso | Precio | $z$ | $p$ | $dp/d\\,precio$ | $E$ |\n|---|---|---|---|---|---|\n| 5 Machine Learning inicial | 55 | -2.23 | 0.0971 | -0.0070 | -3.97 |\n| 8 Cálculo para ciencia de datos | 45 | -1.99 | 0.1203 | -0.0085 | -3.17 |\n| 3 Estadística aplicada | 40 | -1.48 | 0.1854 | -0.0121 | -2.61 |\n| 9 Álgebra lineal práctica | 38 | -1.50 | 0.1824 | -0.0119 | -2.49 |\n| 6 Visualización con Tableau | 35 | -1.15 | 0.2405 | -0.0146 | -2.13 |\n| 1 Python para análisis | 30 | -0.40 | 0.4013 | -0.0192 | -1.44 |\n| 7 Power BI esencial | 28 | -0.30 | 0.4256 | -0.0196 | -1.29 |\n| 2 SQL desde cero | 25 | 0.01 | 0.5025 | -0.0200 | -0.99 |\n| 4 Excel avanzado | 20 | 0.38 | 0.5938 | -0.0193 | -0.65 |\n| 10 Storytelling con datos | 22 | 0.57 | 0.6388 | -0.0185 | -0.64 |\n\nNota modelo: se baja el precio en los 7 cursos con $E<-1$ (5, 8, 3, 9, 6, 1, 7), con prioridad en 5, 8 y 3. El 2 queda en el punto neutro (-0.99): no hay ganancia clara. No se baja en 4 y 10 (inelásticos), y es posible incluso subirlos con cuidado. Incluye una limitación.",
+          "reasoning": "1) Tomar de la etapa 4 el precio, $p$ y $dp/d\\,precio$ de cada curso. 2) Aplicar $E=\\frac{dp}{d\\,precio}\\cdot\\frac{precio}{p}$. Como $dp/d\\,precio=\\beta_{precio}\\,p(1-p)$, el $p$ se cancela y queda $E=\\beta_{precio}\\cdot precio\\cdot(1-p)$: la elasticidad crece con el precio y con la distancia de $p$ a 1. 3) Clasificar con el umbral $E=-1$. 4) Redactar la nota traduciendo cada $E$ a «si el precio sube 1 %, la probabilidad baja $|E|$ %». Ejemplo: curso 5, $E=-0.08\\cdot55\\cdot0.9029=-3.97$, es decir, +1 % de precio baja la probabilidad ≈ 4 %.",
+          "conceptLinks": "`math:derivatives` y `math:chain-rule`: la pendiente $dp/d\\,precio$ viene de derivar la sigmoide por la cadena (etapas 1 a 3). `ml:logreg`: $p$ y $z$ por curso (etapa 4). `business:pricing`: convertir la derivada en elasticidad y compararla con -1 para decidir. `math:correlation` (prerrequisito): recordar que el modelo describe asociaciones observadas, no causas garantizadas.",
+          "businessInterpretation": "Los cursos de precio alto y probabilidad baja (5, 8, 3, 9, 6) son los más sensibles en porcentaje: una rebaja moderada puede aumentar el ingreso por visitante. Los baratos y con buena vista previa y valoración (4, 10) son poco sensibles: bajar su precio regala margen. Dato clave: por dólar, los cursos 2, 4, 7, 10 y 1 pierden más puntos de probabilidad (-0.019 a -0.020) que el curso 5 (-0.007), pero en porcentaje el curso 5 es el más sensible; por eso se decide con $E$ y no con la pendiente. Limitación: $E$ es local (vale para cambios pequeños) y depende del modelo; por ejemplo, en la prueba de precios del curso 1 la compra observada a \\$30 fue 21.8 % (218 de 1000), mientras el modelo da 40.1 %, y la elasticidad observada alrededor de \\$30 sale ≈ -1.13 frente a -1.44 del modelo. Conviene validar con una prueba de precios en los cursos candidatos antes de una rebaja general, y considerar costos y efectos en otros cursos.",
+          "commonError": "Decidir por la pendiente por dólar en vez de por la elasticidad: se concluiría que el curso 2 (-0.0200) es el más sensible y el 5 (-0.0070) el menos sensible, cuando en porcentaje el 5 es el más elástico (-3.97) y el 2 es neutro (-0.99). Otros errores: olvidar el factor $precio/p$ y quedarse con la derivada; invertir la regla y bajar precio donde $|E|<1$ (curso 10, $E=-0.64$), lo que hace perder ingreso; o presentar $E$ como una verdad causal permanente sin mencionar que es local.",
+          "dsFlow": "Aparece al final del proyecto, en la fase de comunicación de resultados: después de entrenar y entender el modelo, se traduce su sensibilidad a una recomendación que cualquier área puede usar. Es el paso previo a diseñar una prueba A/B de precios para confirmar el efecto.",
+          "skill": "Interpretar una derivada como decisión de negocio: convertir una sensibilidad por unidad en un porcentaje comparable, clasificar casos con un umbral, y comunicarlo en lenguaje cotidiano señalando límites."
+        }
+      }
+    }
+  ]
+}

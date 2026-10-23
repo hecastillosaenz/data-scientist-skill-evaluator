@@ -32,13 +32,13 @@ let tmp: string;
 beforeAll(() => {
   tmp = mkdtempSync(path.join(tmpdir(), 'dsc-real-'));
   mkdirSync(path.join(tmp, 'challenge'));
-  cpSync(path.join(repoRoot, 'challenge', 'challenge-001'), path.join(tmp, 'challenge', 'challenge-001'), { recursive: true });
+  cpSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001'), path.join(tmp, 'challenge', 'challenge-001'), { recursive: true });
 });
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const withNotebook = (stage1Code: string) => {
   const file = path.join(tmp, 'challenge', 'challenge-001', 'notebook.ipynb');
-  const nb = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'notebook.ipynb'), 'utf8'));
+  const nb = JSON.parse(readFileSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'notebook.ipynb'), 'utf8'));
   const idx = nb.cells.findIndex((c: any) => c.cell_type === 'code' && c.source.join('').startsWith('# Entregable - Etapa 1:'));
   nb.cells[idx].source = stage1Code.split('\n').map((l, i, a) => (i < a.length - 1 ? `${l}\n` : l));
   writeFileSync(file, JSON.stringify(nb));
@@ -56,15 +56,15 @@ const result = (events: VerifyEvent[]) => events.find((e) => e.type === 'result'
 
 describe('challenge-001 (reto real)', () => {
   it('es un challenge válido y completo en disco', async () => {
-    const [loaded] = await listChallenges(repoRoot);
+    const [loaded] = await listChallenges(tmp);
     expect(loaded!.challenge.id).toBe('challenge-001');
     expect(loaded!.challenge.stages.map((s) => s.id)).toEqual(['challenge-001-s1', 'challenge-001-s2']);
     expect(loaded!.challenge.data?.tables.map((t) => t.name)).toEqual(['polizas', 'siniestros']);
-    for (const f of ['challenge.json', 'notebook.ipynb', 'datos/seed.sql', 'logs-avance.md']) expect(existsSync(path.join(repoRoot, 'challenge', 'challenge-001', f))).toBe(true);
+    for (const f of ['challenge.json', 'notebook.ipynb', 'datos/seed.sql', 'logs-avance.md']) expect(existsSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', f))).toBe(true);
   });
 
   it('los ids de pregunta de negocio y del test son únicos y de este challenge', async () => {
-    const c = (await listChallenges(repoRoot))[0]!.challenge;
+    const c = (await listChallenges(tmp))[0]!.challenge;
     const ids = [...c.businessQuestions.map((q) => q.id), ...(c.finalTest ?? []).map((q) => q.id)];
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => id.startsWith('challenge-001-'))).toBe(true);
@@ -88,7 +88,7 @@ describe.skipIf(!hasDuckdb)('challenge-001 con DuckDB real', () => {
   });
 
   it('el notebook con el esqueleto sin completar NO pasa y lo explica', async () => {
-    const original = JSON.parse(readFileSync(path.join(repoRoot, 'challenge', 'challenge-001', 'notebook.ipynb'), 'utf8'));
+    const original = JSON.parse(readFileSync(path.join(repoRoot, 'app', 'test', 'fixtures', 'challenge-001', 'notebook.ipynb'), 'utf8'));
     const skeleton = original.cells.find((c: any) => c.cell_type === 'code' && c.source.join('').startsWith('# Entregable')).source.join('');
     withNotebook(skeleton);
     const events = await run();

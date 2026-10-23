@@ -195,7 +195,7 @@ export async function* verifyStage(params: VerifyParams): AsyncGenerator<VerifyE
         system: evaluatorSystem(),
         addDirs: [dir],
         ...(signal ? { signal } : {}),
-        onEvent: (e) => events.push(e.type === 'tool' ? { type: 'tool', text: e.text } : { type: 'feedback', text: e.text }),
+        onEvent: (e) => e.type !== 'thinking' && events.push(e.type === 'tool' ? { type: 'tool', text: e.text } : { type: 'feedback', text: e.text }),
       } satisfies AgentRunOptions);
       for (const e of events) yield e;
       feedback = result.text;
@@ -247,7 +247,7 @@ async function* evaluateConceptual(input: {
       system: evaluatorSystem(),
       addDirs: [dir],
       ...(signal ? { signal } : {}),
-      onEvent: (e) => events.push(e.type === 'tool' ? { type: 'tool', text: e.text } : { type: 'feedback', text: e.text }),
+      onEvent: (e) => e.type !== 'thinking' && events.push(e.type === 'tool' ? { type: 'tool', text: e.text } : { type: 'feedback', text: e.text }),
     });
     const verdict = parseVerdict(result.text);
     for (const e of events) {

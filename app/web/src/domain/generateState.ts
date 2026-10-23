@@ -1,4 +1,4 @@
-import type { GenerateErrorCode, GenerateEvent } from '../../../shared/generate';
+import type { CasoPreview, EtapaPreview, GenerateErrorCode, GenerateEvent } from '../../../shared/generate';
 import type { ChallengePlan } from '../../../server/generator/plan';
 
 export interface GenerateStep {
@@ -14,12 +14,15 @@ export interface GenerateState {
   plan: ChallengePlan | null;
   steps: GenerateStep[];
   tools: string[];
+  /** Lo que el Generador ya planteó del caso y las etapas ya escritas y comprobadas. */
+  caso: CasoPreview | null;
+  etapas: EtapaPreview[];
   result: { challengeId: string; title: string } | null;
   cost: number;
   error: { message: string; code: GenerateErrorCode; phase?: string; canResume: boolean } | null;
 }
 
-export const startedGenerate = (): GenerateState => ({ phase: 'running', plan: null, steps: [], tools: [], result: null, cost: 0, error: null });
+export const startedGenerate = (): GenerateState => ({ phase: 'running', plan: null, steps: [], tools: [], caso: null, etapas: [], result: null, cost: 0, error: null });
 
 const failRunning = (steps: GenerateStep[]): GenerateStep[] => steps.map((s) => (s.status === 'running' ? { ...s, status: 'error' as const } : s));
 
@@ -35,6 +38,10 @@ export function reduceGenerate(state: GenerateState, event: GenerateEvent): Gene
     }
     case 'tool':
       return { ...state, tools: [...state.tools.slice(-7), event.text] };
+    case 'caso':
+      return { ...state, caso: event.caso };
+    case 'etapa':
+      return { ...state, etapas: [...state.etapas.filter((e) => e.number !== event.etapa.number), event.etapa].sort((a, b) => a.number - b.number) };
     case 'result':
       return { ...state, result: { challengeId: event.challengeId, title: event.title } };
     case 'done':

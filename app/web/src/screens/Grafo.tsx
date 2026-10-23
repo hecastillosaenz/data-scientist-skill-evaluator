@@ -20,7 +20,7 @@ import { GraphCanvas } from './graph/GraphCanvas';
 import { GraphPanel } from './graph/GraphPanel';
 import styles from './Grafo.module.css';
 
-/** Vista de conceptos (R15): los 6 dominios a la vez; los chips atenúan, no ocultan. */
+/** Vista de conceptos (R15): los 8 dominios a la vez; los chips atenúan, no ocultan. */
 function ConceptsView({ viewSwitch }: { viewSwitch: ReactNode }) {
   const { loading, data, insights } = useApp();
   const [params, setParams] = useSearchParams();
@@ -57,7 +57,7 @@ function ConceptsView({ viewSwitch }: { viewSwitch: ReactNode }) {
   const countByDomain = (d: DomainId) => data.concepts.filter((c) => c.domain === d).length;
   const subtitle =
     active.size === 0
-      ? `${data.concepts.length} conceptos en 6 dominios`
+      ? `${data.concepts.length} conceptos en 8 dominios`
       : `${data.concepts.filter((c) => active.has(c.domain)).length} conceptos en ${[...active].map((d) => DOMAIN_BY_ID[d].short).join(', ')}`;
 
   const emphasized = new Set<string>();

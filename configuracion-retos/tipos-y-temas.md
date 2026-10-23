@@ -11,6 +11,16 @@ Se completa antes de implementar P3.
 
 ## Machine Learning
 
+## Feature Engineering
+
+Transformaciones, codificación, agregaciones, ventanas, interacciones, selección y fuga al construir variables
+(conceptos `features:*`).
+
+## Model Training
+
+Modelo base, pérdida y métrica, ciclo de entrenamiento, curvas de aprendizaje, validación, hiperparámetros,
+desbalance, ensambles y reproducibilidad (conceptos `training:*`).
+
 ## Limpieza y Visualización
 
 ## Business Analytics

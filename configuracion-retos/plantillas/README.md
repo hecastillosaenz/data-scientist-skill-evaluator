@@ -12,6 +12,8 @@ un mensaje explícito.
 | `plantilla-python.md` | Retos de **Python** y **Limpieza y Visualización** (datos reproducibles, asserts). |
 | `plantilla-matematica.md` | Retos de **Matemática Aplicada** (teoría con fórmulas, desarrollo paso a paso). |
 | `plantilla-ml.md` | Retos de **Machine Learning** (algoritmos: explicar y aplicar). |
+| `plantilla-features.md` | Retos de **Feature Engineering** (construir variables y justificarlas). |
+| `plantilla-entrenamiento.md` | Retos de **Model Training** (entrenar, validar, diagnosticar). |
 | `plantilla-business.md` | Retos de **Business Analytics** (KPI y caso analítico). |
 
 Los textos son Markdown con fórmulas LaTeX (`$…$`, `$$…$$`). **Escapa los signos de moneda como `\$`** para que no se
